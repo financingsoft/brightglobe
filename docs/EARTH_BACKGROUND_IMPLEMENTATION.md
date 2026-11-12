@@ -11,6 +11,7 @@ The app targets Expo SDK 58, React Native 0.88, and React 19.3.
 | Package | Selected version | Purpose |
 |---|---:|---|
 | `expo-gl` | `~58.0.4` | Native OpenGL render surface |
+| `react-native` | `0.88.1` | React Native runtime patch aligned to Expo Doctor |
 | `expo-asset` | `~58.0.21` | Native asset resolution |
 | `expo-file-system` | `~58.0.13` | Expo GL / native asset support |
 | `three` | `0.187.0` | 3D scene, geometry, textures, and shaders |
@@ -20,7 +21,7 @@ The app targets Expo SDK 58, React Native 0.88, and React 19.3.
 
 React Three Fiber v9 is intentional: its Native entry point patches Three.js texture loading to resolve Expo assets and uses Expo GL. Do not upgrade this integration to the in-development v10 Native package until its maintainers mark that migration stable. See the [React Three Fiber Native documentation](https://r3f.docs.pmnd.rs/getting-started/installation) and [native loader implementation](https://github.com/pmndrs/react-three-fiber/blob/master/packages/fiber/src/native/polyfills.ts).
 
-TypeScript 7.1 is a beta compiler line. Keep it explicitly marked as pre-release and require the repository validation workflow to pass before upgrading this dependency to a release candidate or stable build. Do not hide beta-related failures with broad type suppressions.
+TypeScript 7.1 is a beta compiler line. Keep it explicitly marked as pre-release and require the repository validation workflow to pass before upgrading this dependency to a release candidate or stable build. Expo SDK's recommended TypeScript pin is intentionally excluded from the Expo version check via the supported `expo.install.exclude` setting in `app/package.json`; this preserves the requested compiler while still checking other SDK dependencies. Do not hide beta-related failures with broad type suppressions.
 
 ## Earth texture provenance and licensing
 

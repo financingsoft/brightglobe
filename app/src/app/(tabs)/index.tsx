@@ -20,7 +20,7 @@ export default function HomeScreen() {
     }
     action();
   };
-  const openPoints = () => requireHomeLogin(() => router.push("/wallet"));
+  const openPoints = () => requireHomeLogin(() => router.push("/points-record"));
   const openForce = () => requireHomeLogin(() => router.push("/force-record"));
   const activityItems = [
     { key: "shopping", category: "shopping", title: t("淘宝黑钻店", "Taobao rewards"), description: t("淘宝919免单日", "Taobao shopping event") },

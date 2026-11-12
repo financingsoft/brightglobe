@@ -22,7 +22,7 @@ export default function CategoryScreen() {
       <View style={styles.header}><Pressable onPress={() => router.back()} style={styles.back}><Text style={styles.backGlyph}>‹</Text></Pressable><Text style={styles.headerTitle}>{locale === "zh-CN" ? current.zh : current.en}</Text><View style={styles.back} /></View>
       <View style={styles.list}>
         {current.items.map(([zh, en]) => (
-          <Pressable key={zh} onPress={() => router.push(`/activity?title=${encodeURIComponent(locale === "zh-CN" ? zh : en)}`)} style={styles.row}>
+          <Pressable key={zh} onPress={() => router.push({ pathname: "/activity", params: { title: locale === "zh-CN" ? zh : en } })} style={styles.row}>
             <Text style={styles.rowIcon}>◇</Text><View style={styles.rowCopy}><Text style={styles.rowTitle}>{t(zh, en)}</Text><Text style={styles.rowMeta}>{t("查看任务详情与参与规则", "View mission details and participation rules")}</Text></View><Text style={styles.chevron}>›</Text>
           </Pressable>
         ))}

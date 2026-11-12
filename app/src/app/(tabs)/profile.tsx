@@ -26,7 +26,7 @@ export default function ProfileScreen() {
           <Text style={styles.avatarText}>BG</Text>
         </View>
         <View style={styles.profileCopy}>
-          <Text style={styles.memberName}>BrightGlobe Member</Text>
+          <Text style={styles.memberName}>{t("demoMemberName")}</Text>
           <Text style={styles.memberLabel}>{t("memberLabel")}</Text>
         </View>
         <Pill label={t("preview")} tone="gold" />

@@ -115,24 +115,14 @@ try {
     ["points-record-375x667.png", "/wallet"],
     ["force-record-375x667.png", "/force-record"],
     ["announcements-375x667.png", "/announcements"],
-    ["announcement-detail-375x667.png", "/announcement-detail?title=BrightGlobe%20community%20announcement&body=Take%20part%20in%20building%20the%20community&date=2026.11.13"],
+    ["announcement-detail-375x667.png", "/announcement-detail"],
     ["invite-375x667.png", "/invite"],
     ["passport-375x667.png", "/passport"],
     ["community-base-375x667.png", "/base"],
     ["settings-375x667.png", "/settings"],
     ["benefits-375x667.png", "/rewards"],
-    ["activity-detail-375x667.png", "/activity?title=Community%20mission"],
-    ["shopping-375x667.png", "/category?category=shopping"],
-    ["games-375x667.png", "/category?category=games"],
-    ["entertainment-375x667.png", "/category?category=entertainment"],
-    ["reading-375x667.png", "/category?category=reading"],
-    ["news-375x667.png", "/category?category=news"],
-    ["comics-375x667.png", "/category?category=comics"],
-    ["music-375x667.png", "/category?category=music"],
-    ["competition-375x667.png", "/category?category=bidding"],
-    ["treasure-hunt-375x667.png", "/category?category=treasure"],
-    ["finance-unavailable-375x667.png", "/category?category=finance"],
-    ["wellness-unavailable-375x667.png", "/category?category=wellness"]
+    ["activity-detail-375x667.png", "/activity"],
+    ["shopping-375x667.png", "/category"]
   ];
 
   for (const [fileName, route] of routeCaptures) {
@@ -141,7 +131,7 @@ try {
     await page.screenshot({ path: resolve(outputRoot, fileName) });
   }
 
-  // Exercise the preview-account path and capture the documented check-in dialog.
+  // Exercise real in-app navigation for parameterized destinations (no query-string hydration shortcuts).
   await page.goto(`http://127.0.0.1:${port}${basePath}/login`, { waitUntil: "networkidle", timeout: 60000 });
   await page.getByText("进入本地预览账户", { exact: true }).click();
   await page.waitForTimeout(250);
@@ -150,8 +140,65 @@ try {
   await page.getByText("签到", { exact: true }).click();
   await page.waitForTimeout(200);
   await page.screenshot({ path: resolve(outputRoot, "check-in-dialog-375x667.png") });
+  await page.getByText("不用了", { exact: true }).click();
+  await page.waitForTimeout(180);
 
-  if (consoleErrors.length > 0) {
+  const captureCategoryFromForce = async (label, fileName) => {
+    await page.getByText(label, { exact: true }).click();
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: resolve(outputRoot, fileName) });
+    await page.getByText("‹", { exact: true }).click();
+    await page.waitForTimeout(180);
+  };
+
+  await captureCategoryFromForce("购物", "shopping-from-force-375x667.png");
+  await captureCategoryFromForce("游戏", "games-from-force-375x667.png");
+  await page.getByText("娱乐", { exact: true }).click();
+  await page.waitForTimeout(180);
+  await page.screenshot({ path: resolve(outputRoot, "entertainment-375x667.png") });
+
+  for (const [label, fileName] of [
+    ["小说", "reading-375x667.png"],
+    ["漫画", "comics-375x667.png"],
+    ["新闻", "news-375x667.png"],
+    ["音乐", "music-375x667.png"]
+  ]) {
+    await page.getByText("‹", { exact: true }).click();
+    await page.waitForTimeout(160);
+    await page.getByText(label, { exact: true }).click();
+    await page.waitForTimeout(180);
+    await page.screenshot({ path: resolve(outputRoot, fileName) });
+  }
+
+  await page.getByText("‹", { exact: true }).click();
+  await page.waitForTimeout(180);
+  await page.getByText("‹", { exact: true }).click();
+  await page.waitForTimeout(180);
+  await captureCategoryFromForce("来钱", "finance-unavailable-375x667.png");
+  await captureCategoryFromForce("健康", "wellness-unavailable-375x667.png");
+
+  await page.getByText("邀请好友", { exact: true }).click();
+  await page.waitForTimeout(180);
+  await page.screenshot({ path: resolve(outputRoot, "invite-from-force-375x667.png") });
+  await page.getByText("‹", { exact: true }).click();
+  await page.waitForTimeout(180);
+  await page.getByText("关注微信公众号", { exact: true }).click();
+  await page.waitForTimeout(180);
+  await page.screenshot({ path: resolve(outputRoot, "official-follow-activity-375x667.png") });
+
+  // Follow the Home announcement entry to its list and detail screens.
+  await page.getByText("‹", { exact: true }).click();
+  await page.waitForTimeout(180);
+  await page.getByText("首页", { exact: true }).last().click();
+  await page.waitForTimeout(180);
+  await page.getByText("更多", { exact: true }).click();
+  await page.waitForTimeout(180);
+  await page.screenshot({ path: resolve(outputRoot, "announcements-from-home-375x667.png") });
+  await page.getByText("立即查看", { exact: true }).first().click();
+  await page.waitForTimeout(180);
+  await page.screenshot({ path: resolve(outputRoot, "announcement-detail-from-home-375x667.png") });
+
+  if (consoleErrors.length > 0) {  if (consoleErrors.length > 0) {
     throw new Error(`Browser runtime errors:\n${consoleErrors.join("\n")}`);
   }
 

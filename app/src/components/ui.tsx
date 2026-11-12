@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, radii, spacing } from "@/constants/theme";
+import { useI18n } from "@/i18n/locale";
 
 type AppScreenProps = {
   children: ReactNode;
@@ -30,6 +31,8 @@ export function AppScreen({ children }: AppScreenProps) {
 }
 
 export function BrandHeader() {
+  const { t } = useI18n();
+
   return (
     <View style={styles.brandHeader}>
       <View style={styles.brandMark}>
@@ -37,7 +40,7 @@ export function BrandHeader() {
       </View>
       <View>
         <Text style={styles.brandName}>BrightGlobe</Text>
-        <Text style={styles.brandTagline}>GLOBAL CONTRIBUTION NETWORK</Text>
+        <Text style={styles.brandTagline}>{t("brandTagline")}</Text>
       </View>
     </View>
   );

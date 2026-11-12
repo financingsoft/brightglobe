@@ -38,7 +38,7 @@ export default function TasksScreen() {
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
 
-  const categories: { id: CategoryId; glyph: string; label: string }[] = [
+  const categories: { id: CategoryId; label: string }[] = [
     { id: "shopping", label: t("购物", "Shopping") },
     { id: "games", label: t("游戏", "Games") },
     { id: "entertainment", label: t("娱乐", "Entertainment") },

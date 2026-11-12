@@ -2,10 +2,19 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { AppScreen } from "@/components/ui";
 import { useI18n } from "@/i18n/locale";
+import { useAuth } from "@/auth/session";
 
 export default function ProfileScreen() {
   const { locale } = useI18n();
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
+  const openProtected = (route: "/settings" | "/wallet" | "/passport" | "/force-record" | "/invite" | "/base") => {
+    if (!isAuthenticated) {
+      router.push("/login");
+      return;
+    }
+    router.push(route);
+  };
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
 
   return (
@@ -15,7 +24,7 @@ export default function ProfileScreen() {
           <Text style={styles.memberName}>{t("BrightGlobe 用户", "BrightGlobe Member")}</Text>
           <Text style={styles.residentType}>{t("星球居民", "Community resident")}</Text>
         </View>
-        <Pressable onPress={() => router.push("/settings")} style={styles.avatarButton}>
+        <Pressable onPress={() => openProtected("/settings")} style={styles.avatarButton}>
           <Text style={styles.avatarGlyph}>♙</Text>
         </Pressable>
       </View>
@@ -24,37 +33,37 @@ export default function ProfileScreen() {
         <Text style={styles.sectionTitle}>{t("我的资产", "My assets")}</Text>
       </View>
       <View style={styles.assetRow}>
-        <Pressable onPress={() => router.push("/wallet")} style={styles.assetTile}>
+        <Pressable onPress={() => openProtected("/wallet")} style={styles.assetTile}>
           <Text style={styles.assetLabel}>{t("我的积分", "My points")}</Text>
           <Text style={styles.assetValue}>122.90001</Text>
           <Text style={styles.assetHint}>{t("查看记录", "View records")} ›</Text>
         </Pressable>
-        <Pressable onPress={() => router.push("/passport")} style={styles.assetTile}>
+        <Pressable onPress={() => openProtected("/passport")} style={styles.assetTile}>
           <Text style={styles.assetLabel}>{t("贡献档案", "Contribution profile")}</Text>
           <Text style={styles.assetValue}>{t("已建立", "Created")}</Text>
           <Text style={styles.assetHint}>{t("查看档案", "View profile")} ›</Text>
         </Pressable>
       </View>
 
-      <Pressable onPress={() => router.push("/force-record")} style={styles.menuRow}>
+      <Pressable onPress={() => openProtected("/force-record")} style={styles.menuRow}>
         <Text style={styles.menuIcon}>◎</Text>
         <Text style={styles.menuTitle}>{t("我的原力值", "My Contribution Power")}</Text>
         <Text style={styles.menuValue}>534</Text>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
-      <Pressable onPress={() => router.push("/invite")} style={styles.menuRow}>
+      <Pressable onPress={() => openProtected("/invite")} style={styles.menuRow}>
         <Text style={styles.menuIcon}>♧</Text>
         <Text style={styles.menuTitle}>{t("我的邀请码", "My invitation code")}</Text>
         <Text style={styles.menuValue}>{t("邀请好友", "Invite friends")}</Text>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
-      <Pressable onPress={() => router.push("/base")} style={styles.menuRow}>
+      <Pressable onPress={() => openProtected("/base")} style={styles.menuRow}>
         <Text style={styles.menuIcon}>⌂</Text>
         <Text style={styles.menuTitle}>{t("星球基地", "Community base")}</Text>
         <Text style={styles.menuValue} />
         <Text style={styles.chevron}>›</Text>
       </Pressable>
-      <Pressable onPress={() => router.push("/settings")} style={styles.menuRow}>
+      <Pressable onPress={() => openProtected("/settings")} style={styles.menuRow}>
         <Text style={styles.menuIcon}>⚙</Text>
         <Text style={styles.menuTitle}>{t("设置", "Settings")}</Text>
         <Text style={styles.menuValue} />

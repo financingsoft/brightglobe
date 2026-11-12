@@ -496,6 +496,7 @@ The V1.6 page families must remain separate in the app router. In particular, th
 | Announcement list | `/announcements` | Fig. 12 announcement list |
 | Announcement detail | `/announcement-detail` | Opened from a selected announcement |
 | Invitation code | `/invite` | Fig. 16 / Fig. 17 invite flow |
+| Follow official account verification | `/official-follow` | Fig. 16 task verification code flow |
 | Data passport | `/passport` | Safe BrightGlobe contribution profile |
 | Community base | `/base` | Fig. 17 base page |
 | Settings | `/settings` | Fig. 17 account settings |
@@ -507,5 +508,6 @@ The V1.6 page families must remain separate in the app router. In particular, th
 
 - The Home points capsule opens `/points-record`; the My-page wallet asset opens `/wallet`.
 - The three primary tabs remain Home, Discover Force, and My. Category, history, and benefit destinations are secondary routes.
+- The recommended “follow official account” task opens `/official-follow`, not the generic activity detail route. The local demo code is a preview interaction only and never credits real Contribution Power.
 - Parameterized destinations must be reached through in-app navigation when validating web preview. Direct static URLs with arbitrary query parameters can produce a React hydration mismatch in the Expo static export and are not representative of the native tap flow.
 - `app/scripts/capture-ui.mjs` captures the contracted screen families at a fixed 375 × 667 CSS-pixel viewport, captures a 390 × 844 Home viewport, and exercises the local check-in and category navigation flow. Reference source images are packaged alongside the preview captures for side-by-side inspection.

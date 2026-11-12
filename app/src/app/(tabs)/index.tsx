@@ -39,7 +39,7 @@ export default function HomeScreen() {
       </Pressable>
 
       <View style={styles.productionStage}>
-        <Pressable onPress={() => router.push("/activity?kind=mine")} style={styles.mineEntry}>
+        <Pressable onPress={() => router.push({ pathname: "/activity", params: { title: t("黑钻挖宝", "Point mining") } })} style={styles.mineEntry}>
           <View style={styles.mineOrb}>
             <Text style={styles.mineGlyph}>◇</Text>
           </View>
@@ -55,7 +55,7 @@ export default function HomeScreen() {
 
         <Pressable onPress={() => setShowLoginPrompt(true)} style={styles.growthState}>
           <Text style={styles.growthStateText}>
-            {claimed ? t("黑钻正在生长中", "Points are growing") : t("点击黑钻，查看领取状态", "Tap the gem to view its status")}
+            {t("点击黑钻，查看领取状态", "Tap the gem to view its status")}
           </Text>
         </Pressable>
       </View>
@@ -65,19 +65,19 @@ export default function HomeScreen() {
         <Text style={styles.activityHint}>{t("左右滑动查看更多", "Swipe to see more")}</Text>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.activityRail}>
-        <Pressable onPress={() => router.push("/category?category=shopping")} style={styles.activityTile}>
+        <Pressable onPress={() => router.push({ pathname: "/category", params: { category: "shopping" } })} style={styles.activityTile}>
           <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>◎</Text></View>
           <Text style={styles.activityTitle}>{t("淘宝得黑钻", "Shopping rewards")}</Text>
           <Text style={styles.activityDescription}>{t("精选优惠券每日领取", "Daily featured offers")}</Text>
           <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
         </Pressable>
-        <Pressable onPress={() => router.push("/category?category=games")} style={styles.activityTile}>
+        <Pressable onPress={() => router.push({ pathname: "/category", params: { category: "games" } })} style={styles.activityTile}>
           <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>◉</Text></View>
           <Text style={styles.activityTitle}>{t("游戏得黑钻", "Game rewards")}</Text>
           <Text style={styles.activityDescription}>{t("凡人飞仙等你来挑战", "Take on a new challenge")}</Text>
           <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
         </Pressable>
-        <Pressable onPress={() => router.push("/category?category=entertainment")} style={styles.activityTile}>
+        <Pressable onPress={() => router.push({ pathname: "/category", params: { category: "entertainment" } })} style={styles.activityTile}>
           <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>♫</Text></View>
           <Text style={styles.activityTitle}>{t("阅读得黑钻", "Reading rewards")}</Text>
           <Text style={styles.activityDescription}>{t("阅读优质内容", "Read quality content")}</Text>

@@ -1,4 +1,6 @@
+import { useCallback, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { useFocusEffect } from "expo-router";
 import {
   AppScreen,
   MetricCard,
@@ -14,6 +16,14 @@ import { useI18n } from "@/i18n/locale";
 
 export default function HomeScreen() {
   const { locale, t } = useI18n();
+  const [isFocused, setIsFocused] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsFocused(true);
+      return () => setIsFocused(false);
+    }, [])
+  );
 
   return (
     <AppScreen>
@@ -24,7 +34,7 @@ export default function HomeScreen() {
       />
 
       <View style={styles.heroPanel}>
-        <EarthBackground />
+        <EarthBackground active={isFocused} />
         <View style={styles.heroContent}>
           <View style={styles.heroTopRow}>
             <Pill label={t("preview")} tone="gold" />

@@ -8,6 +8,7 @@ import { useAuth } from "@/auth/session";
 export default function HomeScreen() {
   const { locale } = useI18n();
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
 

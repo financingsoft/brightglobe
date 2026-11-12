@@ -1,0 +1,58 @@
+name: Build BrightGlobe preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform to build
+        required: true
+        type: choice
+        options:
+          - ios
+          - android
+          - all
+        default: ios
+
+permissions:
+  contents: read
+
+concurrency:
+  group: brightglobe-preview-build
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID }}
+      BUILD_PLATFORM: ${{ inputs.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+
+      - name: Install dependencies
+        working-directory: app
+        run: npm install --no-audit --no-fund
+
+      - name: Validate TypeScript
+        working-directory: app
+        run: npm run typecheck
+
+      - name: Validate Expo configuration
+        working-directory: app
+        run: npx expo-doctor
+
+      - name: Check EAS credentials and project link
+        run: |
+          test -n "$EXPO_TOKEN" || { echo "::error::Add EXPO_TOKEN as a GitHub Actions secret."; exit 1; }
+          test -n "$EAS_PROJECT_ID" || { echo "::error::Add EAS_PROJECT_ID as a GitHub Actions repository variable after running eas init."; exit 1; }
+
+      - name: Create internal preview build
+        working-directory: app
+        run: npx --yes eas-cli@latest build --platform "$BUILD_PLATFORM" --profile preview --non-interactive

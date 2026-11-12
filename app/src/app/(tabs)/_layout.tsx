@@ -5,17 +5,15 @@ import { colors } from "@/constants/theme";
 
 function TabGlyph({
   glyph,
-  color,
   focused
 }: {
   glyph: string;
-  color: string;
   focused: boolean;
 }) {
   return (
     <Text
       style={{
-        color,
+        color: focused ? colors.brand : colors.inkMuted,
         fontSize: 18,
         lineHeight: 22,
         fontWeight: focused ? "800" : "500"
@@ -49,8 +47,8 @@ export default function TabLayout() {
         name="index"
         options={{
           title: t("navHome"),
-          tabBarIcon: ({ color, focused }) => (
-            <TabGlyph glyph="◈" color={color} focused={focused} />
+          tabBarIcon: ({ focused }) => (
+            <TabGlyph glyph="◈" focused={focused} />
           )
         }}
       />
@@ -58,8 +56,8 @@ export default function TabLayout() {
         name="tasks"
         options={{
           title: t("navTasks"),
-          tabBarIcon: ({ color, focused }) => (
-            <TabGlyph glyph="✓" color={color} focused={focused} />
+          tabBarIcon: ({ focused }) => (
+            <TabGlyph glyph="✓" focused={focused} />
           )
         }}
       />
@@ -67,8 +65,8 @@ export default function TabLayout() {
         name="rewards"
         options={{
           title: t("navRewards"),
-          tabBarIcon: ({ color, focused }) => (
-            <TabGlyph glyph="✦" color={color} focused={focused} />
+          tabBarIcon: ({ focused }) => (
+            <TabGlyph glyph="✦" focused={focused} />
           )
         }}
       />
@@ -76,8 +74,8 @@ export default function TabLayout() {
         name="wallet"
         options={{
           title: t("navWallet"),
-          tabBarIcon: ({ color, focused }) => (
-            <TabGlyph glyph="▣" color={color} focused={focused} />
+          tabBarIcon: ({ focused }) => (
+            <TabGlyph glyph="▣" focused={focused} />
           )
         }}
       />
@@ -85,8 +83,8 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: t("navProfile"),
-          tabBarIcon: ({ color, focused }) => (
-            <TabGlyph glyph="◎" color={color} focused={focused} />
+          tabBarIcon: ({ focused }) => (
+            <TabGlyph glyph="◎" focused={focused} />
           )
         }}
       />

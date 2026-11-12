@@ -186,7 +186,7 @@ try {
   const captureCategoryFromForce = async (label, categoryId, fileName) => {
     await page.getByText(label, { exact: true }).last().click();
     await waitForCategory(categoryId);
-    await page.getByText(label, { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
+    await page.getByText(label, { exact: true }).last().waitFor({ state: "visible", timeout: 10000 });
     await page.screenshot({ path: resolve(outputRoot, fileName) });
     await page.goBack();
     await waitForTasks();
@@ -210,7 +210,7 @@ try {
     const [label, categoryId, fileName] = entertainmentDestinations[index];
     await page.getByText(label, { exact: true }).click();
     await waitForCategory(categoryId);
-    await page.getByText(label, { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
+    await page.getByText(label, { exact: true }).last().waitFor({ state: "visible", timeout: 10000 });
     await page.screenshot({ path: resolve(outputRoot, fileName) });
     if (index < entertainmentDestinations.length - 1) {
       await page.goBack();
@@ -232,7 +232,7 @@ try {
 
   await page.getByText("关注微信公众号", { exact: true }).click();
   await waitForPath("/official-follow");
-  await page.getByText("关注微信公众号", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
+  await page.getByText("关注微信公众号", { exact: true }).last().waitFor({ state: "visible", timeout: 10000 });
   await page.screenshot({ path: resolve(outputRoot, "official-follow-375x667.png") });
   await page.getByPlaceholder("请输入公众号提供的验证码").fill("BG2026");
   await page.getByText("提交验证", { exact: true }).click();

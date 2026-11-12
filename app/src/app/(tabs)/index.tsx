@@ -23,14 +23,8 @@ export default function HomeScreen() {
   const openPoints = () => requireHomeLogin(() => router.push("/wallet"));
   const openForce = () => requireHomeLogin(() => router.push("/force-record"));
   const activityItems = [
-    { key: "shopping", category: "shopping", glyph: "▣", title: t("淘宝购物", "Shopping"), description: t("精选购物任务", "Featured offers") },
-    { key: "games", category: "games", glyph: "▤", title: t("游戏中心", "Games"), description: t("游戏任务与活动", "Game missions") },
-    { key: "reading", category: "reading", glyph: "▥", title: t("小说阅读", "Reading"), description: t("精选小说内容", "Selected novels") },
-    { key: "news", category: "news", glyph: "◉", title: t("新闻资讯", "News"), description: t("热点与社区资讯", "News and insights") },
-    { key: "comics", category: "comics", glyph: "▧", title: t("精品漫画", "Comics"), description: t("漫画与连载作品", "Comics and series") },
-    { key: "bidding", category: "bidding", glyph: "◇", title: t("社区竞猜", "Challenges"), description: t("互动挑战活动", "Community challenges") },
-    { key: "treasure", category: "treasure", glyph: "♢", title: t("黑钻挖宝", "Treasure hunt"), description: t("探索活动入口", "Explore activities") },
-    { key: "benefits", type: "rewards" as const, glyph: "✦", title: t("黑钻活动", "Member benefits"), description: t("活动与专属权益", "Events and benefits") }
+    { key: "shopping", category: "shopping", title: t("淘宝黑钻店", "Taobao rewards"), description: t("淘宝919免单日", "Taobao shopping event") },
+    { key: "games", category: "games", title: t("游戏黑钻店", "Game rewards"), description: t("凡人飞仙传", "Featured game") }
   ];
 
   return (
@@ -60,9 +54,7 @@ export default function HomeScreen() {
 
       <View style={styles.productionStage}>
         <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "treasure" } }))} style={styles.mineEntry}>
-          <View style={styles.mineOrb}>
-            <Text style={styles.mineGlyph}>◇</Text>
-          </View>
+          <View style={styles.mineOrb} />
           <Text style={styles.mineLabel}>{t("黑钻挖宝", "Point mining")}</Text>
         </Pressable>
 
@@ -91,26 +83,18 @@ export default function HomeScreen() {
           <Pressable
             key={item.key}
             accessibilityRole="button"
-            onPress={() => requireHomeLogin(() => {
-              if ("type" in item && item.type === "rewards") {
-                router.push("/rewards");
-              } else if ("category" in item) {
-                router.push({ pathname: "/category", params: { category: item.category } });
-              }
-            })}
+            onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: item.category } }))}
             style={styles.activityTile}
           >
-            <View style={styles.activityCover}>
-              <View style={styles.activitySun} />
-              <View style={styles.activityMountainBack} />
-              <View style={styles.activityMountainFront} />
-              <Text style={styles.activityCoverGlyph}>{item.glyph}</Text>
-            </View>
             <Text style={styles.activityTitle} numberOfLines={1}>{item.title}</Text>
-            <Text style={styles.activityDescription} numberOfLines={1}>{item.description}</Text>
-            <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
+            <View style={styles.activityIconCircle}><View style={styles.activityIconInner} /></View>
+            <Text style={styles.activityDescription} numberOfLines={2}>{item.description}</Text>
+            <Text style={styles.activityLink}>{t("查看", "View")}</Text>
           </Pressable>
         ))}
+        <Pressable onPress={() => requireHomeLogin(() => router.push("/rewards"))} style={styles.activityMore}>
+          <Text style={styles.activityMoreGlyph}>···</Text>
+        </Pressable>
       </ScrollView>
 
       <Modal visible={showLoginPrompt} transparent animationType="fade" onRequestClose={() => setShowLoginPrompt(false)}>
@@ -136,25 +120,25 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  statBar: { flexDirection: "row", gap: 7, marginBottom: 7 },
-  statPill: { flex: 1, height: 27, borderRadius: 15, borderWidth: 1, borderColor: "#D6D6D6", backgroundColor: "#FFFFFF", flexDirection: "row", alignItems: "center", paddingHorizontal: 8, gap: 5 },
+  statBar: { flexDirection: "row", gap: 7, marginTop: 10, marginBottom: 16 },
+  statPill: { flex: 1, height: 31, borderRadius: 15, borderWidth: 1, borderColor: "#D6D6D6", backgroundColor: "#FFFFFF", flexDirection: "row", alignItems: "center", paddingHorizontal: 8, gap: 5 },
   statIcon: { color: "#444444", fontSize: 14 },
   forceIcon: { color: "#555555", fontSize: 12 },
-  statLabel: { color: "#666666", fontSize: 9 },
-  statValue: { color: "#333333", fontSize: 10, fontWeight: "600", flex: 1 },
+  statLabel: { color: "#666666", fontSize: 10 },
+  statValue: { color: "#333333", fontSize: 11, fontWeight: "600", flex: 1 },
   statArrow: { color: "#999999", fontSize: 14 },
-  noticeBar: { height: 27, borderRadius: 14, borderWidth: 1, borderColor: "#DCDCDC", backgroundColor: "#FFFFFF", flexDirection: "row", alignItems: "center", paddingHorizontal: 8, gap: 6 },
+  noticeBar: { height: 29, borderRadius: 14, borderWidth: 1, borderColor: "#DCDCDC", backgroundColor: "#FFFFFF", flexDirection: "row", alignItems: "center", paddingHorizontal: 8, gap: 6 },
   noticeIcon: { color: "#777777", fontSize: 12 },
-  noticeText: { flex: 1, color: "#777777", fontSize: 8 },
-  noticeMore: { color: "#444444", fontSize: 8 },
-  productionStage: { height: 245, position: "relative", backgroundColor: "#FFFFFF" },
-  mineEntry: { position: "absolute", right: 27, top: 32, width: 62, alignItems: "center" },
-  mineOrb: { width: 34, height: 34, borderRadius: 17, backgroundColor: "#777777", alignItems: "center", justifyContent: "center" },
-  mineGlyph: { color: "#FFFFFF", fontSize: 20 },
-  mineLabel: { color: "#333333", fontSize: 8, marginTop: 4 },
-  growthEntry: { position: "absolute", top: 92, left: "40%", alignItems: "center", justifyContent: "center" },
-  growthGem: { color: "#4A4A4A", fontSize: 22, lineHeight: 24 },
-  growthLabel: { color: "#555555", fontSize: 8, marginTop: 2 },
+  noticeText: { flex: 1, color: "#777777", fontSize: 9 },
+  noticeMore: { color: "#444444", fontSize: 9 },
+  productionStage: { height: 316, position: "relative", backgroundColor: "#FFFFFF" },
+  mineEntry: { position: "absolute", right: 27, top: 44, width: 68, alignItems: "center" },
+  mineOrb: { width: 50, height: 50, borderRadius: 25, backgroundColor: "#777777", alignItems: "center", justifyContent: "center" },
+  
+  mineLabel: { color: "#333333", fontSize: 10, marginTop: 5 },
+  growthEntry: { position: "absolute", top: 122, left: "40%", alignItems: "center", justifyContent: "center" },
+  growthGem: { color: "#4A4A4A", fontSize: 26, lineHeight: 29 },
+  growthLabel: { color: "#555555", fontSize: 10, marginTop: 3 },
   growingValues: { position: "absolute", left: 0, right: 0, top: 64, bottom: 24 },
   growingValue: { position: "absolute", alignItems: "center", gap: 1 },
   valueOne: { left: "20%", top: 4 },
@@ -162,16 +146,15 @@ const styles = StyleSheet.create({
   valueThree: { left: "39%", top: 104 },
   smallGem: { color: "#555555", fontSize: 17, lineHeight: 19 },
   smallValue: { color: "#555555", fontSize: 7 },
-  activityRail: { gap: 7, paddingBottom: 4, alignItems: "flex-start" },
-  activityTile: { width: 106, height: 105, backgroundColor: "#F2F2F2", borderRadius: 3, padding: 6, alignItems: "center", justifyContent: "space-between" },
-  activityCover: { width: "100%", height: 43, backgroundColor: "#E6E9EC", overflow: "hidden", position: "relative", alignItems: "center", justifyContent: "center" },
-  activitySun: { position: "absolute", width: 9, height: 9, borderRadius: 5, backgroundColor: "#C5C5C5", top: 6, right: 13 },
-  activityMountainBack: { position: "absolute", bottom: -12, left: -9, width: 0, height: 0, borderLeftWidth: 34, borderRightWidth: 34, borderBottomWidth: 36, borderLeftColor: "transparent", borderRightColor: "transparent", borderBottomColor: "#AABBC7" },
-  activityMountainFront: { position: "absolute", bottom: -14, right: -7, width: 0, height: 0, borderLeftWidth: 39, borderRightWidth: 39, borderBottomWidth: 33, borderLeftColor: "transparent", borderRightColor: "transparent", borderBottomColor: "#7F9BAB" },
-  activityCoverGlyph: { color: "#FFFFFF", fontSize: 17, fontWeight: "700" },
-  activityTitle: { color: "#444444", fontSize: 9, fontWeight: "600", textAlign: "center" },
-  activityDescription: { color: "#888888", fontSize: 7, textAlign: "center" },
-  activityLink: { color: "#555555", fontSize: 7 },
+  activityRail: { gap: 15, paddingHorizontal: 8, paddingBottom: 4, alignItems: "flex-start" },
+  activityTile: { width: 128, height: 135, backgroundColor: "#F0F0F0", borderRadius: 8, padding: 8, alignItems: "center", justifyContent: "space-around" },
+  activityIconCircle: { width: 42, height: 42, borderRadius: 21, borderWidth: 3, borderColor: "#777777", alignItems: "center", justifyContent: "center" },
+  activityIconInner: { width: 22, height: 22, borderRadius: 11, borderWidth: 5, borderColor: "#777777" },
+  activityMore: { width: 25, height: 135, alignItems: "center", justifyContent: "center" },
+  activityMoreGlyph: { color: "#888888", fontSize: 20, letterSpacing: 1 },
+  activityTitle: { color: "#444444", fontSize: 10, fontWeight: "600", textAlign: "center" },
+  activityDescription: { color: "#888888", fontSize: 8, textAlign: "center" },
+  activityLink: { color: "#555555", fontSize: 9 },
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.40)", alignItems: "center", justifyContent: "center", padding: 28 },
   loginDialog: { width: "100%", maxWidth: 320, borderRadius: 8, backgroundColor: "#FFFFFF", padding: 20, alignItems: "center" },
   dialogTitle: { color: "#333333", fontSize: 15, fontWeight: "700" },

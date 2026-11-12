@@ -368,7 +368,7 @@ export function EarthBackground({ active = true }: { active?: boolean }) {
 const styles = StyleSheet.create({
   canvas: { flex: 1 },
   fallback: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "#030C1A",
     alignItems: "center",
     justifyContent: "center"

@@ -17,7 +17,7 @@ type AppScreenProps = {
   showHeader?: boolean;
 };
 
-export function AppScreen({ children, showHeader = true }: AppScreenProps) {
+export function AppScreen({ children, showHeader = false }: AppScreenProps) {
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <ScrollView
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
   headerBadgeGlyph: { color: colors.brand, fontSize: 23, lineHeight: 26 },
   heading: { gap: 6, marginTop: 2, marginBottom: 1 },
   eyebrow: { color: colors.brand, fontSize: 10, fontWeight: "900", letterSpacing: 1.2 },
-  pageTitle: { color: colors.ink, fontSize: 25, lineHeight: 31, fontWeight: "900", letterSpacing: -0.7 },
+  pageTitle: { color: colors.ink, fontSize: 19, lineHeight: 24, fontWeight: "900", letterSpacing: -0.7 },
   pageSubtitle: { color: colors.inkMuted, fontSize: 12, lineHeight: 18 },
   lightText: { color: "#FFFFFF" },
   lightSubtitle: { color: "#D8C9EA" },

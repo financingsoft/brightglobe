@@ -8,7 +8,6 @@ export default function HomeScreen() {
   const { locale } = useI18n();
   const router = useRouter();
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [claimed, setClaimed] = useState(false);
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
 
   const openPoints = () => router.push("/wallet");
@@ -50,28 +49,11 @@ export default function HomeScreen() {
         <Pressable onPress={() => setShowLoginPrompt(true)} style={styles.growthEntry}>
           <Text style={styles.growthGem}>♢</Text>
           <Text style={styles.growthLabel}>
-            {claimed ? t("已领取", "Collected") : t("登录后领取", "Sign in to collect")}
+            {t("登录后领取", "Sign in to collect")}
           </Text>
         </Pressable>
 
-        {claimed ? (
-          <View style={styles.growingValues}>
-            <View style={styles.growingValue}>
-              <Text style={styles.smallGem}>♢</Text>
-              <Text style={styles.smallValue}>0.05904</Text>
-            </View>
-            <View style={styles.growingValue}>
-              <Text style={styles.smallGem}>♢</Text>
-              <Text style={styles.smallValue}>0.012333</Text>
-            </View>
-            <View style={styles.growingValue}>
-              <Text style={styles.smallGem}>♢</Text>
-              <Text style={styles.smallValue}>0.05939</Text>
-            </View>
-          </View>
-        ) : null}
-
-        <Pressable onPress={() => setClaimed(true)} style={styles.growthState}>
+        <Pressable onPress={() => setShowLoginPrompt(true)} style={styles.growthState}>
           <Text style={styles.growthStateText}>
             {claimed ? t("黑钻正在生长中", "Points are growing") : t("点击黑钻，查看领取状态", "Tap the gem to view its status")}
           </Text>

@@ -1,89 +1,144 @@
 {
-  "generated_at": "2026-11-12T14:52:11.993677+00:00",
+  "generated_at": "2026-11-12T15:01:30.526278+00:00",
   "license": "CC BY 4.0",
   "license_url": "https://creativecommons.org/licenses/by/4.0/",
   "attribution": "Solar System Scope \u2014 https://www.solarsystemscope.com/textures/",
-  "changes": "Downloaded from the official Solar System Scope texture pack; resized to at most 2048x1024 and optimized as JPEG for BrightGlobe. Normal map RGB channels are preserved; cloud and specular maps are converted to grayscale.",
-  "assets": [
-    {
-      "file": "earth-day.jpg",
+  "changes": "Standard images are optimized to 2048x1024; low-memory copies are resized to 1024x512. The normal map retains RGB channels; cloud and specular masks are converted to grayscale.",
+  "assets": {
+    "earth-day.jpg": {
       "source": "https://play.solarsystemscope.com/textures/download/2k_earth_daymap.jpg",
       "original_dimensions": [
         2048,
         1024
       ],
-      "bundled_dimensions": [
-        2048,
-        1024
-      ],
-      "bytes": 342626,
-      "sha256": "a8c81eb73b9e3085bb903c345b7931b94fdadb0185c721dc53f7eeeefbe621b6",
       "license": "CC BY 4.0",
-      "color_space": "sRGB"
+      "color_space": "sRGB",
+      "standard": {
+        "file": "earth-day.jpg",
+        "dimensions": [
+          2048,
+          1024
+        ],
+        "bytes": 342626,
+        "sha256": "a8c81eb73b9e3085bb903c345b7931b94fdadb0185c721dc53f7eeeefbe621b6"
+      },
+      "low_memory": {
+        "file": "earth-day-1k.jpg",
+        "dimensions": [
+          1024,
+          512
+        ],
+        "bytes": 80844,
+        "sha256": "8cbb4d4fbf64e72500a501fdb977c44dfc68a744468a8b86f1c7fe3d6f06d6f4"
+      }
     },
-    {
-      "file": "earth-night.jpg",
+    "earth-night.jpg": {
       "source": "https://play.solarsystemscope.com/textures/download/2k_earth_nightmap.jpg",
       "original_dimensions": [
         2048,
         1024
       ],
-      "bundled_dimensions": [
-        2048,
-        1024
-      ],
-      "bytes": 187823,
-      "sha256": "a0e66911f3e769d862bf9c38d71302552873eafe66ec50760431b75e48625dee",
       "license": "CC BY 4.0",
-      "color_space": "sRGB"
+      "color_space": "sRGB",
+      "standard": {
+        "file": "earth-night.jpg",
+        "dimensions": [
+          2048,
+          1024
+        ],
+        "bytes": 187823,
+        "sha256": "a0e66911f3e769d862bf9c38d71302552873eafe66ec50760431b75e48625dee"
+      },
+      "low_memory": {
+        "file": "earth-night-1k.jpg",
+        "dimensions": [
+          1024,
+          512
+        ],
+        "bytes": 38052,
+        "sha256": "bfa167cd4ca1f475d7c436906b8f4524dc3c68b34588ae04f41b6d62166588c4"
+      }
     },
-    {
-      "file": "earth-clouds.jpg",
+    "earth-clouds.jpg": {
       "source": "https://play.solarsystemscope.com/textures/download/2k_earth_clouds.jpg",
       "original_dimensions": [
         2048,
         1024
       ],
-      "bundled_dimensions": [
-        2048,
-        1024
-      ],
-      "bytes": 801558,
-      "sha256": "4f7c12fb43112f1b771c96887f6db77cb69e03c8b5f0df015c89d071beaaa89b",
       "license": "CC BY 4.0",
-      "color_space": "linear-data"
+      "color_space": "linear-data",
+      "standard": {
+        "file": "earth-clouds.jpg",
+        "dimensions": [
+          2048,
+          1024
+        ],
+        "bytes": 865624,
+        "sha256": "bf14d35c84b3de9cb75766fdd58660397ec18e7c59c4d25748a561d0e9178652"
+      },
+      "low_memory": {
+        "file": "earth-clouds-1k.jpg",
+        "dimensions": [
+          1024,
+          512
+        ],
+        "bytes": 185250,
+        "sha256": "14b7b3cc141c86823a82ecb33ce99953b7e9fd217b0c5b7b44111bf915c76067"
+      }
     },
-    {
-      "file": "earth-normal.jpg",
+    "earth-normal.jpg": {
       "source": "https://play.solarsystemscope.com/textures/download/2k_earth_normal_map.tif",
       "original_dimensions": [
         2048,
         1024
       ],
-      "bundled_dimensions": [
-        2048,
-        1024
-      ],
-      "bytes": 91136,
-      "sha256": "3f88420adc3eb1d385b7cd7b1071fecfb0c61c479ca2e88e6d2894ff3f7717c6",
       "license": "CC BY 4.0",
-      "color_space": "linear-data"
+      "color_space": "linear-data",
+      "standard": {
+        "file": "earth-normal.jpg",
+        "dimensions": [
+          2048,
+          1024
+        ],
+        "bytes": 91136,
+        "sha256": "3f88420adc3eb1d385b7cd7b1071fecfb0c61c479ca2e88e6d2894ff3f7717c6"
+      },
+      "low_memory": {
+        "file": "earth-normal-1k.jpg",
+        "dimensions": [
+          1024,
+          512
+        ],
+        "bytes": 8143,
+        "sha256": "af41ec644334ddbf18a6ac0c4a7c6cc04d2641472a0bcd5e8747727fd85dca0c"
+      }
     },
-    {
-      "file": "earth-specular.jpg",
+    "earth-specular.jpg": {
       "source": "https://play.solarsystemscope.com/textures/download/2k_earth_specular_map.tif",
       "original_dimensions": [
         2048,
         1024
       ],
-      "bundled_dimensions": [
-        2048,
-        1024
-      ],
-      "bytes": 211373,
-      "sha256": "e5adb6706227f7bf3cd8e2ff5de3b90cff60afbddf7a071b2c0996c78ff730ad",
       "license": "CC BY 4.0",
-      "color_space": "linear-data"
+      "color_space": "linear-data",
+      "standard": {
+        "file": "earth-specular.jpg",
+        "dimensions": [
+          2048,
+          1024
+        ],
+        "bytes": 225343,
+        "sha256": "e7e964839a581c0def0a6a9c24909381fc85b9428b366535fe22622a8d683666"
+      },
+      "low_memory": {
+        "file": "earth-specular-1k.jpg",
+        "dimensions": [
+          1024,
+          512
+        ],
+        "bytes": 72644,
+        "sha256": "78b57ad2ca689a8bae0d68985c0632f180c8bd316c4495d422af3da49b78a8fe"
+      }
     }
-  ]
+  }
 }

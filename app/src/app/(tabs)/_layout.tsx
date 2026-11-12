@@ -66,6 +66,7 @@ export default function TabLayout() {
       <Tabs.Screen name="wallet" options={{ href: null, tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="force-record" options={{ href: null, tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="announcements" options={{ href: null, tabBarStyle: { display: "none" } }} />
+      <Tabs.Screen name="announcement-detail" options={{ href: null, tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="invite" options={{ href: null, tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="passport" options={{ href: null, tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="base" options={{ href: null, tabBarStyle: { display: "none" } }} />

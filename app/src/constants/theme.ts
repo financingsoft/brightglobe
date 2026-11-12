@@ -1,29 +1,26 @@
 export const colors = {
-  ink: "#24133F",
-  inkMuted: "#81758F",
-  brand: "#7A35D7",
-  brandDark: "#54209D",
-  brandSoft: "#F1E8FF",
-  violet: "#A96AF2",
-  violetDeep: "#24103F",
-  purpleNight: "#140A28",
-  magenta: "#D642CB",
-  teal: "#20B8A2",
-  tealSoft: "#E2F8F3",
-  gold: "#F3B94F",
-  goldSoft: "#FFF5DF",
-  canvas: "#F7F5FA",
+  ink: "#33313A",
+  inkMuted: "#9995A0",
+  brand: "#9145D2",
+  brandDark: "#7130AE",
+  brandSoft: "#F4E9FC",
+  teal: "#18A891",
+  tealSoft: "#E7F7F3",
+  gold: "#ECA640",
+  goldSoft: "#FFF5E3",
+  canvas: "#FFFFFF",
   surface: "#FFFFFF",
-  border: "#EAE5F0",
-  success: "#239A79",
-  warning: "#A46B1C",
-  danger: "#C34B4B"
+  border: "#ECE9EF",
+  success: "#1FA37C",
+  warning: "#A46B18",
+  danger: "#C34B4B",
+  purpleNight: "#1D1228"
 } as const;
 
 export const radii = {
-  sm: 10,
-  md: 16,
-  lg: 22,
+  sm: 7,
+  md: 12,
+  lg: 16,
   pill: 999
 } as const;
 

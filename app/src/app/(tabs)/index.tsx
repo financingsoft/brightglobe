@@ -9,6 +9,7 @@ import {
   SectionHeading
 } from "@/components/ui";
 import { colors } from "@/constants/theme";
+import { EarthBackground } from "@/components/earth/EarthBackground";
 import { useI18n } from "@/i18n/locale";
 
 export default function HomeScreen() {
@@ -22,7 +23,9 @@ export default function HomeScreen() {
         subtitle={t("homeSubtitle")}
       />
 
-      <Panel style={styles.heroPanel}>
+      <View style={styles.heroPanel}>
+        <EarthBackground />
+        <View style={styles.heroContent}>
         <View style={styles.heroTopRow}>
           <Pill label={t("preview")} tone="gold" />
           <Text style={styles.heroSymbol}>✦</Text>
@@ -38,7 +41,8 @@ export default function HomeScreen() {
           <Text style={styles.progressCount}>2 / 4</Text>
         </View>
         <ProgressTrack progress={50} />
-      </Panel>
+        </View>
+      </View>
 
       <View style={styles.metricRow}>
         <MetricCard
@@ -103,8 +107,16 @@ const styles = StyleSheet.create({
   heroPanel: {
     backgroundColor: colors.ink,
     borderColor: colors.ink,
+    borderWidth: 1,
+    borderRadius: 22,
     padding: 22,
-    gap: 10
+    gap: 10,
+    position: "relative",
+    overflow: "hidden"
+  },
+  heroContent: {
+    gap: 10,
+    zIndex: 1
   },
   heroTopRow: {
     flexDirection: "row",

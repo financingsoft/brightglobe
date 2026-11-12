@@ -1,6 +1,6 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { AppScreen, Pill, SectionHeading } from "@/components/ui";
 import { colors } from "@/constants/theme";
 import { PlanetOrb } from "@/components/earth/PlanetOrb";
@@ -10,15 +10,6 @@ export default function HomeScreen() {
   const { locale, t } = useI18n();
   const router = useRouter();
   const [claimed, setClaimed] = useState(false);
-  const [isFocused, setIsFocused] = useState(true);
-
-  useFocusEffect(
-    useCallback(() => {
-      setIsFocused(true);
-      return () => setIsFocused(false);
-    }, [])
-  );
-
   const openWallet = () => router.push("/wallet");
   const openTasks = () => router.push("/tasks");
 

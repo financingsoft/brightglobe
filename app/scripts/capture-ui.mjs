@@ -170,9 +170,8 @@ try {
     await page.waitForTimeout(180);
     await page.screenshot({ path: resolve(outputRoot, fileName) });
     if (index < entertainmentDestinations.length - 1) {
+      // A category detail returns directly to the entertainment gateway.
       await page.getByText("‹", { exact: true }).click();
-      await page.waitForTimeout(160);
-      await page.getByText("娱乐", { exact: true }).click();
       await page.waitForTimeout(160);
     }
   }

@@ -114,14 +114,6 @@ export default function TasksScreen() {
         {t("贡献越多原力越多，黑钻生长越快", "The more you contribute, the faster your rewards grow")}
       </Text>
 
-      <View style={styles.campaignBanner}>
-        <View style={styles.campaignPlanet} />
-        <Text style={styles.campaignTitle}>{t("赶紧收取原力，加速获取黑钻", "Collect Contribution Power and accelerate your rewards")}</Text>
-        <View style={styles.campaignPill}>
-          <Text style={styles.campaignPillText}>{t("原力越多，获取的黑钻会越多", "More Power means more community rewards")}</Text>
-        </View>
-      </View>
-
       <View style={styles.forceSummary}>
         <View>
           <View style={styles.forceValueLine}>
@@ -138,6 +130,14 @@ export default function TasksScreen() {
             {checkedIn ? t("已签到", "Checked in") : t("签到", "Check in")}
           </Text>
         </Pressable>
+      </View>
+
+      <View style={styles.campaignBanner}>
+        <View style={styles.campaignPlanet} />
+        <Text style={styles.campaignTitle}>{t("赶紧收取原力，加速获取黑钻", "Collect Contribution Power and accelerate your rewards")}</Text>
+        <View style={styles.campaignPill}>
+          <Text style={styles.campaignPillText}>{t("原力越多，获取的黑钻会越多", "More Power means more community rewards")}</Text>
+        </View>
       </View>
 
       <View style={styles.sectionHeader}>

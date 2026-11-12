@@ -34,6 +34,7 @@ type Mission = {
 export default function TasksScreen() {
   const { locale } = useI18n();
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [showCheckin, setShowCheckin] = useState(false);
   const [checkedIn, setCheckedIn] = useState(false);
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);

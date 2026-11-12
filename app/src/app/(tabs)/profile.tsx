@@ -25,7 +25,10 @@ export default function ProfileScreen() {
           <Text style={styles.residentType}>{t("星球居民", "Community resident")}</Text>
         </View>
         <Pressable onPress={() => openProtected("/settings")} style={styles.avatarButton}>
-          <Text style={styles.avatarGlyph}>♙</Text>
+          <View style={styles.avatarIcon}>
+            <View style={styles.avatarHead} />
+            <View style={styles.avatarShoulders} />
+          </View>
         </Pressable>
       </View>
 
@@ -74,22 +77,24 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  identityRow: { minHeight: 73, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "#E2E2E2" },
+  identityRow: { minHeight: 58, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "#E2E2E2" },
   identityCopy: { gap: 5 },
   memberName: { color: "#333333", fontSize: 13, fontWeight: "700" },
   residentType: { color: "#888888", fontSize: 8 },
   avatarButton: { width: 37, height: 37, alignItems: "center", justifyContent: "center" },
-  avatarGlyph: { color: "#777777", fontSize: 29 },
+  avatarIcon: { width: 28, height: 29, alignItems: "center", justifyContent: "flex-end", gap: 2 },
+  avatarHead: { width: 10, height: 10, borderRadius: 5, borderWidth: 1.7, borderColor: "#777777" },
+  avatarShoulders: { width: 25, height: 14, borderWidth: 1.7, borderColor: "#777777", borderTopLeftRadius: 13, borderTopRightRadius: 13, borderBottomWidth: 0 },
   sectionHeading: { minHeight: 27, justifyContent: "center" },
   sectionTitle: { color: "#444444", fontSize: 10, fontWeight: "700" },
   assetRow: { flexDirection: "row", gap: 8, paddingBottom: 7 },
-  assetTile: { flex: 1, minHeight: 66, backgroundColor: "#F1F1F1", borderRadius: 3, paddingHorizontal: 9, paddingVertical: 7, justifyContent: "space-between" },
+  assetTile: { flex: 1, minHeight: 60, backgroundColor: "#F1F1F1", borderRadius: 3, paddingHorizontal: 9, paddingVertical: 7, justifyContent: "space-between" },
   assetLabel: { color: "#666666", fontSize: 8 },
-  assetValue: { color: "#333333", fontSize: 13, fontWeight: "700" },
+  assetValue: { color: "#333333", fontSize: 12, fontWeight: "700" },
   assetHint: { color: "#888888", fontSize: 7 },
-  menuRow: { minHeight: 43, borderBottomWidth: 1, borderColor: "#E5E5E5", flexDirection: "row", alignItems: "center", gap: 10 },
+  menuRow: { minHeight: 40, borderBottomWidth: 1, borderColor: "#E5E5E5", flexDirection: "row", alignItems: "center", gap: 10 },
   menuIcon: { color: "#777777", fontSize: 18, width: 22, textAlign: "center" },
-  menuTitle: { color: "#444444", fontSize: 9, flex: 1 },
+  menuTitle: { color: "#444444", fontSize: 10, flex: 1 },
   menuValue: { color: "#999999", fontSize: 8 },
   chevron: { color: "#888888", fontSize: 18, marginLeft: 1 }
 });

@@ -44,7 +44,7 @@ Copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_API_BASE_URL` to the Br
 
 ## Earth background
 
-The Home contribution card includes a decorative rotating 3D Earth scene. Day surface, night city lights, cloud, normal, and ocean specular maps are bundled locally in `assets/earth/`; the scene works offline and does not request third-party image URLs at runtime. The textures are provided by Solar System Scope under CC BY 4.0; keep `assets/earth/ATTRIBUTION.md` when redistributing. See [Earth Background Implementation](../docs/EARTH_BACKGROUND_IMPLEMENTATION.md) for provenance, phases, and validation requirements.
+The Home contribution card includes a decorative rotating 3D Earth scene. Day surface, night city lights, cloud, normal, and ocean specular maps are bundled locally in `assets/earth/` in standard 2K and low-memory 1K variants; the scene works offline and does not request third-party image URLs at runtime. The Earth selects a quality tier using device RAM and pauses demand-driven rendering when Home is unfocused or the app is backgrounded. The textures are provided by Solar System Scope under CC BY 4.0; keep `assets/earth/ATTRIBUTION.md` when redistributing. See [Earth Background Implementation](../docs/EARTH_BACKGROUND_IMPLEMENTATION.md) for provenance, phases, validation requirements, and the EAS preview-build setup.
 
 The TypeScript 7.1 compiler is currently a beta. Keep the version explicit until the GitHub Actions typecheck/Expo Doctor workflow and EAS builds have passed.
 
@@ -65,6 +65,7 @@ app/
 │   ├── constants/
 │   ├── i18n/
 │   └── services/
+├── app.config.js
 ├── app.json
 ├── eas.json
 ├── package.json

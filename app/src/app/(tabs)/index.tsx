@@ -1,32 +1,16 @@
 import { useCallback, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
-import {
-  AppScreen,
-  MetricCard,
-  PageHeading,
-  Panel,
-  Pill,
-  PrimaryButton,
-  ProgressTrack,
-  SectionHeading
-} from "@/components/ui";
+import { AppScreen, Pill, SectionHeading } from "@/components/ui";
 import { colors } from "@/constants/theme";
-import { EarthBackground } from "@/components/earth/EarthBackground";
+import { PlanetOrb } from "@/components/earth/PlanetOrb";
 import { useI18n } from "@/i18n/locale";
-
-const shortcuts = [
-  { key: "shortcutTasks" as const, icon: "✣", route: "/tasks" as const },
-  { key: "shortcutEvents" as const, icon: "✧", route: "/rewards" as const },
-  { key: "shortcutWallet" as const, icon: "▤", route: "/wallet" as const },
-  { key: "shortcutInvite" as const, icon: "↗", route: "/profile" as const }
-];
 
 export default function HomeScreen() {
   const { locale, t } = useI18n();
   const router = useRouter();
-  const [isFocused, setIsFocused] = useState(true);
   const [claimed, setClaimed] = useState(false);
+  const [isFocused, setIsFocused] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
@@ -35,271 +19,179 @@ export default function HomeScreen() {
     }, [])
   );
 
+  const openWallet = () => router.push("/wallet");
+  const openTasks = () => router.push("/tasks");
+
   return (
     <AppScreen>
-      <View style={styles.welcomeRow}>
-        <View style={styles.welcomeCopy}>
-          <Text style={styles.welcomeEyebrow}>{t("homeEyebrow")}</Text>
-          <Text style={styles.welcomeTitle}>{t("homeTitle")}</Text>
-        </View>
-        <View style={styles.levelBadge}>
-          <Text style={styles.levelIcon}>✦</Text>
-          <Text style={styles.levelText}>LV.04</Text>
-        </View>
-      </View>
-      <Text style={styles.welcomeSubtitle}>{t("homeSubtitle")}</Text>
-
-      <View style={styles.planetPanel}>
-        <EarthBackground active={isFocused} />
-        <View style={styles.planetOverlay}>
-          <View style={styles.planetTop}>
-            <Pill label={t("preview")} tone="gold" />
-            <Text style={styles.planetSpark}>✧</Text>
-          </View>
-          <View style={styles.powerBlock}>
-            <Text style={styles.powerLabel}>{t("contributionPower")}</Text>
-            <Text style={styles.powerValue}>1,280</Text>
-            <Text style={styles.powerMeta}>{t("contributionRank")} · {t("memberLevel")}</Text>
-          </View>
-          <View style={styles.planetBottom}>
-            <View style={styles.planetMiniStat}>
-              <Text style={styles.planetMiniLabel}>{t("experience")}</Text>
-              <Text style={styles.planetMiniValue}>860 XP</Text>
-            </View>
-            <View style={styles.planetMiniDivider} />
-            <View style={styles.planetMiniStat}>
-              <Text style={styles.planetMiniLabel}>{t("rewardPoints")}</Text>
-              <Text style={styles.planetMiniValue}>2,480</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.dailyRewardCard}>
-        <View style={styles.dailyRewardTop}>
-          <View style={styles.dailyRewardIcon}>
-            <Text style={styles.dailyRewardGlyph}>✦</Text>
-          </View>
-          <View style={styles.dailyRewardCopy}>
-            <Text style={styles.dailyRewardTitle}>{t("dailyYield")}</Text>
-            <Text style={styles.dailyRewardMeta}>+20 XP  ·  +10 {t("points")}</Text>
-          </View>
-          <View style={styles.todayTag}>
-            <Text style={styles.todayTagText}>+10</Text>
-          </View>
-        </View>
-        <PrimaryButton
-          label={claimed ? t("collected") : t("collectNow")}
-          onPress={() => setClaimed(true)}
-        />
-        {claimed ? (
-          <Text style={styles.claimedNote}>
-            {locale === "zh-CN" ? "演示状态：领取按钮已完成本地交互，尚未连接真实奖励接口。" : "Demo state only. No real reward has been credited."}
-          </Text>
-        ) : null}
-      </View>
-
-      <View style={styles.statsRow}>
-        <MetricCard
-          label={t("pointsToday")}
-          value="+30"
-          footnote={t("rewardPoints")}
-          tone="gold"
-        />
-        <MetricCard
-          label={t("streak")}
-          value={locale === "zh-CN" ? "5 天" : "5 days"}
-          footnote={t("todayProgress")}
-          tone="teal"
-        />
-      </View>
-
-      <SectionHeading title={t("shortcuts")} action={t("viewAll")} />
-      <View style={styles.shortcutGrid}>
-        {shortcuts.map((item) => (
-          <Pressable
-            key={item.key}
-            accessibilityRole="button"
-            onPress={() => router.push(item.route)}
-            style={({ pressed }) => [styles.shortcutTile, pressed && styles.pressed]}
-          >
-            <View style={styles.shortcutIcon}>
-              <Text style={styles.shortcutGlyph}>{item.icon}</Text>
-            </View>
-            <Text style={styles.shortcutLabel}>{t(item.key)}</Text>
-            <Text style={styles.shortcutArrow}>›</Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <View style={styles.bulletin}>
-        <View style={styles.bulletinIcon}>
-          <Text style={styles.bulletinGlyph}>⌁</Text>
-        </View>
-        <View style={styles.bulletinCopy}>
-          <Text style={styles.bulletinTitle}>{t("bulletin")}</Text>
-          <Text style={styles.bulletinText}>{t("bulletinText")}</Text>
-        </View>
-        <Text style={styles.bulletinArrow}>›</Text>
-      </View>
-
-      <SectionHeading title={t("recommended")} action={t("viewAll")} />
-      <Panel style={styles.recommendedCard}>
-        <View style={styles.recommendIcon}>
-          <Text style={styles.recommendGlyph}>◎</Text>
-        </View>
-        <View style={styles.recommendCopy}>
-          <Text style={styles.recommendTitle}>{t("exploreMission")}</Text>
-          <Text style={styles.recommendMeta}>{t("taskExploreDetail")}</Text>
-          <Text style={styles.recommendReward}>+30 XP  ·  +15 {t("points")}</Text>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push("/tasks")}
-          style={styles.smallArrowButton}
-        >
-          <Text style={styles.smallArrow}>›</Text>
+      <View style={styles.statBar}>
+        <Pressable accessibilityRole="button" onPress={openWallet} style={styles.statPill}>
+          <Text style={styles.statDiamond}>◆</Text>
+          <Text style={styles.statName}>{locale === "zh-CN" ? "社区积分" : "Points"}</Text>
+          <Text style={styles.statNumber}>2,480</Text>
+          <Text style={styles.statChevron}>›</Text>
         </Pressable>
-      </Panel>
-
-      <View style={styles.weeklyFooter}>
-        <Text style={styles.weeklyTitle}>{t("weeklyActivity")}</Text>
-        <View style={styles.weekBars}>
-          {[28, 52, 36, 76, 58, 90, 43].map((height, index) => (
-            <View key={index} style={styles.weekColumn}>
-              <View style={styles.weekTrack}>
-                <View style={[styles.weekFill, { height: height + "%" }]} />
-              </View>
-              <Text style={styles.weekDay}>
-                {(locale === "zh-CN" ? ["一", "二", "三", "四", "五", "六", "日"] : ["M", "T", "W", "T", "F", "S", "S"])[index]}
-              </Text>
-            </View>
-          ))}
-        </View>
-        <ProgressTrack progress={50} />
+        <Pressable accessibilityRole="button" onPress={openTasks} style={styles.statPill}>
+          <Text style={styles.statPower}>◉</Text>
+          <Text style={styles.statName}>{t("contributionPower")}</Text>
+          <Text style={styles.statNumber}>1,280</Text>
+          <Text style={styles.statChevron}>›</Text>
+        </Pressable>
       </View>
+
+      <Pressable accessibilityRole="button" onPress={openTasks} style={styles.noticeBar}>
+        <Text style={styles.noticeSpeaker}>◖</Text>
+        <Text style={styles.noticeText}>
+          {locale === "zh-CN"
+            ? "BrightGlobe 社区公告：发现新的贡献任务，参与社区共建"
+            : "BrightGlobe bulletin: discover new ways to contribute"}
+        </Text>
+        <Text style={styles.noticeMore}>{locale === "zh-CN" ? "更多" : "More"} ›</Text>
+      </Pressable>
+
+      <View style={styles.planetStage}>
+        <PlanetOrb />
+        <View style={styles.planetTopLine}>
+          <Text style={styles.planetTopTitle}>BRIGHTGLOBE PLANET</Text>
+          <Pill label={locale === "zh-CN" ? "预览数据" : "PREVIEW"} tone="gold" />
+        </View>
+        <View style={styles.planetClaim}>
+          <View style={styles.gemBadge}>
+            <Text style={styles.gemGlyph}>◆</Text>
+          </View>
+          <Text style={styles.claimCaption}>{locale === "zh-CN" ? "今日待领取奖励" : "TODAY'S COMMUNITY REWARD"}</Text>
+          <Text style={styles.claimValue}>0.0286</Text>
+          <Text style={styles.claimUnit}>{locale === "zh-CN" ? "社区积分" : "COMMUNITY POINTS"}</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setClaimed(true)}
+            style={({ pressed }) => [styles.claimButton, pressed && styles.pressed]}
+          >
+            <Text style={styles.claimButtonText}>
+              {claimed ? (locale === "zh-CN" ? "今日已领取" : "Collected today") : (locale === "zh-CN" ? "领取今日奖励" : "Collect today's reward")}
+            </Text>
+          </Pressable>
+          <Text style={styles.claimFootnote}>
+            {claimed
+              ? (locale === "zh-CN" ? "演示状态：尚未连接真实奖励服务" : "Preview state only · No real reward credited")
+              : (locale === "zh-CN" ? "贡献越多，获得的社区权益越丰富" : "Contribute more to unlock more community benefits")}
+          </Text>
+        </View>
+        <View style={styles.planetStats}>
+          <Pressable onPress={openWallet} style={styles.planetStat}>
+            <Text style={styles.planetStatLabel}>{locale === "zh-CN" ? "累计积分" : "TOTAL POINTS"}</Text>
+            <Text style={styles.planetStatValue}>2,480</Text>
+          </Pressable>
+          <View style={styles.planetStatDivider} />
+          <Pressable onPress={openTasks} style={styles.planetStat}>
+            <Text style={styles.planetStatLabel}>{locale === "zh-CN" ? "贡献等级" : "CONTRIBUTION LEVEL"}</Text>
+            <Text style={styles.planetStatValue}>{locale === "zh-CN" ? "探索者 Lv.4" : "Explorer Lv.4"}</Text>
+          </Pressable>
+        </View>
+      </View>
+
+      <SectionHeading title={locale === "zh-CN" ? "星球活动" : "Planet activities"} action={t("viewAll")} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.activityRail}>
+        <Pressable onPress={openTasks} style={[styles.activityCard, styles.activityCardPurple]}>
+          <Text style={styles.activityKicker}>CONTRIBUTION</Text>
+          <Text style={styles.activityTitle}>{locale === "zh-CN" ? "发现原力任务" : "Discover missions"}</Text>
+          <Text style={styles.activityDescription}>{locale === "zh-CN" ? "完成任务提升贡献力" : "Grow your contribution"}</Text>
+          <Text style={styles.activityIcon}>✦</Text>
+          <Text style={styles.activityLink}>{locale === "zh-CN" ? "立即探索 ›" : "Explore ›"}</Text>
+        </Pressable>
+        <Pressable onPress={() => router.push("/rewards")} style={[styles.activityCard, styles.activityCardRose]}>
+          <Text style={styles.activityKicker}>COMMUNITY</Text>
+          <Text style={styles.activityTitle}>{locale === "zh-CN" ? "社区精彩活动" : "Community events"}</Text>
+          <Text style={styles.activityDescription}>{locale === "zh-CN" ? "与全球成员一起参与" : "Join members worldwide"}</Text>
+          <Text style={styles.activityIcon}>✧</Text>
+          <Text style={styles.activityLink}>{locale === "zh-CN" ? "查看活动 ›" : "View events ›"}</Text>
+        </Pressable>
+        <Pressable onPress={() => router.push("/rewards")} style={[styles.activityCard, styles.activityCardGold]}>
+          <Text style={styles.activityKicker}>BENEFITS</Text>
+          <Text style={styles.activityTitle}>{locale === "zh-CN" ? "星球专属权益" : "Planet benefits"}</Text>
+          <Text style={styles.activityDescription}>{locale === "zh-CN" ? "探索积分可兑换权益" : "Explore point benefits"}</Text>
+          <Text style={styles.activityIcon}>◇</Text>
+          <Text style={styles.activityLink}>{locale === "zh-CN" ? "了解更多 ›" : "Learn more ›"}</Text>
+        </Pressable>
+      </ScrollView>
+
+      <SectionHeading title={locale === "zh-CN" ? "推荐原力" : "Recommended missions"} action={t("viewAll")} />
+      <View style={styles.missionList}>
+        <Pressable onPress={openTasks} style={styles.missionRow}>
+          <View style={[styles.missionIcon, styles.missionIconPurple]}><Text style={styles.missionGlyph}>◎</Text></View>
+          <View style={styles.missionCopy}>
+            <Text style={styles.missionTitle}>{t("exploreMission")}</Text>
+            <Text style={styles.missionMeta}>{locale === "zh-CN" ? "每日参与社区探索" : "Explore the community daily"}</Text>
+          </View>
+          <Text style={styles.missionReward}>+15 {t("points")}</Text>
+          <Text style={styles.rowArrow}>›</Text>
+        </Pressable>
+        <View style={styles.rowDivider} />
+        <Pressable onPress={openTasks} style={styles.missionRow}>
+          <View style={[styles.missionIcon, styles.missionIconGold]}><Text style={styles.missionGlyph}>↗</Text></View>
+          <View style={styles.missionCopy}>
+            <Text style={styles.missionTitle}>{t("inviteMission")}</Text>
+            <Text style={styles.missionMeta}>{locale === "zh-CN" ? "邀请朋友加入社区" : "Invite a friend to the community"}</Text>
+          </View>
+          <Text style={styles.missionReward}>+50 {t("points")}</Text>
+          <Text style={styles.rowArrow}>›</Text>
+        </Pressable>
+      </View>
+      <Text style={styles.bottomNote}>{locale === "zh-CN" ? "我是有底线的" : "You've reached the end"}</Text>
     </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  welcomeRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  welcomeCopy: { flex: 1, gap: 4 },
-  welcomeEyebrow: { color: colors.brand, fontSize: 9, letterSpacing: 1, fontWeight: "900" },
-  welcomeTitle: { color: colors.ink, fontSize: 22, lineHeight: 27, fontWeight: "900", letterSpacing: -0.6 },
-  welcomeSubtitle: { color: colors.inkMuted, fontSize: 11, lineHeight: 16, marginTop: -12 },
-  levelBadge: {
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 52,
-    height: 52,
-    borderRadius: 18,
-    backgroundColor: colors.brandSoft,
-    borderWidth: 1,
-    borderColor: "#E8D9FC"
-  },
-  levelIcon: { color: colors.brand, fontSize: 17, fontWeight: "900" },
-  levelText: { color: colors.brandDark, fontSize: 8, fontWeight: "900", marginTop: 1 },
-  planetPanel: {
-    height: 322,
-    borderRadius: 25,
-    overflow: "hidden",
-    backgroundColor: colors.purpleNight,
-    position: "relative",
-    borderWidth: 1,
-    borderColor: "#382054"
-  },
-  planetOverlay: {
-    ...StyleSheet.absoluteFill,
-    justifyContent: "space-between",
-    padding: 18
-  },
-  planetTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  planetSpark: { color: "#E4C5FF", fontSize: 25 },
-  powerBlock: { marginTop: 4, maxWidth: "65%", gap: 4 },
-  powerLabel: { color: "#E5D9F3", fontSize: 10, fontWeight: "800" },
-  powerValue: { color: "#FFFFFF", fontSize: 40, lineHeight: 45, fontWeight: "900", letterSpacing: -1.5 },
-  powerMeta: { color: "#D2B9EA", fontSize: 9, fontWeight: "700" },
-  planetBottom: {
-    minHeight: 58,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(232,213,255,0.22)",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 18,
-    paddingTop: 12
-  },
-  planetMiniStat: { flex: 1, gap: 5 },
-  planetMiniLabel: { color: "#C7B6D9", fontSize: 9, fontWeight: "700" },
-  planetMiniValue: { color: "#FFFFFF", fontSize: 15, fontWeight: "900" },
-  planetMiniDivider: { width: 1, height: 31, backgroundColor: "rgba(232,213,255,0.22)" },
-  dailyRewardCard: {
-    backgroundColor: "#FFFFFF",
-    padding: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: 13
-  },
-  dailyRewardTop: { flexDirection: "row", alignItems: "center", gap: 11 },
-  dailyRewardIcon: { width: 43, height: 43, borderRadius: 15, backgroundColor: colors.goldSoft, alignItems: "center", justifyContent: "center" },
-  dailyRewardGlyph: { color: "#BD7B17", fontSize: 21, fontWeight: "900" },
-  dailyRewardCopy: { flex: 1, gap: 4 },
-  dailyRewardTitle: { color: colors.ink, fontSize: 12, fontWeight: "900" },
-  dailyRewardMeta: { color: colors.inkMuted, fontSize: 10 },
-  todayTag: { backgroundColor: colors.goldSoft, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 12 },
-  todayTagText: { color: "#9A5A06", fontSize: 12, fontWeight: "900" },
-  claimedNote: { color: colors.inkMuted, fontSize: 9, lineHeight: 14 },
-  statsRow: { flexDirection: "row", gap: 11 },
-  shortcutGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  shortcutTile: {
-    width: "48%",
-    minHeight: 82,
-    flexGrow: 1,
-    flexBasis: "45%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 17,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 9
-  },
-  pressed: { opacity: 0.82 },
-  shortcutIcon: { width: 36, height: 36, borderRadius: 12, backgroundColor: colors.brandSoft, alignItems: "center", justifyContent: "center" },
-  shortcutGlyph: { color: colors.brand, fontSize: 18, fontWeight: "900" },
-  shortcutLabel: { color: colors.ink, fontSize: 10, lineHeight: 14, fontWeight: "800", flex: 1 },
-  shortcutArrow: { color: "#B5A9C1", fontSize: 22 },
-  bulletin: {
-    backgroundColor: "#F0E6FC",
-    borderRadius: 17,
-    padding: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 11
-  },
-  bulletinIcon: { width: 36, height: 36, borderRadius: 12, backgroundColor: "#E0C9FA", alignItems: "center", justifyContent: "center" },
-  bulletinGlyph: { color: colors.brandDark, fontSize: 22, fontWeight: "900" },
-  bulletinCopy: { flex: 1, gap: 4 },
-  bulletinTitle: { color: colors.brandDark, fontSize: 11, fontWeight: "900" },
-  bulletinText: { color: "#75618C", fontSize: 9, lineHeight: 14 },
-  bulletinArrow: { color: colors.brandDark, fontSize: 24 },
-  recommendedCard: { flexDirection: "row", alignItems: "center", gap: 11 },
-  recommendIcon: { width: 44, height: 44, borderRadius: 14, backgroundColor: colors.tealSoft, alignItems: "center", justifyContent: "center" },
-  recommendGlyph: { color: colors.teal, fontSize: 21, fontWeight: "900" },
-  recommendCopy: { flex: 1, gap: 4 },
-  recommendTitle: { color: colors.ink, fontSize: 12, fontWeight: "900" },
-  recommendMeta: { color: colors.inkMuted, fontSize: 9, lineHeight: 13 },
-  recommendReward: { color: colors.brand, fontSize: 9, fontWeight: "900", marginTop: 1 },
-  smallArrowButton: { width: 31, height: 31, borderRadius: 11, backgroundColor: colors.brandSoft, alignItems: "center", justifyContent: "center" },
-  smallArrow: { color: colors.brand, fontSize: 22, lineHeight: 24 },
-  weeklyFooter: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 15, gap: 13 },
-  weeklyTitle: { color: colors.ink, fontSize: 12, fontWeight: "900" },
-  weekBars: { height: 93, flexDirection: "row", gap: 8 },
-  weekColumn: { flex: 1, alignItems: "center", justifyContent: "flex-end", gap: 7 },
-  weekTrack: { height: 70, width: "100%", justifyContent: "flex-end", borderRadius: 7, overflow: "hidden", backgroundColor: "#F2EEF6" },
-  weekFill: { width: "100%", backgroundColor: colors.brand, borderRadius: 7 },
-  weekDay: { color: colors.inkMuted, fontSize: 8, fontWeight: "800" }
+  statBar: { flexDirection: "row", gap: 8, marginBottom: 10 },
+  statPill: { flex: 1, minHeight: 38, borderRadius: 20, borderWidth: 1, borderColor: "#E5E1E9", backgroundColor: "#FFFFFF", flexDirection: "row", alignItems: "center", paddingHorizontal: 10, gap: 5 },
+  statDiamond: { color: "#8E4DCB", fontSize: 11 },
+  statPower: { color: "#4D8B9D", fontSize: 13 },
+  statName: { color: "#88838E", fontSize: 9, fontWeight: "600" },
+  statNumber: { color: "#39343D", fontSize: 11, fontWeight: "800", flex: 1 },
+  statChevron: { color: "#B9B3C0", fontSize: 16 },
+  noticeBar: { height: 34, borderRadius: 18, backgroundColor: "#F7F4F9", borderWidth: 1, borderColor: "#EEE8F2", flexDirection: "row", alignItems: "center", paddingHorizontal: 10, gap: 7, marginBottom: 10 },
+  noticeSpeaker: { color: colors.brand, fontSize: 13 },
+  noticeText: { flex: 1, color: "#817A88", fontSize: 9 },
+  noticeMore: { color: colors.brand, fontSize: 8, fontWeight: "800" },
+  planetStage: { height: 430, borderRadius: 12, overflow: "hidden", backgroundColor: "#1B0D2A", marginBottom: 7 },
+  planetTopLine: { position: "absolute", top: 13, left: 14, right: 14, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  planetTopTitle: { color: "#BFA6D9", fontSize: 8, letterSpacing: 1.2, fontWeight: "900" },
+  planetClaim: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center", paddingTop: 18 },
+  gemBadge: { width: 46, height: 46, borderRadius: 23, backgroundColor: "rgba(35,12,57,0.78)", borderWidth: 1, borderColor: "rgba(209,164,255,0.6)", alignItems: "center", justifyContent: "center", marginBottom: 9 },
+  gemGlyph: { color: "#F0D3FF", fontSize: 25, textShadowColor: "#B978FF", textShadowRadius: 12 },
+  claimCaption: { color: "#E3D1F5", fontSize: 9, fontWeight: "800", letterSpacing: 1 },
+  claimValue: { color: "#FFFFFF", fontSize: 32, lineHeight: 38, fontWeight: "900", marginTop: 2 },
+  claimUnit: { color: "#C5A8DF", fontSize: 8, fontWeight: "800", letterSpacing: 1.2 },
+  claimButton: { backgroundColor: "#FFFFFF", minWidth: 145, height: 37, borderRadius: 19, alignItems: "center", justifyContent: "center", marginTop: 15, paddingHorizontal: 16 },
+  claimButtonText: { color: "#6E35A5", fontSize: 10, fontWeight: "900" },
+  claimFootnote: { color: "#B89BCD", fontSize: 8, marginTop: 8, textAlign: "center" },
+  planetStats: { position: "absolute", bottom: 0, left: 0, right: 0, minHeight: 62, backgroundColor: "rgba(16,7,27,0.7)", flexDirection: "row", alignItems: "center", paddingHorizontal: 20 },
+  planetStat: { flex: 1, gap: 5 },
+  planetStatLabel: { color: "#AA91C0", fontSize: 7, fontWeight: "800", letterSpacing: 0.8 },
+  planetStatValue: { color: "#FFFFFF", fontSize: 12, fontWeight: "900" },
+  planetStatDivider: { width: 1, height: 30, backgroundColor: "rgba(255,255,255,0.18)", marginHorizontal: 14 },
+  activityRail: { gap: 9, paddingRight: 8, paddingBottom: 2 },
+  activityCard: { width: 205, minHeight: 125, borderRadius: 10, padding: 13, overflow: "hidden", justifyContent: "space-between" },
+  activityCardPurple: { backgroundColor: "#4B2772" },
+  activityCardRose: { backgroundColor: "#77365C" },
+  activityCardGold: { backgroundColor: "#76542D" },
+  activityKicker: { color: "rgba(255,255,255,0.65)", fontSize: 7, letterSpacing: 1, fontWeight: "900" },
+  activityTitle: { color: "#FFFFFF", fontSize: 14, fontWeight: "900", marginTop: 5 },
+  activityDescription: { color: "rgba(255,255,255,0.76)", fontSize: 8, marginTop: 2 },
+  activityIcon: { position: "absolute", right: 12, top: 17, color: "rgba(255,255,255,0.2)", fontSize: 48, fontWeight: "900" },
+  activityLink: { color: "#FFFFFF", fontSize: 8, fontWeight: "900", marginTop: 10 },
+  missionList: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: "#EEEAF1", paddingHorizontal: 2 },
+  missionRow: { minHeight: 61, flexDirection: "row", alignItems: "center", gap: 9 },
+  missionIcon: { width: 36, height: 36, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  missionIconPurple: { backgroundColor: "#F2E8FB" },
+  missionIconGold: { backgroundColor: "#FFF3E2" },
+  missionGlyph: { color: colors.brand, fontSize: 18, fontWeight: "800" },
+  missionCopy: { flex: 1, gap: 4 },
+  missionTitle: { color: "#37313D", fontSize: 10, fontWeight: "800" },
+  missionMeta: { color: "#A09AA5", fontSize: 8 },
+  missionReward: { color: colors.brand, fontSize: 9, fontWeight: "800" },
+  rowArrow: { color: "#B7B1BD", fontSize: 19 },
+  rowDivider: { height: 1, backgroundColor: "#F0EDF2", marginLeft: 44 },
+  bottomNote: { alignSelf: "center", color: "#BAB5BF", fontSize: 8, paddingVertical: 7 }
 });

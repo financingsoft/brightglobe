@@ -43,11 +43,14 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: "#555555",
         tabBarInactiveTintColor: "#C4C4C4",
-        tabBarLabelStyle: { fontSize: 9, fontWeight: "500", marginTop: 0, marginBottom: 1 },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: "500", marginTop: 0, marginBottom: 1 },
         tabBarStyle: {
-          height: 58,
-          paddingTop: 4,
-          paddingBottom: 4,
+          height: 60,
+          width: "100%",
+          maxWidth: 430,
+          alignSelf: "center",
+          paddingTop: 3,
+          paddingBottom: 3,
           borderTopWidth: 1,
           borderTopColor: "#D5D5D5",
           backgroundColor: "#FFFFFF",
@@ -75,16 +78,16 @@ export default function TabLayout() {
 }
 
 const styles = {
-  iconBox: { width: 28, height: 26, alignItems: "center" as const, position: "relative" as const },
-  roofLeft: { position: "absolute" as const, top: 4, left: 4, width: 15, height: 3, transform: [{ rotate: "-42deg" }] },
-  roofRight: { position: "absolute" as const, top: 4, right: 4, width: 15, height: 3, transform: [{ rotate: "42deg" }] },
-  houseBody: { position: "absolute" as const, top: 11, width: 19, height: 13, borderWidth: 2, alignItems: "center" as const, justifyContent: "flex-end" as const },
-  houseDoor: { width: 5, height: 7 },
-  taskIcon: { width: 23, height: 22, borderWidth: 2, borderRadius: 2, paddingHorizontal: 3, justifyContent: "center" as const, gap: 3 },
+  iconBox: { width: 32, height: 29, alignItems: "center" as const, position: "relative" as const },
+  roofLeft: { position: "absolute" as const, top: 4, left: 4, width: 17, height: 3, transform: [{ rotate: "-42deg" }] },
+  roofRight: { position: "absolute" as const, top: 4, right: 4, width: 17, height: 3, transform: [{ rotate: "42deg" }] },
+  houseBody: { position: "absolute" as const, top: 11, width: 22, height: 16, borderWidth: 2, alignItems: "center" as const, justifyContent: "flex-end" as const },
+  houseDoor: { width: 6, height: 8 },
+  taskIcon: { width: 26, height: 24, borderWidth: 2, borderRadius: 2, paddingHorizontal: 3, justifyContent: "center" as const, gap: 3 },
   taskLineRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 3 },
   taskBullet: { width: 3, height: 3, borderRadius: 1.5 },
   taskLine: { flex: 1, height: 2, borderRadius: 1 },
-  personIcon: { width: 26, height: 26, alignItems: "center" as const, justifyContent: "flex-end" as const, gap: 1 },
-  personHead: { width: 10, height: 10, borderWidth: 2, borderRadius: 5 },
-  personShoulders: { width: 22, height: 12, borderWidth: 2, borderTopLeftRadius: 12, borderTopRightRadius: 12, borderBottomWidth: 0 }
+  personIcon: { width: 29, height: 28, alignItems: "center" as const, justifyContent: "flex-end" as const, gap: 1 },
+  personHead: { width: 11, height: 11, borderWidth: 2, borderRadius: 5 },
+  personShoulders: { width: 25, height: 13, borderWidth: 2, borderTopLeftRadius: 12, borderTopRightRadius: 12, borderBottomWidth: 0 }
 };

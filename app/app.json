@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "BrightGlobe",
+    "slug": "brightglobe",
+    "version": "0.1.0",
+    "scheme": "brightglobe",
+    "orientation": "default",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.financingsoft.brightglobe"
+    },
+    "android": {
+      "package": "com.financingsoft.brightglobe"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

@@ -13,7 +13,7 @@ BrightGlobe is a global contribution and rewards platform. Its product foundatio
 - [x] Expo SDK 58 app workspace created
 - [x] Five primary app routes scaffolded: Home, Tasks, Rewards, Wallet, Profile
 - [x] English and Simplified Chinese locale foundation
-- [x] Adaptive native 3D Earth background with five 2K/1K map pairs and demand rendering (device validation pending)
+- [x] Reference-based planet UI with locally rendered violet sphere and four-section navigation (device validation pending)
 - [x] Browser-specific 3D Earth renderer and Expo static web export; preview deployed to GitHub Pages
 - [x] API client foundation and EAS build profiles
 - [ ] Backend API and authentication integration
@@ -28,3 +28,7 @@ XP is non-transferable progression experience. Platform points are internal rewa
 ## Browser preview
 
 Live preview: [https://financingsoft.github.io/brightglobe/](https://financingsoft.github.io/brightglobe/). The first GitHub Pages deployment completed successfully. Changes under app/** automatically rebuild and redeploy the site. See [Web Preview Setup](docs/WEB_PREVIEW.md).
+
+## UI reference
+
+BrightGlobe's current four-section UI follows the 2018 NetEase Planet 1.3-era information architecture as a version-specific visual/product reference while retaining original BrightGlobe branding and reward semantics. See [UI Reference Specification](docs/PRODUCT_UI_DIRECTION.md).

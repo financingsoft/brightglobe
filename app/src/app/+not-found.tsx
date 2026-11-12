@@ -1,13 +1,16 @@
 import { Link } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { colors } from "@/constants/theme";
+import { useI18n } from "@/i18n/locale";
 
 export default function NotFoundScreen() {
+  const { t } = useI18n();
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Page not found</Text>
-      <Text style={styles.description}>This BrightGlobe route does not exist.</Text>
-      <Link href="/" style={styles.link}>Return home</Link>
+      <Text style={styles.title}>{t("notFoundTitle")}</Text>
+      <Text style={styles.description}>{t("notFoundDescription")}</Text>
+      <Link href="/" style={styles.link}>{t("goHome")}</Link>
     </View>
   );
 }

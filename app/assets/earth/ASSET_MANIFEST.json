@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-11-12T14:37:40.098160+00:00",
+  "generated_at": "2026-11-12T14:52:11.993677+00:00",
   "license": "CC BY 4.0",
   "license_url": "https://creativecommons.org/licenses/by/4.0/",
   "attribution": "Solar System Scope \u2014 https://www.solarsystemscope.com/textures/",
-  "changes": "Downloaded from the official Solar System Scope texture pack; resized to at most 2048x1024 and optimized as JPEG for BrightGlobe.",
+  "changes": "Downloaded from the official Solar System Scope texture pack; resized to at most 2048x1024 and optimized as JPEG for BrightGlobe. Normal map RGB channels are preserved; cloud and specular maps are converted to grayscale.",
   "assets": [
     {
       "file": "earth-day.jpg",
@@ -16,9 +16,10 @@
         2048,
         1024
       ],
-      "bytes": 308624,
-      "sha256": "dbcfd55ee9a96472be2e8e2aeae439af6d84a44ed3332ccf72d21c07ab79a30e",
-      "license": "CC BY 4.0"
+      "bytes": 342626,
+      "sha256": "a8c81eb73b9e3085bb903c345b7931b94fdadb0185c721dc53f7eeeefbe621b6",
+      "license": "CC BY 4.0",
+      "color_space": "sRGB"
     },
     {
       "file": "earth-night.jpg",
@@ -31,9 +32,10 @@
         2048,
         1024
       ],
-      "bytes": 170657,
-      "sha256": "a0bcc19c3397455501f2116e998729451889c6e18765dbf9678794ac98351086",
-      "license": "CC BY 4.0"
+      "bytes": 187823,
+      "sha256": "a0e66911f3e769d862bf9c38d71302552873eafe66ec50760431b75e48625dee",
+      "license": "CC BY 4.0",
+      "color_space": "sRGB"
     },
     {
       "file": "earth-clouds.jpg",
@@ -48,7 +50,40 @@
       ],
       "bytes": 801558,
       "sha256": "4f7c12fb43112f1b771c96887f6db77cb69e03c8b5f0df015c89d071beaaa89b",
-      "license": "CC BY 4.0"
+      "license": "CC BY 4.0",
+      "color_space": "linear-data"
+    },
+    {
+      "file": "earth-normal.jpg",
+      "source": "https://play.solarsystemscope.com/textures/download/2k_earth_normal_map.tif",
+      "original_dimensions": [
+        2048,
+        1024
+      ],
+      "bundled_dimensions": [
+        2048,
+        1024
+      ],
+      "bytes": 91136,
+      "sha256": "3f88420adc3eb1d385b7cd7b1071fecfb0c61c479ca2e88e6d2894ff3f7717c6",
+      "license": "CC BY 4.0",
+      "color_space": "linear-data"
+    },
+    {
+      "file": "earth-specular.jpg",
+      "source": "https://play.solarsystemscope.com/textures/download/2k_earth_specular_map.tif",
+      "original_dimensions": [
+        2048,
+        1024
+      ],
+      "bundled_dimensions": [
+        2048,
+        1024
+      ],
+      "bytes": 211373,
+      "sha256": "e5adb6706227f7bf3cd8e2ff5de3b90cff60afbddf7a071b2c0996c78ff730ad",
+      "license": "CC BY 4.0",
+      "color_space": "linear-data"
     }
   ]
 }

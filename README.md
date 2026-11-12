@@ -14,6 +14,7 @@ BrightGlobe is a global contribution and rewards platform. Its product foundatio
 - [x] Five primary app routes scaffolded: Home, Tasks, Rewards, Wallet, Profile
 - [x] English and Simplified Chinese locale foundation
 - [x] Adaptive native 3D Earth background with five 2K/1K map pairs and demand rendering (device validation pending)
+- [x] Browser-specific 3D Earth renderer and Expo static web export; GitHub Pages activation pending
 - [x] API client foundation and EAS build profiles
 - [ ] Backend API and authentication integration
 - [ ] Server-authoritative rewards and append-only ledger
@@ -23,3 +24,7 @@ BrightGlobe is a global contribution and rewards platform. Its product foundatio
 ## Product safety boundary
 
 XP is non-transferable progression experience. Platform points are internal reward units governed by disclosed redemption rules. Contribution Power is a reputation/weight metric, not spendable value or a promise of yield. Token issuance, custody, staking, and exchange features are out of scope for this initial application scaffold.
+
+## Browser preview
+
+Target URL: [https://financingsoft.github.io/brightglobe/](https://financingsoft.github.io/brightglobe/) — enable **Settings → Pages → Source: GitHub Actions** once, then rerun the **Deploy BrightGlobe web preview** workflow. See [Web Preview Setup](docs/WEB_PREVIEW.md).

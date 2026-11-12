@@ -157,17 +157,23 @@ try {
   await page.waitForTimeout(180);
   await page.screenshot({ path: resolve(outputRoot, "entertainment-375x667.png") });
 
-  for (const [label, fileName] of [
+  const entertainmentDestinations = [
     ["小说", "reading-375x667.png"],
     ["漫画", "comics-375x667.png"],
     ["新闻", "news-375x667.png"],
     ["音乐", "music-375x667.png"]
-  ]) {
-    await page.getByText("‹", { exact: true }).click();
-    await page.waitForTimeout(160);
+  ];
+  for (let index = 0; index < entertainmentDestinations.length; index += 1) {
+    const [label, fileName] = entertainmentDestinations[index];
     await page.getByText(label, { exact: true }).click();
     await page.waitForTimeout(180);
     await page.screenshot({ path: resolve(outputRoot, fileName) });
+    if (index < entertainmentDestinations.length - 1) {
+      await page.getByText("‹", { exact: true }).click();
+      await page.waitForTimeout(160);
+      await page.getByText("娱乐", { exact: true }).click();
+      await page.waitForTimeout(160);
+    }
   }
 
   await page.getByText("‹", { exact: true }).click();

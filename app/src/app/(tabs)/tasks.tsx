@@ -171,7 +171,7 @@ export default function TasksScreen() {
                 if (mission.id === "invite") {
                   router.push("/invite");
                 } else if (mission.id === "follow") {
-                  router.push({ pathname: "/activity", params: { title: mission.title } });
+                  router.push("/official-follow");
                 } else {
                   router.push({ pathname: "/category", params: { category: mission.id } });
                 }

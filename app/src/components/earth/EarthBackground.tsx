@@ -1,10 +1,10 @@
-import { Component, Suspense, useMemo, useRef, type ErrorInfo, type ReactNode } from "react";
-import { StyleSheet, View } from "react-native";
+import { Component, Suspense, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from "react";
+import { AppState, StyleSheet, View } from "react-native";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber/native";
 import * as THREE from "three";
 
-// Static require() calls let Metro bundle these textures into the native app.
-// React Three Fiber's Native entry point patches TextureLoader to resolve Expo assets.
+// Static require() calls let Metro bundle the textures into the native app.
+// R3F's Native entry point patches TextureLoader to resolve Expo asset IDs.
 const TEXTURES = {
   day: require("../../../assets/earth/earth-day.jpg") as unknown as string,
   night: require("../../../assets/earth/earth-night.jpg") as unknown as string,
@@ -14,27 +14,21 @@ const TEXTURES = {
 const EARTH_VERTEX_SHADER = `
   varying vec2 vUv;
   varying vec3 vNormalView;
-  varying vec3 vViewDirection;
 
   void main() {
     vUv = uv;
-    vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
     vNormalView = normalize(normalMatrix * normal);
-    vViewDirection = normalize(-modelViewPosition.xyz);
-    gl_Position = projectionMatrix * modelViewPosition;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `;
 
 const EARTH_FRAGMENT_SHADER = `
   uniform sampler2D uDayMap;
   uniform sampler2D uNightMap;
-  uniform sampler2D uCloudMap;
   uniform vec3 uSunDirection;
-  uniform float uTime;
 
   varying vec2 vUv;
   varying vec3 vNormalView;
-  varying vec3 vViewDirection;
 
   void main() {
     vec3 normal = normalize(vNormalView);
@@ -47,20 +41,47 @@ const EARTH_FRAGMENT_SHADER = `
     float directLight = max(sunFacing, 0.0);
     dayColor *= 0.34 + directLight * 0.92;
 
-    // City lights are visible only on the night side of the terminator.
+    // The night texture contributes city lights only on the dark side.
     vec3 surfaceColor = mix(nightColor * 1.35, dayColor, daylight);
+    gl_FragColor = vec4(surfaceColor, 1.0);
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
+  }
+`;
 
-    // A separate cloud map drifts slowly over the surface.
-    vec2 cloudUv = vec2(fract(vUv.x + uTime * 0.0022), vUv.y);
-    float cloudDensity = texture2D(uCloudMap, cloudUv).r;
-    float cloudMask = smoothstep(0.3, 0.78, cloudDensity);
-    surfaceColor = mix(
-      surfaceColor,
+const CLOUD_VERTEX_SHADER = `
+  varying vec2 vUv;
+  varying vec3 vNormalView;
+
+  void main() {
+    vUv = uv;
+    vNormalView = normalize(normalMatrix * normal);
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const CLOUD_FRAGMENT_SHADER = `
+  uniform sampler2D uCloudMap;
+  uniform vec3 uSunDirection;
+
+  varying vec2 vUv;
+  varying vec3 vNormalView;
+
+  void main() {
+    float sunFacing = dot(normalize(vNormalView), normalize(uSunDirection));
+    float daylight = smoothstep(-0.18, 0.28, sunFacing);
+    float cloudDensity = texture2D(uCloudMap, vUv).r;
+    float cloudShape = smoothstep(0.34, 0.76, cloudDensity);
+
+    // Clouds are a separate translucent shell, not baked into the land map.
+    float alpha = cloudShape * mix(0.16, 0.48, daylight);
+    vec3 cloudColor = mix(
+      vec3(0.16, 0.24, 0.38),
       vec3(0.88, 0.94, 1.0),
-      cloudMask * 0.18 * smoothstep(-0.25, 0.35, sunFacing)
+      daylight
     );
 
-    gl_FragColor = vec4(surfaceColor, 1.0);
+    gl_FragColor = vec4(cloudColor, alpha);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
   }
@@ -146,6 +167,8 @@ function EarthScene() {
   ]) as [THREE.Texture, THREE.Texture, THREE.Texture];
 
   const globeRef = useRef<THREE.Group | null>(null);
+  const cloudRef = useRef<THREE.Mesh | null>(null);
+
   const earthMaterial = useMemo(() => {
     dayMap.colorSpace = THREE.SRGBColorSpace;
     nightMap.colorSpace = THREE.SRGBColorSpace;
@@ -161,17 +184,34 @@ function EarthScene() {
       uniforms: {
         uDayMap: { value: dayMap },
         uNightMap: { value: nightMap },
-        uCloudMap: { value: cloudMap },
         uSunDirection: {
           value: new THREE.Vector3(-0.62, 0.24, 0.92).normalize()
-        },
-        uTime: { value: 0 }
+        }
       },
       vertexShader: EARTH_VERTEX_SHADER,
       fragmentShader: EARTH_FRAGMENT_SHADER,
       toneMapped: false
     });
-  }, [cloudMap, dayMap, nightMap]);
+  }, [dayMap, nightMap, cloudMap]);
+
+  const cloudMaterial = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        uniforms: {
+          uCloudMap: { value: cloudMap },
+          uSunDirection: {
+            value: new THREE.Vector3(-0.62, 0.24, 0.92).normalize()
+          }
+        },
+        vertexShader: CLOUD_VERTEX_SHADER,
+        fragmentShader: CLOUD_FRAGMENT_SHADER,
+        transparent: true,
+        depthWrite: false,
+        side: THREE.FrontSide,
+        toneMapped: false
+      }),
+    [cloudMap]
+  );
 
   const atmosphereMaterial = useMemo(
     () =>
@@ -187,25 +227,43 @@ function EarthScene() {
     []
   );
 
+  useEffect(
+    () => () => {
+      earthMaterial.dispose();
+      cloudMaterial.dispose();
+      atmosphereMaterial.dispose();
+    },
+    [atmosphereMaterial, cloudMaterial, earthMaterial]
+  );
+
   useFrame((_state, frameDelta) => {
     const delta = Math.min(frameDelta, 0.05);
 
     if (globeRef.current) {
-      globeRef.current.rotation.y += delta * 0.035;
+      globeRef.current.rotation.y += delta * 0.032;
     }
 
-    earthMaterial.uniforms.uTime.value += delta;
+    if (cloudRef.current) {
+      // A slightly faster angular speed creates independent cloud movement.
+      cloudRef.current.rotation.y += delta * 0.037;
+    }
   });
 
   return (
-    <group ref={globeRef} position={[0.62, 0, 0]}>
-      <mesh>
-        <sphereGeometry args={[1.12, 96, 96]} />
-        <primitive object={earthMaterial} attach="material" />
-      </mesh>
-      <mesh scale={1.035}>
-        <sphereGeometry args={[1.12, 64, 64]} />
-        <primitive object={atmosphereMaterial} attach="material" />
+    <group position={[0.62, 0, 0]}>
+      <group ref={globeRef}>
+        <mesh>
+          <sphereGeometry args={[1.12, 96, 96]} />
+          <primitive object={earthMaterial} attach="material" />
+        </mesh>
+        <mesh scale={1.04}>
+          <sphereGeometry args={[1.12, 64, 64]} />
+          <primitive object={atmosphereMaterial} attach="material" />
+        </mesh>
+      </group>
+      <mesh ref={cloudRef} scale={1.018}>
+        <sphereGeometry args={[1.12, 72, 72]} />
+        <primitive object={cloudMaterial} attach="material" />
       </mesh>
     </group>
   );
@@ -244,10 +302,20 @@ class EarthErrorBoundary extends Component<
 
 /**
  * Decorative, non-interactive Earth background for the Home hero card.
- * Texture URLs are temporary development sources; production should bundle
- * approved, optimized texture assets with the app.
+ * All textures are bundled with the app, so rendering works offline.
  */
-export function EarthBackground() {
+export function EarthBackground({ active = true }: { active?: boolean }) {
+  const [appIsActive, setAppIsActive] = useState(AppState.currentState === "active");
+  const shouldAnimate = active && appIsActive;
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      setAppIsActive(nextState === "active");
+    });
+
+    return () => subscription.remove();
+  }, []);
+
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       <EarthErrorBoundary>
@@ -255,6 +323,7 @@ export function EarthBackground() {
           style={styles.canvas}
           camera={{ position: [0, 0, 4.35], fov: 39 }}
           dpr={1.15}
+          frameloop={shouldAnimate ? "always" : "never"}
           gl={{
             alpha: false,
             antialias: true,

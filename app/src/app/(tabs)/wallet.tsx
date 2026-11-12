@@ -29,7 +29,6 @@ export default function WalletScreen() {
       <View style={styles.totalBlock}>
         <View style={styles.totalHeading}>
           <Text style={styles.totalLabel}>{t("黑钻总数", "Total points")}</Text>
-          <Pressable onPress={() => router.push("/rewards")}><Text style={styles.exchange}>{t("兑换权益", "Benefits")} ›</Text></Pressable>
         </View>
         <Text style={styles.totalValue}>122.90001</Text>
         <View style={styles.frozenRow}>
@@ -81,7 +80,6 @@ const styles = StyleSheet.create({
   totalHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   totalLabel: { color: "#777777", fontSize: 9 },
   totalValue: { color: "#333333", fontSize: 25, fontWeight: "700" },
-  exchange: { color: "#666666", fontSize: 8 },
   frozenRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderTopWidth: 1, borderColor: "#EEEEEE", paddingTop: 7, marginTop: 3 },
   frozenLabel: { color: "#888888", fontSize: 8 },
   frozenValue: { color: "#777777", fontSize: 8 },

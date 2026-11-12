@@ -47,3 +47,7 @@ jobs:
       - name: Bundle iOS JavaScript and local assets
         working-directory: app
         run: npx expo export --platform ios --output-dir /tmp/brightglobe-ios-export
+
+      - name: Export web bundle
+        working-directory: app
+        run: npm run export:web -- --output-dir /tmp/brightglobe-web-export

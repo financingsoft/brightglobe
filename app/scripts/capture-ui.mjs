@@ -172,6 +172,10 @@ try {
     await page.getByText("发现原力", { exact: true }).last().waitFor({ state: "visible", timeout: 10000 });
   };
 
+  const tapInAppBack = async () => {
+    await page.getByText("‹", { exact: true }).first().click();
+  };
+
   await page.goto(`http://127.0.0.1:${port}${basePath}/login`, { waitUntil: "networkidle", timeout: 60000 });
   await page.getByText("进入本地预览账户", { exact: true }).click();
   await page.getByText("发现原力", { exact: true }).last().waitFor({ state: "visible", timeout: 10000 });
@@ -188,7 +192,7 @@ try {
     await waitForCategory(categoryId);
     await page.getByText(label, { exact: true }).last().waitFor({ state: "visible", timeout: 10000 });
     await page.screenshot({ path: resolve(outputRoot, fileName) });
-    await page.goBack();
+    await tapInAppBack();
     await waitForTasks();
   };
 
@@ -213,12 +217,14 @@ try {
     await page.getByText(label, { exact: true }).last().waitFor({ state: "visible", timeout: 10000 });
     await page.screenshot({ path: resolve(outputRoot, fileName) });
     if (index < entertainmentDestinations.length - 1) {
-      await page.goBack();
+      await tapInAppBack();
       await waitForCategory("entertainment");
     }
   }
 
-  await page.goBack();
+  await tapInAppBack();
+  await waitForCategory("entertainment");
+  await tapInAppBack();
   await waitForTasks();
   await captureCategoryFromForce("来钱", "finance", "finance-unavailable-375x667.png");
   await captureCategoryFromForce("健康", "wellness", "wellness-unavailable-375x667.png");
@@ -227,7 +233,7 @@ try {
   await waitForPath("/invite");
   await page.getByText("邀请码", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
   await page.screenshot({ path: resolve(outputRoot, "invite-from-force-375x667.png") });
-  await page.goBack();
+  await tapInAppBack();
   await waitForTasks();
 
   await page.getByText("关注微信公众号", { exact: true }).click();
@@ -238,7 +244,7 @@ try {
   await page.getByText("提交验证", { exact: true }).click();
   await page.getByText("验证成功", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
   await page.screenshot({ path: resolve(outputRoot, "official-follow-verified-375x667.png") });
-  await page.goBack();
+  await tapInAppBack();
   await waitForTasks();
 
   // Follow the Home announcement entry to its list and detail screens.

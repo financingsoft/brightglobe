@@ -1,0 +1,394 @@
+# BrightGlobe — NetEase Planet UI Reconstruction Contract
+
+**Status:** Binding implementation contract  
+**Target reference:** NetEase Planet PRD V1.6.0, authored 2018-10-05 and published 2018-10-08  
+**Contract revision:** 1.0  
+**Applies to:** React Native app screens, navigation, shared components, interaction states, and browser preview  
+**Rule:** Implementation must follow this document. A visually attractive reinterpretation is not acceptance.
+
+---
+
+## 1. Source hierarchy and version lock
+
+### 1.1 Primary source — binding
+
+The primary source is Eric's public teardown **《解剖“网易星球”APP产品需求文档（PRD）》**:
+
+- Article: https://www.woshipm.com/pd/1478379.html
+- Article publication date: 2018-10-08.
+- The embedded PRD cover identifies **V1.6.0**, written 2018-10-05.
+- The document contains the information architecture, function map, navigation, login flow, Home wireframes, Force-task wireframes, My-page wireframes, and corresponding interaction notes.
+
+This is the binding source for page structure and interactions. Relevant embedded source images:
+
+| Reference ID | Page / flow | Original image |
+|---|---|---|
+| Fig. 1–2 | Functional and information architecture | https://image.woshipm.com/wp-files/2018/10/dyis6yKxvMCWSsHe0Kt2.png and https://image.woshipm.com/wp-files/2018/10/XZXCIdWVeHhg1s1X9Isl.png |
+| Fig. 11 | Login / signup, nickname, identity, help | https://image.woshipm.com/wp-files/2018/10/Gd17d1oR62KMpTyLRRtW.png |
+| Fig. 12 | Home, Black Diamond record, Force record, announcement | https://image.woshipm.com/wp-files/2018/10/WloTKKM6kTz2nVfwapX7.png |
+| Fig. 13 | Home activity / content-entry flows | https://image.woshipm.com/wp-files/2018/10/VKZ3IfsoETBUvC4Bekrm.png |
+| Fig. 14 | Force check-in and success dialog | https://image.woshipm.com/wp-files/2018/10/aVB8QLvGZjzTxGbVpmC7.png |
+| Fig. 15 | Force categories and category destinations | https://image.woshipm.com/wp-files/2018/10/Jy4zbKG97rtEITCfksjS.png |
+| Fig. 16 | Invitation code and follow-official-account task | https://image.woshipm.com/wp-files/2018/10/Q46DJneg8QEV4V9o6ENP.png |
+| Fig. 17 | My, wallet, Force record, invitation, data passport, planet base, settings | https://image.woshipm.com/wp-files/2018/10/xnHGvSmbqNyOrSb6Genl.png |
+
+The embedded PRD wireframes are low-fidelity Axure-style specifications. They are authoritative for structure and flows, but they do **not** provide exact final production color values, typography files, or pixel coordinates for every page. Do not invent those values and then claim pixel-perfect provenance.
+
+### 1.2 Supporting historical context — not a competing shell specification
+
+The 2018-07-17 report about NetEase Planet 1.3.0 says that Force tasks, Black Diamond activities, and Planet benefits were promoted to important Home positions:
+https://news.ikanchai.com/2018/0717/224290.shtml
+
+This is historical context only. It does not override the V1.6.0 PRD page wireframes.
+
+### 1.3 Conflicting visual evidence — do not mix
+
+A separate 2018 image composite shows a four-item bottom navigation with a dedicated “玩转黑钻” destination and a dark/purple Black Diamond activities screen:
+https://image.woshipm.com/wp-files/2018/10/HhRbQVojaZC1O8IsF6RT.jpeg
+
+The V1.6.0 PRD's own functional map and page wireframes show **three primary tabs: 首页 / 原力任务 / 我的**. The four-tab composite is retained as a secondary reference for the Black Diamond activity/shop area, but must not be mixed into the V1.6.0 primary navigation without a separately approved version decision.
+
+A later 2021-era screenshot with a giant purple planet is a different visual generation and is **not** the Home reference for this contract. In particular, the giant 3D planet must not be used to justify the current oversized PlanetOrb home composition.
+
+### 1.4 Source-derived implementation rule
+
+When sources disagree:
+1. V1.6.0 PRD screenshots and written behavior win for the three primary sections and their flows.
+2. Supporting screenshots may only fill visual details for the screen they actually depict.
+3. Unknown details remain marked as unknown; no speculative UI is allowed to masquerade as a reference match.
+
+---
+
+## 2. Product-to-product mapping
+
+BrightGlobe is not a blockchain wallet and must not copy the original product's sensitive or misleading asset claims. Map the interface concepts while preserving the page hierarchy and visual grammar:
+
+| NetEase Planet concept | BrightGlobe equivalent |
+|---|---|
+| 黑钻 | Community Points (internal, non-cash platform reward units) |
+| 原力 | Contribution Power |
+| 原力任务 | Contribution missions |
+| 黑钻记录 | Points record |
+| 原力记录 | Contribution Power record |
+| 邀请好友 / 邀请码 | Invite friends / invitation code |
+| 数据护照 | Contribution profile / data passport |
+| 星球基地 | BrightGlobe community base |
+| 黑钻活动 / 权益 | Community activities / member benefits |
+
+Never represent Community Points as cash, deposits, crypto tokens, securities, investment balances, or guaranteed returns. Contribution Power is not a spendable balance.
+
+---
+
+## 3. Global application shell
+
+### 3.1 Primary navigation — three tabs
+
+The V1.6.0 reference shell has exactly three persistent bottom destinations:
+
+1. 首页
+2. 原力任务
+3. 我的
+
+Use a white/light bottom bar, three large monochrome glyphs, compact labels, and a clear active state. Do not use the previously implemented dark-violet four-tab bar for this V1.6.0 contract.
+
+The Black Diamond activities / benefits experience is reached through Home activity entries and related navigation, not by silently adding a fourth persistent tab.
+
+### 3.2 Global visual grammar
+
+- Main surfaces: white, with thin neutral separators and low-contrast outlines.
+- Content density: compact and information-led, not a spacious SaaS dashboard.
+- Rows: full-width, tightly stacked, thin horizontal separators.
+- Cards: only where shown in the reference; modest radius and restrained border treatment.
+- Icons: monochrome solid or simple glyph icons matching the black pictograms in the Force categories and bottom navigation. No colorful emoji in place of reference icons.
+- Avoid invented gradients, oversized cards, decorative brand headers, oversized labels, ornamental starfields, and 3D hero illustrations unless a source screenshot explicitly shows them.
+- Reference wireframes are portrait iPhone screens. The visual regression viewport is **375 × 667 CSS px**, with the status/system safe area preserved. Also verify a 390 × 844 viewport for responsive behavior.
+- Use a consistent native status bar / safe-area treatment. The page content begins below the system status area; bottom navigation stays fixed while page content scrolls.
+
+### 3.3 Global interaction patterns
+
+Implement the patterns specified in the PRD:
+- Center dialog: centered white rounded rectangle above a dim scrim; close/action dismisses it.
+- Bottom sheet: slides from the bottom; tapping an option or the scrim dismisses it.
+- Toast: temporary bottom message prefixed with the BrightGlobe brand in preview mode; disappears after a short interval.
+- Navigation: tap the explicit entry and navigate to the referenced page; preserve a back affordance on secondary pages.
+- Network failure state: show a concise error and refresh action when a screen cannot load.
+- Logged-out behavior: Home actions show a login prompt; Force and My protected actions route to the login/signup flow.
+
+The local preview must not pretend that a real account, reward, or remote task has been completed. Mock data and preview-only actions must be labeled as such.
+
+---
+
+## 4. Binding page specifications
+
+### 4.1 Login / signup flow
+
+Reference: Fig. 11.
+
+Screens:
+- Phone + SMS verification entry.
+- Nickname + optional invitation code.
+- Identity-information step in the historical PRD.
+- Help / FAQ.
+
+Behavior:
+- Login and registration share the phone verification entry.
+- Validate the phone number before enabling SMS request.
+- Countdown state after requesting a code.
+- Successful existing-user verification returns to Home.
+- New-user flow asks for nickname and optional invitation code, then continues to its next registration step.
+- Help opens the FAQ page.
+
+BrightGlobe implementation constraint: do not collect government identity numbers or sensitive identity information merely to imitate the old flow. Keep identity verification out of the demo unless a separately reviewed legal/product requirement exists. Reproduce the public-facing layout and safe portions of the interaction only.
+
+### 4.2 Home — 首页
+
+Reference: Fig. 12 and Fig. 13.
+
+Required order and hierarchy:
+1. Top compact capsule statistics: Community Points and Contribution Power.
+2. Narrow announcement row directly underneath, with a leading speaker/notice icon and trailing “more” affordance.
+3. Main Black Diamond / daily reward production area. The PRD reference shows a mostly white open canvas with a small gem/production state and several floating reward values; it is not a full-screen 3D planet scene.
+4. Home activity / benefits entries near the bottom, shown as compact horizontal tiles/cards. Support horizontal scrolling where the source shows multiple items.
+5. Fixed three-item bottom navigation.
+
+Required actions:
+- Points capsule -> Points record page.
+- Contribution Power capsule -> Contribution Power record page.
+- Announcement -> Planet/community announcement list/detail.
+- Daily reward area -> show login prompt when logged out; for a signed-in preview, expose a local claim state only.
+- Individual activity entries -> corresponding activity, category, or benefit page.
+
+Do not add a fabricated giant hero panel, unrelated statistic strip, large English branding, or a separate custom planet illustration.
+
+### 4.3 Points record — 黑钻记录
+
+Reference: lower-left screen in Fig. 12.
+
+Required structure:
+- Secondary-page top bar with back and close affordances as shown in the wireframe.
+- Page title.
+- Total points value.
+- Frozen/unavailable points line where applicable.
+- Brief points explanation.
+- Activity/credit-debit record list with timestamp and amount.
+- Exchange or benefit entry only if the BrightGlobe product actually supports it.
+
+BrightGlobe should show internal community points and preview ledger rows, with a visible “preview data” disclosure.
+
+### 4.4 Contribution Power record — 原力记录
+
+Reference: lower-middle screen in Fig. 12; also My flow in Fig. 17.
+
+Required structure:
+- Secondary-page top bar.
+- Effective Contribution Power value and ineffective/expired value.
+- Explanation of Contribution Power.
+- Two record states/tabs: effective records and ineffective records.
+- Record rows show task/source, value, and effective time or status.
+
+Do not substitute a generic points wallet page for this screen.
+
+### 4.5 Announcement — 星球公告
+
+Reference: lower-right screen in Fig. 12.
+
+Required structure:
+- Secondary-page header and title.
+- Vertical list of announcement cards.
+- Each item includes title/summary, date, and a “view now” affordance.
+- Tap opens the announcement detail.
+
+### 4.6 Discover Force — 原力任务
+
+Reference: Fig. 14, Fig. 15, Fig. 16.
+
+Required order:
+1. Compact title “发现原力” and circular help affordance.
+2. One-line explanatory text.
+3. Current Contribution Power value and outlined sign-in button on the same summary row.
+4. “原力分类” with five evenly distributed black pictogram categories:
+   - 购物
+   - 游戏
+   - 娱乐
+   - 来钱 / finance
+   - 健康
+5. “推荐原力” compact task list.
+
+Each recommended task row must contain:
+- Left monochrome category/task glyph.
+- Main title and smaller explanatory line.
+- Right-aligned reward value/period.
+- Small circular info affordance.
+
+Source-listed examples include shopping, games, reading, news, invitation, and following an official account. BrightGlobe may substitute its own equivalent tasks, but must not invent a visually different component structure.
+
+Sign-in flow:
+- Tap sign-in -> centered dialog with scrim.
+- Dialog includes success/reward headline, small illustration placeholder, explanatory copy, close affordance, and two actions (“不用了” / “去探索”).
+- In BrightGlobe preview, clearly disclose that it does not credit a real account.
+
+Category destinations:
+- Shopping -> shopping task list.
+- Games -> game task list.
+- Entertainment -> second-level categories for reading, comics, news, and music.
+- Finance -> finance task list or explicitly unavailable state.
+- Wellness -> wellness task list or explicitly unavailable state.
+
+### 4.7 Invitation code — 邀请码
+
+Reference: Fig. 16 and Fig. 17.
+
+Required structure:
+- Secondary-page header.
+- Invitation code title and code value.
+- Copy affordance.
+- QR-code placeholder / share affordance.
+- Invitation rules panel.
+- Invitation count and remaining/used invitation summary where the BrightGlobe model supports it.
+
+### 4.8 My — 我的
+
+Reference: first screen in Fig. 17.
+
+Required order:
+1. Compact identity row: nickname and member/resident type; avatar/profile affordance on right.
+2. “我的资产” section.
+3. Two asset entries/cards: points/wallet and data passport.
+4. Full-width menu rows:
+   - 我的原力值 / Contribution Power
+   - 我的邀请码 / Invitation code
+   - 星球基地 / Community base
+   - 设置 / Settings
+5. Fixed three-item bottom navigation with My active.
+
+Do not turn this into a large profile hero, a marketing card grid, or a language-settings dashboard. BrightGlobe language selection may exist within Settings, not as a prominent block inserted into the My page.
+
+### 4.9 Wallet / points account
+
+Reference: second screen in Fig. 17.
+
+Required structure:
+- Secondary-page header.
+- Total balance.
+- Manage account/wallet affordance, mapped to a BrightGlobe points-account explanation rather than cryptocurrency key management.
+- Transaction history rows with time, description, and amount.
+
+Do not implement blockchain address or private-key display/export. The BrightGlobe product has no such wallet, and reproducing private-key flows would be both semantically wrong and unsafe.
+
+### 4.10 Contribution profile / data passport
+
+Reference: lower-left page in Fig. 17.
+
+Required structure:
+- Secondary-page header and title.
+- Profile/basic-information panel.
+- Data/participation analysis visualization block.
+- Usage / contribution breakdown.
+- Benefits/rights section.
+
+Use only safe, explicitly available BrightGlobe profile/participation data. Do not fabricate personal data collection or imply third-party sale of user data.
+
+### 4.11 Community base — 星球基地
+
+Reference: lower-middle page in Fig. 17.
+
+Required structure:
+- Secondary-page header.
+- Centered title and one-line community positioning.
+- Summary metrics panel.
+- Personal value/contribution panel.
+- Core technology / ecosystem section with stacked items.
+- Development plan section with structured content.
+
+### 4.12 Settings — 账户设置
+
+Reference: lower-right page in Fig. 17.
+
+Required structure:
+- Secondary-page header and title.
+- Compact account-information rows.
+- Support / feedback / privacy entry rows.
+- Logout action at the bottom with a confirmation dialog.
+
+Language switching may be placed here as a BrightGlobe-specific setting.
+
+### 4.13 Category and activity detail pages
+
+Reference: Fig. 13 and Fig. 15.
+
+Implement only the categories actually shown by the PRD:
+- Shopping
+- Games
+- Entertainment second-level categories (reading, comics, news, music)
+- Finance
+- Wellness
+- Home activity detail / benefit detail
+
+Content may be BrightGlobe-native, but the list/detail hierarchy and navigation must follow the source. Detailed task-provider pages are not fully documented by the PRD; mark their internals as product-specific instead of inventing a fake NetEase match.
+
+---
+
+## 5. Existing implementation elements explicitly rejected
+
+The following existing implementation choices do not conform and must be removed or replaced:
+- Oversized purple 3D PlanetOrb occupying a large Home panel.
+- Four-item persistent dark-violet bottom tab bar.
+- A fourth “Play Points” primary tab in the V1.6.0 shell.
+- Emoji in place of the original monochrome task/category icons.
+- Tall colorful marketing-card layout where the wireframe specifies compact tiles and rows.
+- My page language selector displayed as a major section instead of Settings.
+- Alert popups used as substitutes for documented detail pages.
+- Self-created 2021-style visual elements being cited as 2018 V1.6.0 one-to-one replication.
+
+Components such as PlanetOrb may remain in the codebase only if unused by the V1.6.0 product screens; they must not affect these contracted pages.
+
+---
+
+## 6. Acceptance and visual regression
+
+A page is not complete merely because TypeScript, Expo Doctor, or web export passes.
+
+For each contracted screen:
+1. Run the app at 375 × 667 CSS px.
+2. Capture a screenshot with the same system/status-area assumptions.
+3. Compare it side-by-side with the corresponding PRD screenshot.
+4. Check major region order, vertical proportions, margins, row heights, typography hierarchy, icon silhouette, border positions, bottom navigation, and dialog geometry.
+5. Record any source ambiguity instead of silently inventing a value.
+6. Repeat at 390 × 844 to ensure the page scales without changing the reference hierarchy.
+
+Required review matrix:
+- Home (logged out, production/growing, reward claimed)
+- Points record
+- Contribution Power record (effective / ineffective)
+- Announcement list/detail
+- Discover Force (default / selected category / sign-in dialog)
+- Invitation code
+- My
+- Points account / records
+- Contribution profile
+- Community base
+- Settings / logout confirmation
+- Category list and activity detail
+
+Release gate:
+- All documented screens exist.
+- All documented taps navigate to the correct destination or show the correct dialog.
+- The primary shell matches the three-tab V1.6.0 wireframe.
+- No unreferenced large hero art or decorative layout remains.
+- Side-by-side screenshot review is attached to the change or recorded in the PR.
+- Only then may the UI be described as reference-matched. If source data is insufficient for pixel-level matching, state “structure/interaction matched; exact production skin not verifiable” rather than “100% pixel-perfect”.
+
+---
+
+## 7. References and evidence log
+
+1. PRD article (source document, page structure and behavior): https://www.woshipm.com/pd/1478379.html
+2. PRD V1.6.0 cover image (version and authoring date): https://image.woshipm.com/wp-files/2018/10/QroLauOiFi6U30oXPjB6.png
+3. PRD functional structure map: https://image.woshipm.com/wp-files/2018/10/dyis6yKxvMCWSsHe0Kt2.png
+4. PRD information structure map: https://image.woshipm.com/wp-files/2018/10/XZXCIdWVeHhg1s1X9Isl.png
+5. PRD Home wireframe: https://image.woshipm.com/wp-files/2018/10/WloTKKM6kTz2nVfwapX7.png
+6. PRD Force-task wireframe: https://image.woshipm.com/wp-files/2018/10/aVB8QLvGZjzTxGbVpmC7.png
+7. PRD Force-category destinations: https://image.woshipm.com/wp-files/2018/10/Jy4zbKG97rtEITCfksjS.png
+8. PRD My and account-related wireframes: https://image.woshipm.com/wp-files/2018/10/xnHGvSmbqNyOrSb6Genl.png
+9. 2018-07-17 Planet 1.3.0 release report (historical context only): https://news.ikanchai.com/2018/0717/224290.shtml
+10. Separate four-tab / Black Diamond visual composite (conflicting secondary reference): https://image.woshipm.com/wp-files/2018/10/HhRbQVojaZC1O8IsF6RT.jpeg

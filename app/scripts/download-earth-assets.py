@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Download and optimize CC BY 4.0 Earth textures for the BrightGlobe app."""
+"""Download, validate, and optimize CC BY 4.0 Earth textures."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "assets" / "earth"
 MAX_SIZE = (2048, 1024)
+LOW_SIZE = (1024, 512)
 LICENSE = "https://creativecommons.org/licenses/by/4.0/"
 
 SOURCES = {
@@ -27,10 +28,7 @@ SOURCES = {
 
 
 def download(url: str) -> bytes:
-    request = Request(
-        url,
-        headers={"User-Agent": "BrightGlobe-EarthAssetBuilder/1.0"},
-    )
+    request = Request(url, headers={"User-Agent": "BrightGlobe-EarthAssetBuilder/1.0"})
     with urlopen(request, timeout=60) as response:
         content_type = response.headers.get("Content-Type", "")
         payload = response.read()
@@ -40,10 +38,27 @@ def download(url: str) -> bytes:
     if len(payload) < 20_000 or len(payload) > 20_000_000:
         raise RuntimeError(f"Unexpected image size from {url}: {len(payload)} bytes")
 
-    # Let Pillow verify the actual file signature; the pack includes both JPEG and TIFF.
     with Image.open(io.BytesIO(payload)) as image:
         image.verify()
     return payload
+
+
+def convert_image(name: str, source: Image.Image) -> Image.Image:
+    if name in {"earth-clouds.jpg", "earth-specular.jpg"}:
+        return source.convert("L")
+    # Keep RGB channels for the tangent-space normal map.
+    return source.convert("RGB")
+
+
+def save_jpeg(image: Image.Image, path: Path, quality: int) -> dict[str, object]:
+    image.save(path, "JPEG", quality=quality, optimize=True, progressive=False)
+    data = path.read_bytes()
+    return {
+        "file": path.name,
+        "dimensions": list(image.size),
+        "bytes": len(data),
+        "sha256": hashlib.sha256(data).hexdigest(),
+    }
 
 
 def process(name: str, url: str) -> dict[str, object]:
@@ -51,49 +66,47 @@ def process(name: str, url: str) -> dict[str, object]:
 
     with Image.open(io.BytesIO(payload)) as source:
         original_size = list(source.size)
-        if source.width / source.height < 1.98 or source.width / source.height > 2.02:
+        if not 1.98 <= source.width / source.height <= 2.02:
             raise RuntimeError(f"{name} is not a 2:1 equirectangular texture: {source.size}")
 
         source.thumbnail(MAX_SIZE, Image.Resampling.LANCZOS)
+        optimized = convert_image(name, source)
+        high_quality = 95 if name == "earth-normal.jpg" else 92
+        standard = save_jpeg(optimized, OUTPUT / name, high_quality)
 
-        if name in {"earth-clouds.jpg", "earth-specular.jpg"}:
-            image = source.convert("L")
-            quality = 90
-        else:
-            # Preserve RGB channels for the tangent-space normal map.
-            image = source.convert("RGB")
-            quality = 95 if name == "earth-normal.jpg" else 92
+        low_image = optimized.copy()
+        low_image.thumbnail(LOW_SIZE, Image.Resampling.LANCZOS)
+        low_name = f"{Path(name).stem}-1k.jpg"
+        low = save_jpeg(low_image, OUTPUT / low_name, 88)
 
-        destination = OUTPUT / name
-        image.save(destination, "JPEG", quality=quality, optimize=True, progressive=False)
-
-    data = destination.read_bytes()
     return {
-        "file": name,
         "source": url,
         "original_dimensions": original_size,
-        "bundled_dimensions": list(image.size),
-        "bytes": len(data),
-        "sha256": hashlib.sha256(data).hexdigest(),
         "license": "CC BY 4.0",
-        "color_space": "linear-data" if name in {"earth-normal.jpg", "earth-specular.jpg", "earth-clouds.jpg"} else "sRGB",
+        "color_space": "sRGB" if name in {"earth-day.jpg", "earth-night.jpg"} else "linear-data",
+        "standard": standard,
+        "low_memory": low,
     }
 
 
 def main() -> None:
     OUTPUT.mkdir(parents=True, exist_ok=True)
+    assets = {name: process(name, url) for name, url in SOURCES.items()}
     manifest = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "license": "CC BY 4.0",
         "license_url": LICENSE,
         "attribution": "Solar System Scope — https://www.solarsystemscope.com/textures/",
-        "changes": "Downloaded from the official Solar System Scope texture pack; resized to at most 2048x1024 and optimized as JPEG for BrightGlobe. Normal map RGB channels are preserved; cloud and specular maps are converted to grayscale.",
-        "assets": [process(name, url) for name, url in SOURCES.items()],
+        "changes": (
+            "Standard images are optimized to 2048x1024; low-memory copies are "
+            "resized to 1024x512. The normal map retains RGB channels; cloud and "
+            "specular masks are converted to grayscale."
+        ),
+        "assets": assets,
     }
 
     (OUTPUT / "ASSET_MANIFEST.json").write_text(
-        json.dumps(manifest, indent=2) + "\n",
-        encoding="utf-8",
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
     )
     (OUTPUT / "ATTRIBUTION.md").write_text(
         "# Earth texture attribution\n\n"
@@ -103,9 +116,9 @@ def main() -> None:
         "These textures are distributed under the "
         "[Creative Commons Attribution 4.0 International license](https://creativecommons.org/licenses/by/4.0/). "
         "They may be adapted and used commercially with attribution.\n\n"
-        "Changes made for BrightGlobe: images are resized to a maximum of 2048×1024; "
-        "the normal map retains its RGB channels; cloud and specular maps are converted "
-        "to grayscale; all images are optimized as JPEGs.\n",
+        "Changes made for BrightGlobe: standard textures are optimized to 2048×1024; "
+        "low-memory copies are resized to 1024×512; the normal map retains RGB "
+        "channels; cloud and specular masks are grayscale.\n",
         encoding="utf-8",
     )
     print(json.dumps(manifest, indent=2))

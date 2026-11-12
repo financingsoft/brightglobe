@@ -322,7 +322,6 @@ export function EarthBackground({ active = true }: { active?: boolean }) {
         <Canvas
           style={styles.canvas}
           camera={{ position: [0, 0, 4.35], fov: 39 }}
-          dpr={1.15}
           frameloop={shouldAnimate ? "always" : "never"}
           gl={{
             alpha: false,
@@ -346,7 +345,7 @@ const styles = StyleSheet.create({
     flex: 1
   },
   errorFallback: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "#061426",
     alignItems: "center",
     justifyContent: "center"

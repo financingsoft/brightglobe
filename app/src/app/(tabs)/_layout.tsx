@@ -67,6 +67,7 @@ export default function TabLayout() {
       <Tabs.Screen name="points-record" options={{ href: null, tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="force-record" options={{ href: null, tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="announcements" options={{ href: null, tabBarStyle: { display: "none" } }} />
+      <Tabs.Screen name="official-follow" options={{ href: null, tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="announcement-detail" options={{ href: null, tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="invite" options={{ href: null, tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="passport" options={{ href: null, tabBarStyle: { display: "none" } }} />

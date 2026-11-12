@@ -83,6 +83,12 @@ export default function HomeScreen() {
           <Text style={styles.activityDescription}>{t("阅读优质内容", "Read quality content")}</Text>
           <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
         </Pressable>
+        <Pressable onPress={() => router.push("/rewards")} style={styles.activityTile}>
+          <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>◇</Text></View>
+          <Text style={styles.activityTitle}>{t("黑钻活动", "Point activities")}</Text>
+          <Text style={styles.activityDescription}>{t("活动与星球集市", "Events and marketplace")}</Text>
+          <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
+        </Pressable>
       </ScrollView>
 
       <Modal visible={showLoginPrompt} transparent animationType="fade" onRequestClose={() => setShowLoginPrompt(false)}>

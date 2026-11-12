@@ -326,9 +326,9 @@ function LoadingEarth() {
 }
 
 function EarthScene({ active }: { active: boolean }) {
-  const textureSources = EARTH_QUALITY === "low"
-    ? TEXTURES.lowMemory
-    : TEXTURES.standard;
+  const textureSources: string[] = EARTH_QUALITY === "low"
+    ? [...TEXTURES.lowMemory]
+    : [...TEXTURES.standard];
   const [dayMap, nightMap, cloudMap, normalMap, specularMap] = useLoader(
     THREE.TextureLoader,
     textureSources

@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { AppScreen } from "@/components/ui";
 import { useI18n } from "@/i18n/locale";
@@ -19,7 +19,7 @@ export default function InviteScreen() {
       <View style={styles.codeCard}>
         <Text style={styles.label}>{t("我的邀请码", "My invitation code")}</Text>
         <Text style={styles.code}>BG828</Text>
-        <Pressable onPress={() => {}} style={styles.copyButton}><Text style={styles.copyText}>{t("复制邀请码", "Copy code")}</Text></Pressable>
+        <Pressable onPress={() => Alert.alert(t("复制邀请码", "Copy invitation code"), t("当前预览环境尚未接入剪贴板服务，请手动复制 BG828。", "Clipboard access is not connected in this preview. Please copy BG828 manually."))} style={styles.copyButton}><Text style={styles.copyText}>{t("复制邀请码", "Copy code")}</Text></Pressable>
         <View style={styles.qrBox}>
           <View style={styles.qrPattern}><Text style={styles.qrText}>▦ ▣ ▦</Text><Text style={styles.qrText}>▣ ▦ ▣</Text><Text style={styles.qrText}>▦ ▣ ▦</Text></View>
         </View>

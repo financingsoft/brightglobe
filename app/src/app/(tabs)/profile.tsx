@@ -34,14 +34,14 @@ export default function ProfileScreen() {
       </View>
       <View style={styles.assetRow}>
         <Pressable onPress={() => openProtected("/wallet")} style={styles.assetTile}>
-          <Text style={styles.assetLabel}>{t("我的积分", "My points")}</Text>
+          <Text style={styles.assetLabel}>{t("我的钱包", "My wallet")}</Text>
           <Text style={styles.assetValue}>122.90001</Text>
           <Text style={styles.assetHint}>{t("查看记录", "View records")} ›</Text>
         </Pressable>
         <Pressable onPress={() => openProtected("/passport")} style={styles.assetTile}>
-          <Text style={styles.assetLabel}>{t("贡献档案", "Contribution profile")}</Text>
+          <Text style={styles.assetLabel}>{t("数据护照", "Data passport")}</Text>
           <Text style={styles.assetValue}>{t("已建立", "Created")}</Text>
-          <Text style={styles.assetHint}>{t("查看档案", "View profile")} ›</Text>
+          <Text style={styles.assetHint}>{t("查看护照", "View passport")} ›</Text>
         </Pressable>
       </View>
 

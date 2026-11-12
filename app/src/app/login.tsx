@@ -86,7 +86,7 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#FFFFFF" },
-  page: { flex: 1, paddingHorizontal: 24 },
+  page: { flex: 1, width: "100%", maxWidth: 390, alignSelf: "center", paddingHorizontal: 24 },
   header: { height: 42, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   back: { width: 36 }, backGlyph: { color: "#333333", fontSize: 28, lineHeight: 31 },
   headerTitle: { color: "#333333", fontSize: 13, fontWeight: "600" },

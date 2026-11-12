@@ -57,9 +57,10 @@ export default function TasksScreen() {
 
   const missions: Mission[] = [
     { id: "shop", category: "shopping", title: t("精选商城每日浏览", "Browse the featured marketplace"), hint: t("发现每日精选内容", "Discover daily highlights"), reward: t("每日1~5原力", "1–5 Power daily") },
-    { id: "game", category: "games", title: t("参与社区小游戏", "Play a community mini game"), hint: t("完成游戏互动任务", "Complete a game activity"), reward: t("每日3~8原力", "3–8 Power daily") },
-    { id: "comics", category: "entertainment", title: t("浏览精选漫画", "Browse selected comics"), hint: t("发现优质漫画内容", "Discover selected comics"), reward: t("每日1~3原力", "1–3 Power daily") },
-    { id: "news", category: "entertainment", title: t("查看新闻", "Read the news"), hint: t("了解最新时事动态", "Keep up with current topics"), reward: t("每日1~3原力", "1–3 Power daily") },
+    { id: "game", category: "games", title: t("凡人飞仙游戏", "Play the featured game"), hint: t("参与游戏获得原力", "Earn Power through game participation"), reward: t("每日3~8原力", "3–8 Power daily") },
+    { id: "reading", category: "entertainment", title: t("小说阅读", "Read novels"), hint: t("浏览精选小说内容", "Explore selected novels"), reward: t("每日1~3原力", "1–3 Power daily") },
+    { id: "comics", category: "entertainment", title: t("看漫画", "Read comics"), hint: t("发现优质漫画内容", "Discover selected comics"), reward: t("每日1~3原力", "1–3 Power daily") },
+    { id: "news", category: "entertainment", title: t("看新闻", "Read the news"), hint: t("了解最新时事动态", "Keep up with current topics"), reward: t("每日1~3原力", "1–3 Power daily") },
     { id: "invite", category: "shopping", title: t("邀请好友", "Invite friends"), hint: t("+10原力/被邀请人", "+10 Power per accepted invite"), reward: t("+10~500原力", "+10–500 Power") },
     { id: "follow", category: "entertainment", title: t("关注官方公众号", "Follow the official account"), hint: t("关注并获取最新动态", "Follow official updates"), reward: t("+2原力", "+2 Power") }
   ];
@@ -94,9 +95,10 @@ export default function TasksScreen() {
         </Pressable>
       </View>
 
-      <View style={styles.categoryPanel}>
+      <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{t("原力分类", "Power categories")}</Text>
-        <View style={styles.categoryGrid}>
+      </View>
+      <View style={styles.categoryGrid}>
         {categories.map((item) => (
           <Pressable
             key={item.id}
@@ -108,7 +110,6 @@ export default function TasksScreen() {
             <Text style={styles.categoryLabel}>{item.label}</Text>
           </Pressable>
         ))}
-        </View>
       </View>
 
       <View style={styles.sectionHeader}>
@@ -184,13 +185,13 @@ export default function TasksScreen() {
 
 const styles = StyleSheet.create({
   pageHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 27, marginTop: 1 },
-  pageTitle: { color: "#333333", fontSize: 17, fontWeight: "700" },
+  pageTitle: { color: "#333333", fontSize: 14, fontWeight: "700" },
   helpButton: { width: 17, height: 17, borderRadius: 9, borderWidth: 1, borderColor: "#999999", alignItems: "center", justifyContent: "center" },
   helpGlyph: { color: "#777777", fontSize: 11, fontWeight: "700", lineHeight: 13 },
   pageSubtitle: { color: "#999999", fontSize: 9, marginTop: 1, marginBottom: 9 },
   forceSummary: { minHeight: 53, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "#DCDCDC", paddingBottom: 8 },
   forceValueLine: { flexDirection: "row", alignItems: "baseline", gap: 5 },
-  forceValue: { color: "#333333", fontSize: 21, fontWeight: "700" },
+  forceValue: { color: "#333333", fontSize: 18, fontWeight: "700" },
   forceUnit: { color: "#777777", fontSize: 9 },
   checkinButton: { minWidth: 54, height: 27, borderRadius: 15, borderWidth: 1, borderColor: "#A9A9A9", alignItems: "center", justifyContent: "center", paddingHorizontal: 12 },
   checkinButtonDone: { borderColor: "#CCCCCC", backgroundColor: "#F5F5F5" },
@@ -198,8 +199,7 @@ const styles = StyleSheet.create({
   checkinTextDone: { color: "#999999" },
   sectionHeader: { minHeight: 28, justifyContent: "center", borderBottomWidth: 1, borderColor: "#E0E0E0" },
   sectionTitle: { color: "#444444", fontSize: 10, fontWeight: "700" },
-  categoryPanel: { borderWidth: 1, borderColor: "#DCDCDC", borderRadius: 8, paddingHorizontal: 9, paddingTop: 9, paddingBottom: 6, marginTop: 3 },
-  categoryGrid: { flexDirection: "row", justifyContent: "space-between", paddingTop: 9 },
+  categoryGrid: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, borderBottomWidth: 1, borderColor: "#E0E0E0" },
   categoryItem: { flex: 1, alignItems: "center", justifyContent: "center", gap: 3, minHeight: 44 },
   cart: { width: 25, height: 23, alignItems: "flex-end", justifyContent: "flex-start" },
   cartHandle: { position: "absolute", top: 2, left: 1, width: 7, height: 2, backgroundColor: "#171717", transform: [{ rotate: "25deg" }] },
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
   smallGlyph: { transform: [{ scale: 0.78 }] },
   categoryLabel: { color: "#444444", fontSize: 8 },
   missionList: { borderTopWidth: 1, borderColor: "#E0E0E0" },
-  missionRow: { minHeight: 51, flexDirection: "row", alignItems: "center", gap: 6 },
+  missionRow: { minHeight: 37, flexDirection: "row", alignItems: "center", gap: 6 },
   missionDivider: { borderBottomWidth: 1, borderColor: "#E8E8E8" },
   missionIcon: { width: 27, alignItems: "center", justifyContent: "center" },
 

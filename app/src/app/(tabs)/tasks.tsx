@@ -159,7 +159,15 @@ export default function TasksScreen() {
               <MissionGlyph id={mission.id} />
             </View>
             <Pressable
-              onPress={() => requireLogin(() => router.push({ pathname: "/activity", params: { title: mission.title } }))}
+              onPress={() => requireLogin(() => {
+                if (mission.id === "invite") {
+                  router.push("/invite");
+                } else if (mission.id === "follow") {
+                  router.push({ pathname: "/activity", params: { title: mission.title } });
+                } else {
+                  router.push({ pathname: "/category", params: { category: mission.id } });
+                }
+              })}
               style={styles.missionCopy}
             >
               <Text style={styles.missionTitle}>{mission.title}</Text>

@@ -11,6 +11,7 @@ export default function HomeScreen() {
   const { isAuthenticated } = useAuth();
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [claimed, setClaimed] = useState(false);
+  const [pointsTotal, setPointsTotal] = useState(122.90001);
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
 
   const requireHomeLogin = (action: () => void) => {
@@ -22,6 +23,12 @@ export default function HomeScreen() {
   };
   const openPoints = () => requireHomeLogin(() => router.push("/points-record"));
   const openForce = () => requireHomeLogin(() => router.push("/force-record"));
+  const claimDailyReward = () => requireHomeLogin(() => {
+    if (!claimed) {
+      setClaimed(true);
+      setPointsTotal((current) => Number((current + 0.05904).toFixed(5)));
+    }
+  });
   const activityItems = [
     { key: "shopping", category: "shopping", title: t("淘宝黑钻店", "Taobao rewards"), description: t("淘宝919免单日", "Taobao shopping event") },
     { key: "games", category: "games", title: t("游戏黑钻店", "Game rewards"), description: t("凡人飞仙传", "Featured game") }
@@ -33,7 +40,7 @@ export default function HomeScreen() {
         <Pressable accessibilityRole="button" onPress={openPoints} style={styles.statPill}>
           <Text style={styles.statIcon}>♢</Text>
           <Text style={styles.statLabel}>{t("黑钻", "Points")}</Text>
-          <Text style={styles.statValue}>122.90001</Text>
+          <Text style={styles.statValue}>{pointsTotal.toFixed(5)}</Text>
           <Text style={styles.statArrow}>›</Text>
         </Pressable>
         <Pressable accessibilityRole="button" onPress={openForce} style={styles.statPill}>
@@ -67,7 +74,7 @@ export default function HomeScreen() {
         ) : (
           <Pressable
             accessibilityRole="button"
-            onPress={() => requireHomeLogin(() => setClaimed(true))}
+            onPress={claimDailyReward}
             style={styles.growthEntry}
           >
             <Text style={styles.growthGem}>♢</Text>

@@ -76,7 +76,6 @@ export function PlanetOrb() {
       <Canvas
         style={styles.canvas}
         camera={{ position: [0, 0, 3.45], fov: 42 }}
-        dpr={[1, 1.5]}
         gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
       >
         <color attach="background" args={["#1B0D2A"]} />

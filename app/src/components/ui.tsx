@@ -275,7 +275,8 @@ export function PrimaryButton({
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.canvas },
-  scroll: { flex: 1 },
+  // Keep the app at a phone-sized reference width on tablet and desktop previews.
+  scroll: { flex: 1, width: "100%", maxWidth: 430, alignSelf: "center" },
   content: {
     paddingHorizontal: 12,
     paddingTop: 5,

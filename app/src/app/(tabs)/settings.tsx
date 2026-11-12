@@ -8,6 +8,7 @@ import { useAuth } from "@/auth/session";
 export default function SettingsScreen() {
   const { locale, setLocale } = useI18n();
   const router = useRouter();
+  const { signOutPreviewAccount } = useAuth();
   const [showLogout, setShowLogout] = useState(false);
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
   const changeLocale = (value: Locale) => setLocale(value);

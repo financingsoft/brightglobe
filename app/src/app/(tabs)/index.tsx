@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     borderColor: "#382054"
   },
   planetOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: "space-between",
     padding: 18
   },

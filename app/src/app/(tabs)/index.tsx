@@ -61,7 +61,7 @@ export default function HomeScreen() {
 
       <View style={styles.productionStage}>
         <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "treasure" } }))} style={styles.mineEntry}>
-          <View style={styles.mineOrb} />
+          <View style={styles.mineOrb}><View style={styles.mineGem} /></View>
           <Text style={styles.mineLabel}>{t("黑钻挖宝", "Point mining")}</Text>
         </Pressable>
 
@@ -141,6 +141,7 @@ const styles = StyleSheet.create({
   productionStage: { height: 316, position: "relative", backgroundColor: "#FFFFFF" },
   mineEntry: { position: "absolute", right: 27, top: 44, width: 68, alignItems: "center" },
   mineOrb: { width: 50, height: 50, borderRadius: 25, backgroundColor: "#777777", alignItems: "center", justifyContent: "center" },
+  mineGem: { width: 11, height: 11, borderWidth: 2, borderColor: "#FFFFFF", transform: [{ rotate: "45deg" }] },
   
   mineLabel: { color: "#333333", fontSize: 10, marginTop: 5 },
   growthEntry: { position: "absolute", top: 122, left: "40%", alignItems: "center", justifyContent: "center" },

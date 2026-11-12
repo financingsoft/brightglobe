@@ -1,154 +1,125 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import {
-  AppScreen,
-  PageHeading,
-  Panel,
-  Pill,
-  SectionHeading
-} from "@/components/ui";
+import { AppScreen } from "@/components/ui";
 import { colors } from "@/constants/theme";
 import { useI18n } from "@/i18n/locale";
 
 export default function RewardsScreen() {
-  const { locale, t } = useI18n();
+  const { locale } = useI18n();
   const router = useRouter();
+  const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
 
-  const benefits = [
-    { icon: "✦", title: t("rewardOne"), description: t("rewardOneDesc"), tag: locale === "zh-CN" ? "创作者" : "CREATOR" },
-    { icon: "▤", title: t("rewardTwo"), description: t("rewardTwoDesc"), tag: locale === "zh-CN" ? "学习" : "LEARNING" },
-    { icon: "◉", title: t("rewardThree"), description: t("rewardThreeDesc"), tag: locale === "zh-CN" ? "活动" : "EVENTS" }
+  const events = [
+    { icon: "🏆", title: t("社区贡献榜", "Community ranking"), note: t("贡献力挑战赛", "Contribution challenge"), color: "#F6C9D5" },
+    { icon: "💎", title: t("积分寻宝", "Point treasure hunt"), note: t("发现隐藏奖励", "Find hidden rewards"), color: "#D4C5F6" },
+    { icon: "🎁", title: t("幸运抽奖", "Lucky draw"), note: t("参与活动赢好礼", "Join and win rewards"), color: "#F5D7A9" }
+  ];
+
+  const goods = [
+    { icon: "🎧", title: t("精选会员礼包", "Member bundle"), note: t("社区专属权益", "Community privileges"), points: "800" },
+    { icon: "📚", title: t("学习资源合集", "Learning collection"), note: t("精选内容与课程", "Curated content and courses"), points: "500" },
+    { icon: "🎮", title: t("游戏体验礼包", "Game experience pack"), note: t("社区合作内容", "Community partner content"), points: "1,200" },
+    { icon: "🎟", title: t("线上活动门票", "Online event pass"), note: t("优先参与活动", "Priority event access"), points: "600" }
   ];
 
   return (
     <AppScreen>
-      <PageHeading
-        eyebrow={t("navBenefits").toUpperCase()}
-        title={t("rewardsTitle")}
-        subtitle={t("rewardsSubtitle")}
-      />
-
-      <View style={styles.eventHero}>
-        <View style={styles.eventGlowOne} />
-        <View style={styles.eventGlowTwo} />
-        <View style={styles.eventBadge}>
-          <Text style={styles.eventBadgeText}>{t("eventOfWeek")}</Text>
-        </View>
-        <Text style={styles.eventKicker}>BRIGHTGLOBE COMMUNITY</Text>
-        <Text style={styles.eventTitle}>{t("eventTitle")}</Text>
-        <Text style={styles.eventDescription}>{t("eventDescription")}</Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push("/tasks")}
-          style={({ pressed }) => [styles.eventButton, pressed && styles.pressed]}
-        >
-          <Text style={styles.eventButtonText}>{t("joinEvent")}  ›</Text>
+      <View style={styles.pageHeader}>
+        <Text style={styles.pageTitle}>{t("玩转积分", "Play with points")}</Text>
+        <Pressable onPress={() => router.push("/wallet")} style={styles.pointsButton}>
+          <Text style={styles.pointsButtonIcon}>◆</Text>
+          <Text style={styles.pointsButtonText}>2,480</Text>
         </Pressable>
-        <Text style={styles.eventPlanet}>✧</Text>
       </View>
 
-      <View style={styles.balanceStrip}>
-        <View style={styles.balanceIcon}>
-          <Text style={styles.balanceGlyph}>◆</Text>
+      <Pressable onPress={() => router.push("/tasks")} style={styles.promoBanner}>
+        <View style={styles.promoGlow} />
+        <Text style={styles.promoKicker}>BRIGHTGLOBE SPECIAL</Text>
+        <Text style={styles.promoTitle}>{t("让每一份贡献都有回馈", "Rewards for every contribution")}</Text>
+        <Text style={styles.promoText}>{t("参与活动、积累积分，解锁社区专属体验", "Join activities, earn points, and unlock community experiences")}</Text>
+        <View style={styles.promoButton}>
+          <Text style={styles.promoButtonText}>{t("立即参与", "Explore now")} ›</Text>
         </View>
-        <View style={styles.balanceCopy}>
-          <Text style={styles.balanceLabel}>{t("availableBalance")}</Text>
-          <Text style={styles.balanceValue}>2,480 <Text style={styles.balanceUnit}>{t("points")}</Text></Text>
-        </View>
-        <Pill label={t("preview")} tone="gold" />
+        <Text style={styles.promoGem}>◆</Text>
+      </Pressable>
+
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>{t("积分活动", "Point activities")}</Text>
+        <Text style={styles.sectionMore}>{t("更多", "More")} ›</Text>
       </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.eventRail}>
+        {events.map((event) => (
+          <Pressable key={event.title} onPress={() => router.push("/tasks")} style={styles.eventCard}>
+            <View style={[styles.eventArt, { backgroundColor: event.color }]}>
+              <Text style={styles.eventArtIcon}>{event.icon}</Text>
+            </View>
+            <Text style={styles.eventTitle}>{event.title}</Text>
+            <Text style={styles.eventNote}>{event.note}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
 
-      <SectionHeading title={t("marketplace")} action={t("viewAll")} />
-      <View style={styles.categoryGrid}>
-        <View style={styles.categoryCard}>
-          <Text style={styles.categoryIcon}>♧</Text>
-          <Text style={styles.categoryTitle}>{locale === "zh-CN" ? "精选内容" : "Curated content"}</Text>
-          <Text style={styles.categorySub}>{locale === "zh-CN" ? "发现优质资源" : "Discover resources"}</Text>
-        </View>
-        <View style={[styles.categoryCard, styles.categoryCardGold]}>
-          <Text style={styles.categoryIcon}>♢</Text>
-          <Text style={styles.categoryTitle}>{locale === "zh-CN" ? "会员权益" : "Member perks"}</Text>
-          <Text style={styles.categorySub}>{locale === "zh-CN" ? "社区专属福利" : "Community benefits"}</Text>
-        </View>
-        <View style={[styles.categoryCard, styles.categoryCardBlue]}>
-          <Text style={styles.categoryIcon}>◎</Text>
-          <Text style={styles.categoryTitle}>{locale === "zh-CN" ? "线上活动" : "Online events"}</Text>
-          <Text style={styles.categorySub}>{locale === "zh-CN" ? "与全球成员交流" : "Meet the community"}</Text>
-        </View>
-        <View style={[styles.categoryCard, styles.categoryCardTeal]}>
-          <Text style={styles.categoryIcon}>✎</Text>
-          <Text style={styles.categoryTitle}>{locale === "zh-CN" ? "创作者计划" : "Creator program"}</Text>
-          <Text style={styles.categorySub}>{locale === "zh-CN" ? "展示你的作品" : "Showcase your work"}</Text>
-        </View>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>{t("星球集市", "Planet marketplace")}</Text>
+        <Text style={styles.sectionMore}>{t("全部", "All")} ›</Text>
       </View>
-
-      <SectionHeading title={t("rewardFeatured")} />
-      {benefits.map((benefit, index) => (
-        <Panel key={benefit.title} style={styles.benefitCard}>
-          <View style={[styles.benefitArt, index === 1 && styles.benefitArtGold, index === 2 && styles.benefitArtTeal]}>
-            <Text style={styles.benefitGlyph}>{benefit.icon}</Text>
-          </View>
-          <View style={styles.benefitCopy}>
-            <Text style={styles.benefitTag}>{benefit.tag}</Text>
-            <Text style={styles.benefitTitle}>{benefit.title}</Text>
-            <Text style={styles.benefitDescription}>{benefit.description}</Text>
-            <Text style={styles.benefitCost}>{index === 0 ? "500" : index === 1 ? "800" : "1,200"} {t("points")}</Text>
-          </View>
-          <Text style={styles.benefitArrow}>›</Text>
-        </Panel>
-      ))}
-
-      <Text style={styles.disclaimer}>{t("redemptionNote")}</Text>
+      <View style={styles.marketGrid}>
+        {goods.map((good, index) => (
+          <Pressable
+            key={good.title}
+            onPress={() => router.push("/wallet")}
+            style={styles.goodsCard}
+          >
+            <View style={[styles.goodsArt, index % 2 === 0 ? styles.goodsArtPurple : styles.goodsArtGold]}>
+              <Text style={styles.goodsIcon}>{good.icon}</Text>
+            </View>
+            <Text style={styles.goodsTitle}>{good.title}</Text>
+            <Text style={styles.goodsNote}>{good.note}</Text>
+            <View style={styles.goodsBottom}>
+              <Text style={styles.goodsPoints}>{good.points} {t("积分", "pts")}</Text>
+              <Text style={styles.goodsArrow}>›</Text>
+            </View>
+          </Pressable>
+        ))}
+      </View>
+      <Text style={styles.disclaimer}>{t("当前展示为预览权益，具体兑换规则以 BrightGlobe 平台正式规则为准。", "Preview catalog. Eligibility and redemption depend on BrightGlobe platform rules.")}</Text>
     </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  eventHero: {
-    minHeight: 215,
-    borderRadius: 23,
-    padding: 19,
-    overflow: "hidden",
-    backgroundColor: "#261040",
-    justifyContent: "space-between",
-    gap: 9
-  },
-  eventGlowOne: { position: "absolute", width: 170, height: 170, borderRadius: 85, backgroundColor: "rgba(155,75,224,0.32)", right: -25, top: -44 },
-  eventGlowTwo: { position: "absolute", width: 115, height: 115, borderRadius: 58, backgroundColor: "rgba(218,72,191,0.18)", right: 85, bottom: -50 },
-  eventBadge: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.13)" },
-  eventBadgeText: { color: "#F3DFFF", fontSize: 9, fontWeight: "900" },
-  eventKicker: { color: "#C9A2F3", fontSize: 8, fontWeight: "900", letterSpacing: 1.5, marginTop: 4 },
-  eventTitle: { color: "#FFFFFF", fontSize: 22, lineHeight: 27, fontWeight: "900", maxWidth: "76%" },
-  eventDescription: { color: "#DAC7EA", fontSize: 10, lineHeight: 15, maxWidth: "80%" },
-  eventButton: { alignSelf: "flex-start", backgroundColor: "#FFFFFF", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginTop: 4 },
-  eventButtonText: { color: colors.brandDark, fontSize: 10, fontWeight: "900" },
-  eventPlanet: { position: "absolute", right: 18, top: 67, color: "rgba(239,210,255,0.72)", fontSize: 58 },
-  balanceStrip: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: colors.border, borderRadius: 17, minHeight: 79, padding: 13, flexDirection: "row", alignItems: "center", gap: 11 },
-  balanceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: colors.goldSoft, alignItems: "center", justifyContent: "center" },
-  balanceGlyph: { color: "#B97916", fontSize: 18, fontWeight: "900" },
-  balanceCopy: { flex: 1, gap: 3 },
-  balanceLabel: { color: colors.inkMuted, fontSize: 9, fontWeight: "800" },
-  balanceValue: { color: colors.ink, fontSize: 19, fontWeight: "900" },
-  balanceUnit: { color: colors.inkMuted, fontSize: 9, fontWeight: "700" },
-  categoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
-  categoryCard: { width: "48%", flexGrow: 1, flexBasis: "45%", minHeight: 111, borderRadius: 17, backgroundColor: "#F1E8FF", padding: 13, justifyContent: "space-between" },
-  categoryCardGold: { backgroundColor: "#FFF3DD" },
-  categoryCardBlue: { backgroundColor: "#E9F0FF" },
-  categoryCardTeal: { backgroundColor: "#E3F7F2" },
-  categoryIcon: { color: colors.brand, fontSize: 23, fontWeight: "900" },
-  categoryTitle: { color: colors.ink, fontSize: 11, fontWeight: "900" },
-  categorySub: { color: colors.inkMuted, fontSize: 8, fontWeight: "600" },
-  benefitCard: { flexDirection: "row", alignItems: "center", gap: 12, padding: 13 },
-  benefitArt: { width: 62, height: 66, borderRadius: 15, backgroundColor: colors.brandSoft, alignItems: "center", justifyContent: "center" },
-  benefitArtGold: { backgroundColor: colors.goldSoft },
-  benefitArtTeal: { backgroundColor: colors.tealSoft },
-  benefitGlyph: { color: colors.brand, fontSize: 25, fontWeight: "900" },
-  benefitCopy: { flex: 1, gap: 4 },
-  benefitTag: { color: colors.brand, fontSize: 7, fontWeight: "900", letterSpacing: 1 },
-  benefitTitle: { color: colors.ink, fontSize: 11, fontWeight: "900" },
-  benefitDescription: { color: colors.inkMuted, fontSize: 9, lineHeight: 14 },
-  benefitCost: { color: "#A66A15", fontSize: 9, fontWeight: "900", marginTop: 2 },
-  benefitArrow: { color: "#B5A8C2", fontSize: 24 },
-  disclaimer: { color: colors.inkMuted, fontSize: 9, lineHeight: 15 },
-  pressed: { opacity: 0.82 }
+  pageHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  pageTitle: { color: "#302A37", fontSize: 20, fontWeight: "900" },
+  pointsButton: { minHeight: 30, borderRadius: 18, borderWidth: 1, borderColor: "#E6DDED", backgroundColor: "#FBF8FD", paddingHorizontal: 11, flexDirection: "row", alignItems: "center", gap: 5 },
+  pointsButtonIcon: { color: colors.brand, fontSize: 10 },
+  pointsButtonText: { color: "#6B3F8A", fontSize: 10, fontWeight: "900" },
+  promoBanner: { height: 154, borderRadius: 12, backgroundColor: "#351447", overflow: "hidden", padding: 15, justifyContent: "space-between" },
+  promoGlow: { position: "absolute", right: -15, top: -50, width: 185, height: 185, borderRadius: 92, backgroundColor: "rgba(183,89,224,0.25)" },
+  promoKicker: { color: "#D1A9E5", fontSize: 7, fontWeight: "900", letterSpacing: 1.5 },
+  promoTitle: { color: "#FFFFFF", fontSize: 17, fontWeight: "900", maxWidth: "78%" },
+  promoText: { color: "#D9C3E7", fontSize: 9, lineHeight: 14, maxWidth: "78%" },
+  promoButton: { backgroundColor: "#FFFFFF", borderRadius: 13, alignSelf: "flex-start", paddingHorizontal: 12, paddingVertical: 6 },
+  promoButtonText: { color: "#643184", fontSize: 8, fontWeight: "900" },
+  promoGem: { position: "absolute", right: 21, top: 48, color: "rgba(241,207,255,0.25)", fontSize: 67 },
+  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 1 },
+  sectionTitle: { color: "#413A47", fontSize: 13, fontWeight: "900" },
+  sectionMore: { color: colors.brand, fontSize: 9, fontWeight: "800" },
+  eventRail: { gap: 9, paddingBottom: 1 },
+  eventCard: { width: 112, borderWidth: 1, borderColor: "#EEE9F1", borderRadius: 9, overflow: "hidden", backgroundColor: "#FFFFFF", paddingBottom: 9 },
+  eventArt: { height: 76, alignItems: "center", justifyContent: "center" },
+  eventArtIcon: { fontSize: 31 },
+  eventTitle: { color: "#39333F", fontSize: 9, fontWeight: "900", marginHorizontal: 8, marginTop: 8 },
+  eventNote: { color: "#9B95A0", fontSize: 7, marginHorizontal: 8, marginTop: 3 },
+  marketGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
+  goodsCard: { width: "48%", flexGrow: 1, flexBasis: "45%", borderWidth: 1, borderColor: "#ECE8EF", borderRadius: 9, overflow: "hidden", backgroundColor: "#FFFFFF", paddingBottom: 8 },
+  goodsArt: { height: 98, alignItems: "center", justifyContent: "center" },
+  goodsArtPurple: { backgroundColor: "#F1E7F8" },
+  goodsArtGold: { backgroundColor: "#FFF2DB" },
+  goodsIcon: { fontSize: 37 },
+  goodsTitle: { color: "#36313B", fontSize: 10, fontWeight: "900", marginHorizontal: 9, marginTop: 8 },
+  goodsNote: { color: "#9D97A2", fontSize: 8, marginHorizontal: 9, marginTop: 3 },
+  goodsBottom: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginHorizontal: 9, marginTop: 8 },
+  goodsPoints: { color: colors.brand, fontSize: 9, fontWeight: "900" },
+  goodsArrow: { color: "#AAA3AF", fontSize: 18 },
+  disclaimer: { color: "#AAA4AF", fontSize: 8, lineHeight: 13, marginTop: -4 }
 });

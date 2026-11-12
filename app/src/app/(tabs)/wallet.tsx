@@ -1,7 +1,6 @@
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { AppScreen } from "@/components/ui";
-import { colors } from "@/constants/theme";
 import { useI18n } from "@/i18n/locale";
 
 export default function WalletScreen() {
@@ -22,8 +21,10 @@ export default function WalletScreen() {
         <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.backButton}>
           <Text style={styles.backGlyph}>‹</Text>
         </Pressable>
-        <Text style={styles.headerTitle}>{t("积分记录", "Points record")}</Text>
-        <View style={styles.headerSpacer} />
+        <Text style={styles.headerTitle}>{t("黑钻记录", "Points record")}</Text>
+        <Pressable accessibilityRole="button" onPress={() => router.replace("/(tabs)")} style={styles.closeButton}>
+          <Text style={styles.closeGlyph}>×</Text>
+        </Pressable>
       </View>
 
       <View style={styles.totalBlock}>
@@ -69,8 +70,14 @@ const styles = StyleSheet.create({
   backButton: { width: 28, height: 30, justifyContent: "center" },
   backGlyph: { color: "#4A434F", fontSize: 29, lineHeight: 30 },
   headerTitle: { color: "#3A3540", fontSize: 15, fontWeight: "800" },
-  headerSpacer: { width: 28 },
-  totalBlock: { paddingVertical: 23, borderBottomWidth: 1, borderColor: "#EEEAF1", gap: 5 },
+  closeButton: { width: 28, height: 30, alignItems: "flex-end", justifyContent: "center" },
+  closeGlyph: { color: "#333333", fontSize: 24, lineHeight: 27 },
+  totalBlock: { paddingVertical: 14, borderBottomWidth: 1, borderColor: "#DDDDDD", gap: 5 },
+  totalHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  exchange: { color: "#555555", fontSize: 8 },
+  frozenRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderTopWidth: 1, borderColor: "#EEEEEE", paddingTop: 7, marginTop: 4 },
+  frozenLabel: { color: "#888888", fontSize: 8 },
+  frozenValue: { color: "#777777", fontSize: 8 },
   totalLabel: { color: "#89828E", fontSize: 10 },
   totalValue: { color: "#35303A", fontSize: 31, fontWeight: "900" },
   totalHint: { color: "#A59EAA", fontSize: 8 },
@@ -85,7 +92,7 @@ const styles = StyleSheet.create({
   recordCopy: { gap: 4 },
   recordTitle: { color: "#4C4652", fontSize: 10, fontWeight: "700" },
   recordTime: { color: "#A8A2AD", fontSize: 8 },
-  recordValue: { color: colors.success, fontSize: 11, fontWeight: "900" },
+  recordValue: { color: "#777777", fontSize: 11, fontWeight: "700" },
   recordValueUsed: { color: "#8F8994" },
   previewNote: { color: "#B4AEB9", fontSize: 8, lineHeight: 13, marginTop: 15 }
 });

@@ -42,7 +42,22 @@ https://news.ikanchai.com/2018/0717/224290.shtml
 
 This is historical context only. It does not override the V1.6.0 PRD page wireframes.
 
-### 1.3 Conflicting visual evidence — do not mix
+### 1.3 Supporting 2018 production-skin evidence
+
+The PRD is the authority for screen order, page hierarchy, and interactions. Its Axure-style drawings are not the final visual skin. Two additional 2018 screenshots provide limited production-skin evidence:
+
+- Force task screen screenshot from the 2018 NetEase Planet task article:
+  https://image.woshipm.com/wp-files/2018/03/F7K5tusDLJ06kqxK9D4S.jpg
+  Article: https://www.woshipm.com/blockchain/977909.html
+  It shows a purple campaign banner, a white task surface, purple line icons, segmented “regular / exclusive” task sections, and visible completion / reward states.
+- October 2018 app screenshot composite:
+  https://image.woshipm.com/wp-files/2018/10/HhRbQVojaZC1O8IsF6RT.jpeg
+  Article: https://www.woshipm.com/marketing/1545522.html
+  It shows the production app's purple-black activity surface, event cards, and marketplace cards.
+
+Use these screenshots only to recover visual-skin cues for the relevant task / activity page families (purple accent, dark activity surface, real image/cover areas, compact card treatment). They do not override V1.6.0 PRD navigation or the individual page wireframe order. In particular, the October composite has a four-tab navigation that conflicts with the V1.6.0 PRD shell.
+
+### 1.4 Conflicting visual evidence — do not mix
 
 A separate 2018 image composite shows a four-item bottom navigation with a dedicated “玩转黑钻” destination and a dark/purple Black Diamond activities screen:
 https://image.woshipm.com/wp-files/2018/10/HhRbQVojaZC1O8IsF6RT.jpeg
@@ -51,7 +66,7 @@ The V1.6.0 PRD's own functional map and page wireframes show **three primary tab
 
 A later 2021-era screenshot with a giant purple planet is a different visual generation and is **not** the Home reference for this contract. In particular, the giant 3D planet must not be used to justify the current oversized PlanetOrb home composition.
 
-### 1.4 Source-derived implementation rule
+### 1.5 Source-derived implementation rule
 
 When sources disagree:
 1. V1.6.0 PRD screenshots and written behavior win for the three primary sections and their flows.
@@ -96,7 +111,8 @@ The Black Diamond activities / benefits experience is reached through Home activ
 
 ### 3.2 Global visual grammar
 
-- Main surfaces: white, with thin neutral separators and low-contrast outlines.
+- Main task/content surfaces: white, with thin neutral separators and low-contrast outlines.
+- Use restrained purple accents where supported by the 2018 production task screenshot; the Black Diamond activity page may use the dark violet surface shown by the October 2018 production screenshot. Do not apply the dark violet surface to every page.
 - Content density: compact and information-led, not a spacious SaaS dashboard.
 - Rows: full-width, tightly stacked, thin horizontal separators.
 - Cards: only where shown in the reference; modest radius and restrained border treatment.
@@ -460,4 +476,5 @@ Release gate:
 7. PRD Force-category destinations: https://image.woshipm.com/wp-files/2018/10/Jy4zbKG97rtEITCfksjS.png
 8. PRD My and account-related wireframes: https://image.woshipm.com/wp-files/2018/10/xnHGvSmbqNyOrSb6Genl.png
 9. 2018-07-17 Planet 1.3.0 release report (historical context only): https://news.ikanchai.com/2018/0717/224290.shtml
-10. Separate four-tab / Black Diamond visual composite (conflicting secondary reference): https://image.woshipm.com/wp-files/2018/10/HhRbQVojaZC1O8IsF6RT.jpeg
+10. 2018 Force task production screenshot (skin reference for task surfaces only): https://image.woshipm.com/wp-files/2018/03/F7K5tusDLJ06kqxK9D4S.jpg
+11. 2018 Black Diamond activities production screenshot (dark activity skin only; four-tab shell is non-binding): https://image.woshipm.com/wp-files/2018/10/HhRbQVojaZC1O8IsF6RT.jpeg

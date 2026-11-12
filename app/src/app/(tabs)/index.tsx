@@ -69,10 +69,6 @@ export default function HomeScreen() {
         </Pressable>
       </View>
 
-      <View style={styles.activityHeader}>
-        <Text style={styles.activityHeading}>{t("周边", "Discover")}</Text>
-        <Text style={styles.activityHint}>{t("左右滑动查看更多", "Swipe to see more")}</Text>
-      </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.activityRail}>
         <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "shopping" } }))} style={styles.activityTile}>
           <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>◎</Text></View>
@@ -148,11 +144,8 @@ const styles = StyleSheet.create({
   smallValue: { color: "#555555", fontSize: 7 },
   growthState: { position: "absolute", left: 0, right: 0, bottom: 15, alignItems: "center", paddingVertical: 7 },
   growthStateText: { color: "#777777", fontSize: 8 },
-  activityHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 2, marginBottom: 6 },
-  activityHeading: { color: "#444444", fontSize: 11, fontWeight: "700" },
-  activityHint: { color: "#AAAAAA", fontSize: 7 },
   activityRail: { gap: 7, paddingBottom: 4 },
-  activityTile: { width: 118, minHeight: 92, backgroundColor: "#F2F2F2", borderRadius: 4, padding: 8, alignItems: "center", justifyContent: "space-between" },
+  activityTile: { width: 118, minHeight: 128, backgroundColor: "#F2F2F2", borderRadius: 4, padding: 8, alignItems: "center", justifyContent: "space-between" },
   activityIconCircle: { width: 27, height: 27, borderRadius: 14, borderWidth: 1, borderColor: "#999999", alignItems: "center", justifyContent: "center" },
   activityGlyph: { color: "#555555", fontSize: 15 },
   activityTitle: { color: "#444444", fontSize: 9, fontWeight: "600", textAlign: "center" },

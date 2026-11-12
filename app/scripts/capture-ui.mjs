@@ -148,7 +148,7 @@ try {
     await page.getByText(label, { exact: true }).click();
     await page.waitForTimeout(200);
     await page.screenshot({ path: resolve(outputRoot, fileName) });
-    await page.getByText("‹", { exact: true }).click();
+    await page.goBack();
     await page.waitForTimeout(180);
   };
 
@@ -171,14 +171,14 @@ try {
     await page.screenshot({ path: resolve(outputRoot, fileName) });
     if (index < entertainmentDestinations.length - 1) {
       // A category detail returns directly to the entertainment gateway.
-      await page.getByText("‹", { exact: true }).click();
+      await page.goBack();
       await page.waitForTimeout(160);
     }
   }
 
-  await page.getByText("‹", { exact: true }).click();
+  await page.goBack();
   await page.waitForTimeout(180);
-  await page.getByText("‹", { exact: true }).click();
+  await page.goBack();
   await page.waitForTimeout(180);
   await captureCategoryFromForce("来钱", "finance-unavailable-375x667.png");
   await captureCategoryFromForce("健康", "wellness-unavailable-375x667.png");
@@ -186,14 +186,14 @@ try {
   await page.getByText("邀请好友", { exact: true }).click();
   await page.waitForTimeout(180);
   await page.screenshot({ path: resolve(outputRoot, "invite-from-force-375x667.png") });
-  await page.getByText("‹", { exact: true }).click();
+  await page.goBack();
   await page.waitForTimeout(180);
   await page.getByText("关注微信公众号", { exact: true }).click();
   await page.waitForTimeout(180);
   await page.screenshot({ path: resolve(outputRoot, "official-follow-activity-375x667.png") });
 
   // Follow the Home announcement entry to its list and detail screens.
-  await page.getByText("‹", { exact: true }).click();
+  await page.goBack();
   await page.waitForTimeout(180);
   await page.getByText("首页", { exact: true }).last().click();
   await page.waitForTimeout(180);

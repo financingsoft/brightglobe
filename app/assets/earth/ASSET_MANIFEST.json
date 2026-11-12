@@ -1,0 +1,54 @@
+{
+  "generated_at": "2026-11-12T14:37:40.098160+00:00",
+  "license": "CC BY 4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "attribution": "Solar System Scope \u2014 https://www.solarsystemscope.com/textures/",
+  "changes": "Downloaded from the official Solar System Scope texture pack; resized to at most 2048x1024 and optimized as JPEG for BrightGlobe.",
+  "assets": [
+    {
+      "file": "earth-day.jpg",
+      "source": "https://play.solarsystemscope.com/textures/download/2k_earth_daymap.jpg",
+      "original_dimensions": [
+        2048,
+        1024
+      ],
+      "bundled_dimensions": [
+        2048,
+        1024
+      ],
+      "bytes": 308624,
+      "sha256": "dbcfd55ee9a96472be2e8e2aeae439af6d84a44ed3332ccf72d21c07ab79a30e",
+      "license": "CC BY 4.0"
+    },
+    {
+      "file": "earth-night.jpg",
+      "source": "https://play.solarsystemscope.com/textures/download/2k_earth_nightmap.jpg",
+      "original_dimensions": [
+        2048,
+        1024
+      ],
+      "bundled_dimensions": [
+        2048,
+        1024
+      ],
+      "bytes": 170657,
+      "sha256": "a0bcc19c3397455501f2116e998729451889c6e18765dbf9678794ac98351086",
+      "license": "CC BY 4.0"
+    },
+    {
+      "file": "earth-clouds.jpg",
+      "source": "https://play.solarsystemscope.com/textures/download/2k_earth_clouds.jpg",
+      "original_dimensions": [
+        2048,
+        1024
+      ],
+      "bundled_dimensions": [
+        2048,
+        1024
+      ],
+      "bytes": 801558,
+      "sha256": "4f7c12fb43112f1b771c96887f6db77cb69e03c8b5f0df015c89d071beaaa89b",
+      "license": "CC BY 4.0"
+    }
+  ]
+}

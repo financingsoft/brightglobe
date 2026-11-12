@@ -47,7 +47,7 @@ export default function TabLayout() {
         tabBarStyle: {
           height: 60,
           width: "100%",
-          maxWidth: 430,
+          maxWidth: 390,
           alignSelf: "center",
           paddingTop: 3,
           paddingBottom: 3,

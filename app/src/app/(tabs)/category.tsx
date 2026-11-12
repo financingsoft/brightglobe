@@ -16,9 +16,9 @@ function PageHeader({ title, onBack, onClose }: { title: string; onBack: () => v
   );
 }
 
-function WireframeImage({ width, height }: { width: number; height: number }) {
+function WireframeImage({ width, height, cover = false }: { width?: number; height: number; cover?: boolean }) {
   return (
-    <View style={[styles.wireframeImage, { width, height }]}>
+    <View style={[styles.wireframeImage, { height }, width ? { width } : styles.wireframeStretch, cover && styles.wireframeCover]}>
       <View style={{ position: "absolute", top: height * 0.16, right: width * 0.2, width: height * 0.09, height: height * 0.09, borderRadius: height * 0.05, backgroundColor: "#C5C5C5" }} />
       <View style={{ position: "absolute", bottom: -height * 0.08, left: -width * 0.12, width: 0, height: 0, borderLeftWidth: width * 0.34, borderRightWidth: width * 0.34, borderBottomWidth: height * 0.62, borderLeftColor: "transparent", borderRightColor: "transparent", borderBottomColor: "#69B3D5" }} />
       <View style={{ position: "absolute", bottom: -height * 0.1, right: -width * 0.13, width: 0, height: 0, borderLeftWidth: width * 0.38, borderRightWidth: width * 0.38, borderBottomWidth: height * 0.48, borderLeftColor: "transparent", borderRightColor: "transparent", borderBottomColor: "#318FC0" }} />
@@ -70,7 +70,8 @@ export default function CategoryScreen() {
           </Pressable>
         ))}
       </View>
-      <View style={styles.featureBanner}>
+      <View style={styles.featureBanner}
+        <WireframeImage height={111} cover />>
         <Text style={styles.bannerCaption}>{t("精选内容", "FEATURED CONTENT")}</Text>
         <Text style={styles.bannerTitle}>{t("发现值得阅读与分享的内容", "Discover stories worth reading and sharing")}</Text>
         <Text style={styles.bannerSub}>{t("小说 · 漫画 · 资讯 · 音乐", "Reading · Comics · News · Music")}</Text>
@@ -108,7 +109,8 @@ export default function CategoryScreen() {
 
   const renderGames = () => (
     <View style={styles.content}>
-      <View style={styles.gameBanner}>
+      <View style={styles.gameBanner}
+        <WireframeImage height={112} cover />>
         <Text style={styles.bannerCaption}>{t("网易游戏", "NETEASE GAMES")}</Text>
         <Text style={styles.bannerTitle}>{t("发现好玩的游戏", "Discover games to play")}</Text>
         <Text style={styles.bannerSub}>{t("精选游戏与社区互动", "Selected games and community activities")}</Text>
@@ -278,20 +280,22 @@ const styles = StyleSheet.create({
   shopCategoryIcon: { width: 33, height: 33, borderRadius: 17, alignItems: "center", justifyContent: "center" },
   shopCategoryGlyph: { color: "#FFFFFF", fontSize: 17 }, shopCategoryLabel: { color: "#666666", fontSize: 7 },
   wireframeImage: { backgroundColor: "#E9E9E9", overflow: "hidden", position: "relative" },
+  wireframeStretch: { alignSelf: "stretch" },
+  wireframeCover: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
   thumbCool: { backgroundColor: "#E9E9E9" }, thumbWarm: { backgroundColor: "#E9E9E9" },
   sectionHeading: { minHeight: 30, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "#E5E5E5" },
   sectionHeadingText: { color: "#444444", fontSize: 9, fontWeight: "700" }, sectionAction: { color: "#888888", fontSize: 7 },
   productRow: { minHeight: 76, flexDirection: "row", alignItems: "center", gap: 9, borderBottomWidth: 1, borderColor: "#EAEAEA", paddingVertical: 6 },
   productThumb: { width: 60, height: 60, alignItems: "center", justifyContent: "center" }, productGlyph: { color: "#FFFFFF", fontSize: 25 },
   productCopy: { flex: 1, gap: 4 }, productTitle: { color: "#444444", fontSize: 9, fontWeight: "700" }, productDescription: { color: "#999999", fontSize: 7 }, productPrice: { color: "#777777", fontSize: 7 },
-  gameBanner: { minHeight: 112, backgroundColor: "#4E9CC0", justifyContent: "center", padding: 13, gap: 5 },
-  bannerCaption: { color: "rgba(255,255,255,0.82)", fontSize: 6, letterSpacing: 1, fontWeight: "700" }, bannerTitle: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" }, bannerSub: { color: "rgba(255,255,255,0.85)", fontSize: 7 },
+  gameBanner: { minHeight: 112, backgroundColor: "#E9E9E9", justifyContent: "center", padding: 13, gap: 5, position: "relative", overflow: "hidden" },
+  bannerCaption: { color: "#777777", fontSize: 6, letterSpacing: 1, fontWeight: "700" }, bannerTitle: { color: "#444444", fontSize: 13, fontWeight: "700" }, bannerSub: { color: "#777777", fontSize: 7 },
   gameRow: { minHeight: 82, flexDirection: "row", alignItems: "center", gap: 8, borderBottomWidth: 1, borderColor: "#E8E8E8" },
   gameThumb: { width: 54, height: 54, borderRadius: 9, justifyContent: "center", alignItems: "center" }, gameGlyph: { color: "#FFFFFF", fontSize: 23 },
   gameCopy: { flex: 1, gap: 4 }, gameMeta: { color: "#A0A0A0", fontSize: 7 }, openButton: { borderWidth: 1, borderColor: "#AAAAAA", borderRadius: 13, paddingHorizontal: 11, paddingVertical: 5, color: "#666666", fontSize: 7 },
-  featureBanner: { minHeight: 111, backgroundColor: "#5F9FC0", justifyContent: "center", padding: 13, gap: 5, marginVertical: 6 },
-  bannerAction: { alignSelf: "flex-start", marginTop: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.85)", borderRadius: 12, paddingHorizontal: 9, paddingVertical: 4 },
-  bannerActionText: { color: "#FFFFFF", fontSize: 7 },
+  featureBanner: { minHeight: 111, backgroundColor: "#E9E9E9", justifyContent: "center", padding: 13, gap: 5, marginVertical: 6, position: "relative", overflow: "hidden" },
+  bannerAction: { alignSelf: "flex-start", marginTop: 3, borderWidth: 1, borderColor: "#888888", borderRadius: 12, paddingHorizontal: 9, paddingVertical: 4 },
+  bannerActionText: { color: "#666666", fontSize: 7 },
   entertainmentGrid: { flexDirection: "row", borderBottomWidth: 1, borderColor: "#E5E5E5", paddingVertical: 9 },
   entertainmentItem: { flex: 1, alignItems: "center", gap: 5 },
   entertainmentIcon: { width: 33, height: 33, borderRadius: 17, backgroundColor: "#F0F0F0", justifyContent: "center", alignItems: "center" }, entertainmentGlyph: { color: "#555555", fontSize: 17 }, entertainmentLabel: { color: "#666666", fontSize: 7 },

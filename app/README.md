@@ -44,9 +44,9 @@ Copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_API_BASE_URL` to the Br
 
 ## Earth background
 
-The Home contribution card now includes a decorative rotating 3D Earth scene. The first implementation uses day imagery, NASA Black Marble night lights, a moving cloud map, an atmospheric rim, and a star field. Texture URLs are temporary development sources; approved textures must be bundled locally before production so the scene works offline and does not depend on external image hosts. See [Earth Background Implementation](../docs/EARTH_BACKGROUND_IMPLEMENTATION.md) for the staged plan and validation requirements.
+The Home contribution card includes a decorative rotating 3D Earth scene. Day surface, night city lights, and cloud maps are bundled locally in `assets/earth/`; the scene works offline and does not request third-party image URLs at runtime. The textures are provided by Solar System Scope under CC BY 4.0; keep `assets/earth/ATTRIBUTION.md` when redistributing. See [Earth Background Implementation](../docs/EARTH_BACKGROUND_IMPLEMENTATION.md) for provenance, phases, and validation requirements.
 
-The TypeScript 7.1 compiler is currently a beta. Keep the version explicit until typecheck and EAS builds have been validated.
+The TypeScript 7.1 compiler is currently a beta. Keep the version explicit until the GitHub Actions typecheck/Expo Doctor workflow and EAS builds have passed.
 
 ## Current scope
 

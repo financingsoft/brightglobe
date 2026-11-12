@@ -1,6 +1,6 @@
 import { chromium } from "playwright";
 import { createServer } from "node:http";
-import { mkdir, readFile, stat } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { extname, resolve } from "node:path";
 
 const appRoot = resolve(process.env.BRIGHTGLOBE_WEB_EXPORT_DIR ?? resolve(process.cwd(), "dist"));
@@ -8,6 +8,14 @@ const outputRoot = resolve(process.cwd(), "artifacts/ui-baseline");
 const basePath = "/brightglobe";
 const port = 4173;
 
+const referenceImages = [
+  ["reference-home-fig12.png", "https://image.woshipm.com/wp-files/2018/10/WloTKKM6kTz2nVfwapX7.png"],
+  ["reference-home-activity-fig13.png", "https://image.woshipm.com/wp-files/2018/10/VKZ3IfsoETBUvC4Bekrm.png"],
+  ["reference-force-checkin-fig14.png", "https://image.woshipm.com/wp-files/2018/10/aVB8QLvGZjzTxGbVpmC7.png"],
+  ["reference-force-categories-fig15.png", "https://image.woshipm.com/wp-files/2018/10/Jy4zbKG97rtEITCfksjS.png"],
+  ["reference-my-fig17.png", "https://image.woshipm.com/wp-files/2018/10/xnHGvSmbqNyOrSb6Genl.png"],
+  ["reference-activity-skin-2018.jpg", "https://image.woshipm.com/wp-files/2018/10/HhRbQVojaZC1O8IsF6RT.jpeg"]
+];
 await mkdir(outputRoot, { recursive: true });
 
 const mimeTypes = {
@@ -103,6 +111,27 @@ try {
   if (consoleErrors.length > 0) {
     throw new Error(`Browser runtime errors:\n${consoleErrors.join("\n")}`);
   }
+
+  for (const [fileName, url] of referenceImages) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      await writeFile(resolve(outputRoot, fileName), Buffer.from(await response.arrayBuffer()));
+    } catch (error) {
+      console.warn(`Reference image not downloaded: ${fileName}: ${String(error)}`);
+    }
+  }
+
+  const sourceNotes = [
+    "# NetEase Planet V1.6 visual references",
+    "",
+    "The home, discover-force, and my files are screenshots captured from the BrightGlobe preview.",
+    "The reference files are source wireframes / historical visual references, not pixel-to-pixel production screenshots.",
+    "",
+    ...referenceImages.map(([name, url]) => `- ${name}: ${url}`),
+    ""
+  ].join("\n");
+  await writeFile(resolve(outputRoot, "REFERENCE-SOURCES.md"), sourceNotes);
 } finally {
   await browser.close();
   await new Promise((resolveClose) => server.close(resolveClose));

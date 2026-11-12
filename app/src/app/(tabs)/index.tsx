@@ -10,6 +10,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [claimed, setClaimed] = useState(false);
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
 
   const requireHomeLogin = (action: () => void) => {
@@ -55,16 +56,29 @@ export default function HomeScreen() {
           <Text style={styles.mineLabel}>{t("黑钻挖宝", "Point mining")}</Text>
         </Pressable>
 
-        <Pressable onPress={() => setShowLoginPrompt(true)} style={styles.growthEntry}>
-          <Text style={styles.growthGem}>♢</Text>
-          <Text style={styles.growthLabel}>
-            {t("登录后领取", "Sign in to collect")}
-          </Text>
-        </Pressable>
+        {isAuthenticated && claimed ? (
+          <View style={styles.growingValues}>
+            <View style={styles.growingValue}><Text style={styles.smallGem}>♢</Text><Text style={styles.smallValue}>0.05904</Text></View>
+            <View style={styles.growingValue}><Text style={styles.smallGem}>♢</Text><Text style={styles.smallValue}>0.012333</Text></View>
+            <View style={styles.growingValue}><Text style={styles.smallGem}>♢</Text><Text style={styles.smallValue}>0.05939</Text></View>
+          </View>
+        ) : (
+          <Pressable
+            onPress={() => requireHomeLogin(() => setClaimed(true))}
+            style={styles.growthEntry}
+          >
+            <Text style={styles.growthGem}>♢</Text>
+            <Text style={styles.growthLabel}>
+              {isAuthenticated ? t("正在生长中", "Growing") : t("登录后领取", "Sign in to collect")}
+            </Text>
+          </Pressable>
+        )}
 
-        <Pressable onPress={() => setShowLoginPrompt(true)} style={styles.growthState}>
+        <Pressable onPress={() => requireHomeLogin(() => setClaimed(true))} style={styles.growthState}>
           <Text style={styles.growthStateText}>
-            {t("点击黑钻，查看领取状态", "Tap the gem to view its status")}
+            {isAuthenticated
+              ? (claimed ? t("黑钻已生长 · 本地预览", "Points grown · local preview") : t("点击黑钻，查看已生长黑钻", "Tap the gem to reveal grown points"))
+              : t("点击黑钻，查看领取状态", "Tap the gem to view its status")}
           </Text>
         </Pressable>
       </View>
@@ -133,6 +147,10 @@ const styles = StyleSheet.create({
   smallValue: { color: "#555555", fontSize: 7 },
   growthState: { position: "absolute", left: 0, right: 0, bottom: 15, alignItems: "center", paddingVertical: 7 },
   growthStateText: { color: "#777777", fontSize: 8 },
+  growingValues: { position: "absolute", left: 12, right: 12, top: 83, flexDirection: "row", justifyContent: "space-around" },
+  growingValue: { alignItems: "center", gap: 2 },
+  smallGem: { color: "#555555", fontSize: 17 },
+  smallValue: { color: "#555555", fontSize: 7 },
   activityRail: { gap: 7, paddingBottom: 4, alignItems: "flex-start" },
   activityTile: { width: 106, height: 105, backgroundColor: "#F2F2F2", borderRadius: 4, padding: 8, alignItems: "center", justifyContent: "space-between" },
   activityMore: { width: 17, height: 105, alignItems: "center", justifyContent: "center" },

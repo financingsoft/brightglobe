@@ -13,6 +13,7 @@ const referenceImages = [
   ["reference-home-activity-fig13.png", "https://image.woshipm.com/wp-files/2018/10/VKZ3IfsoETBUvC4Bekrm.png"],
   ["reference-force-checkin-fig14.png", "https://image.woshipm.com/wp-files/2018/10/aVB8QLvGZjzTxGbVpmC7.png"],
   ["reference-force-categories-fig15.png", "https://image.woshipm.com/wp-files/2018/10/Jy4zbKG97rtEITCfksjS.png"],
+  ["reference-force-production-2018.jpg", "https://image.woshipm.com/wp-files/2018/03/F7K5tusDLJ06kqxK9D4S.jpg"],
   ["reference-my-fig17.png", "https://image.woshipm.com/wp-files/2018/10/xnHGvSmbqNyOrSb6Genl.png"],
   ["reference-activity-skin-2018.jpg", "https://image.woshipm.com/wp-files/2018/10/HhRbQVojaZC1O8IsF6RT.jpeg"]
 ];
@@ -131,6 +132,16 @@ try {
     await page.waitForTimeout(180);
     await page.screenshot({ path: resolve(outputRoot, fileName) });
   }
+
+  await page.goto(`http://127.0.0.1:${port}${basePath}/force-record`, { waitUntil: "networkidle", timeout: 60000 });
+  await page.getByText("未生效的原力记录", { exact: true }).click();
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: resolve(outputRoot, "force-record-inactive-375x667.png") });
+
+  await page.goto(`http://127.0.0.1:${port}${basePath}/settings`, { waitUntil: "networkidle", timeout: 60000 });
+  await page.getByText("退出登录", { exact: true }).click();
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: resolve(outputRoot, "logout-confirmation-375x667.png") });
 
   // Exercise real in-app navigation for parameterized destinations (no query-string hydration shortcuts).
   await page.goto(`http://127.0.0.1:${port}${basePath}/login`, { waitUntil: "networkidle", timeout: 60000 });

@@ -3,6 +3,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { AppScreen } from "@/components/ui";
 import { useI18n, type Locale } from "@/i18n/locale";
+import { useAuth } from "@/auth/session";
 
 export default function SettingsScreen() {
   const { locale, setLocale } = useI18n();
@@ -41,7 +42,7 @@ export default function SettingsScreen() {
           <Text style={styles.dialogCopy}>{t("当前只是演示页面，不会执行真实账户退出。", "This is a preview; no live account session will be ended.")}</Text>
           <View style={styles.actions}>
             <Pressable onPress={() => setShowLogout(false)} style={styles.dialogButton}><Text style={styles.dialogButtonText}>{t("取消", "Cancel")}</Text></Pressable>
-            <Pressable onPress={() => setShowLogout(false)} style={[styles.dialogButton, styles.dialogPrimary]}><Text style={[styles.dialogButtonText, styles.dialogPrimaryText]}>{t("确定", "Confirm")}</Text></Pressable>
+            <Pressable onPress={() => { setShowLogout(false); signOutPreviewAccount(); router.replace("/(tabs)"); }} style={[styles.dialogButton, styles.dialogPrimary]}><Text style={[styles.dialogButtonText, styles.dialogPrimaryText]}>{t("确定", "Confirm")}</Text></Pressable>
           </View>
         </View></View>
       </Modal>

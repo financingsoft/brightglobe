@@ -7,7 +7,8 @@ The BrightGlobe cross-platform mobile app workspace.
 - Expo SDK 58
 - React Native 0.88 / React 19.3
 - Expo Router with file-based routes
-- TypeScript (strict mode)
+- TypeScript 7.1.0-beta (strict mode; pre-release compiler)
+- React Three Fiber v9 + Three.js for native 3D rendering
 - English and Simplified Chinese UI foundations
 - EAS Build profiles for development, preview, and production
 
@@ -40,6 +41,12 @@ An iOS device build requires Apple signing credentials. EAS can perform the buil
 ## Environment
 
 Copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_API_BASE_URL` to the BrightGlobe API origin. Only public configuration belongs in `EXPO_PUBLIC_*` variables. Never place private API keys, database credentials, or signing secrets in the app bundle.
+
+## Earth background
+
+The Home contribution card now includes a decorative rotating 3D Earth scene. The first implementation uses day imagery, NASA Black Marble night lights, a moving cloud map, an atmospheric rim, and a star field. Texture URLs are temporary development sources; approved textures must be bundled locally before production so the scene works offline and does not depend on external image hosts. See [Earth Background Implementation](../docs/EARTH_BACKGROUND_IMPLEMENTATION.md) for the staged plan and validation requirements.
+
+The TypeScript 7.1 compiler is currently a beta. Keep the version explicit until typecheck and EAS builds have been validated.
 
 ## Current scope
 

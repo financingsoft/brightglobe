@@ -43,3 +43,7 @@ jobs:
       - name: Expo Doctor
         working-directory: app
         run: npx expo-doctor
+
+      - name: Bundle iOS JavaScript and local assets
+        working-directory: app
+        run: npx expo export --platform ios --output-dir /tmp/brightglobe-ios-export

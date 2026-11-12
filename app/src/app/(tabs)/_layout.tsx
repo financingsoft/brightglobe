@@ -36,9 +36,9 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: t("navHome"), tabBarIcon: ({ focused }) => <TabGlyph glyph="⌂" focused={focused} /> }} />
-      <Tabs.Screen name="tasks" options={{ title: t("navTasks"), tabBarIcon: ({ focused }) => <TabGlyph glyph="▤" focused={focused} /> }} />
-      <Tabs.Screen name="rewards" options={{ title: t("navRewards"), tabBarIcon: ({ focused }) => <TabGlyph glyph="◆" focused={focused} /> }} />
-      <Tabs.Screen name="profile" options={{ title: t("navProfile"), tabBarIcon: ({ focused }) => <TabGlyph glyph="♙" focused={focused} /> }} />
+      <Tabs.Screen name="tasks" options={{ title: t("navDiscover"), tabBarIcon: ({ focused }) => <TabGlyph glyph="▤" focused={focused} /> }} />
+      <Tabs.Screen name="rewards" options={{ title: t("navBenefits"), tabBarIcon: ({ focused }) => <TabGlyph glyph="◆" focused={focused} /> }} />
+      <Tabs.Screen name="profile" options={{ title: t("navMe"), tabBarIcon: ({ focused }) => <TabGlyph glyph="♙" focused={focused} /> }} />
       <Tabs.Screen name="wallet" options={{ href: null }} />
     </Tabs>
   );

@@ -22,6 +22,16 @@ export default function HomeScreen() {
   };
   const openPoints = () => requireHomeLogin(() => router.push("/wallet"));
   const openForce = () => requireHomeLogin(() => router.push("/force-record"));
+  const activityItems = [
+    { key: "shopping", category: "shopping", glyph: "▣", title: t("淘宝购物", "Shopping"), description: t("精选购物任务", "Featured offers") },
+    { key: "games", category: "games", glyph: "▤", title: t("游戏中心", "Games"), description: t("游戏任务与活动", "Game missions") },
+    { key: "reading", category: "reading", glyph: "▥", title: t("小说阅读", "Reading"), description: t("精选小说内容", "Selected novels") },
+    { key: "news", category: "news", glyph: "◉", title: t("新闻资讯", "News"), description: t("热点与社区资讯", "News and insights") },
+    { key: "comics", category: "comics", glyph: "▧", title: t("精品漫画", "Comics"), description: t("漫画与连载作品", "Comics and series") },
+    { key: "bidding", category: "bidding", glyph: "◇", title: t("社区竞猜", "Challenges"), description: t("互动挑战活动", "Community challenges") },
+    { key: "treasure", category: "treasure", glyph: "♢", title: t("黑钻挖宝", "Treasure hunt"), description: t("探索活动入口", "Explore activities") },
+    { key: "benefits", type: "rewards" as const, glyph: "✦", title: t("黑钻活动", "Member benefits"), description: t("活动与专属权益", "Events and benefits") }
+  ];
 
   return (
     <AppScreen>
@@ -77,19 +87,30 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.activityRail}>
-        <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "shopping" } }))} style={styles.activityTile}>
-          <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>◎</Text></View>
-          <Text style={styles.activityTitle}>{t("淘宝得黑钻", "Shopping rewards")}</Text>
-          <Text style={styles.activityDescription}>{t("淘宝919年中大促", "Featured shopping event")}</Text>
-          <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
-        </Pressable>
-        <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "games" } }))} style={styles.activityTile}>
-          <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>◉</Text></View>
-          <Text style={styles.activityTitle}>{t("游戏得黑钻", "Game rewards")}</Text>
-          <Text style={styles.activityDescription}>{t("凡人飞仙传", "Featured game")}</Text>
-          <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
-        </Pressable>
-        <View style={styles.activityMore}><Text style={styles.activityMoreGlyph}>···</Text></View>
+        {activityItems.map((item) => (
+          <Pressable
+            key={item.key}
+            accessibilityRole="button"
+            onPress={() => requireHomeLogin(() => {
+              if ("type" in item && item.type === "rewards") {
+                router.push("/rewards");
+              } else if ("category" in item) {
+                router.push({ pathname: "/category", params: { category: item.category } });
+              }
+            })}
+            style={styles.activityTile}
+          >
+            <View style={styles.activityCover}>
+              <View style={styles.activitySun} />
+              <View style={styles.activityMountainBack} />
+              <View style={styles.activityMountainFront} />
+              <Text style={styles.activityCoverGlyph}>{item.glyph}</Text>
+            </View>
+            <Text style={styles.activityTitle} numberOfLines={1}>{item.title}</Text>
+            <Text style={styles.activityDescription} numberOfLines={1}>{item.description}</Text>
+            <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
+          </Pressable>
+        ))}
       </ScrollView>
 
       <Modal visible={showLoginPrompt} transparent animationType="fade" onRequestClose={() => setShowLoginPrompt(false)}>
@@ -142,11 +163,12 @@ const styles = StyleSheet.create({
   smallGem: { color: "#555555", fontSize: 17, lineHeight: 19 },
   smallValue: { color: "#555555", fontSize: 7 },
   activityRail: { gap: 7, paddingBottom: 4, alignItems: "flex-start" },
-  activityTile: { width: 106, height: 105, backgroundColor: "#F2F2F2", borderRadius: 4, padding: 8, alignItems: "center", justifyContent: "space-between" },
-  activityMore: { width: 17, height: 105, alignItems: "center", justifyContent: "center" },
-  activityMoreGlyph: { color: "#999999", fontSize: 20, letterSpacing: 1 },
-  activityIconCircle: { width: 27, height: 27, borderRadius: 14, borderWidth: 1, borderColor: "#999999", alignItems: "center", justifyContent: "center" },
-  activityGlyph: { color: "#555555", fontSize: 15 },
+  activityTile: { width: 106, height: 105, backgroundColor: "#F2F2F2", borderRadius: 3, padding: 6, alignItems: "center", justifyContent: "space-between" },
+  activityCover: { width: "100%", height: 43, backgroundColor: "#E6E9EC", overflow: "hidden", position: "relative", alignItems: "center", justifyContent: "center" },
+  activitySun: { position: "absolute", width: 9, height: 9, borderRadius: 5, backgroundColor: "#C5C5C5", top: 6, right: 13 },
+  activityMountainBack: { position: "absolute", bottom: -12, left: -9, width: 0, height: 0, borderLeftWidth: 34, borderRightWidth: 34, borderBottomWidth: 36, borderLeftColor: "transparent", borderRightColor: "transparent", borderBottomColor: "#AABBC7" },
+  activityMountainFront: { position: "absolute", bottom: -14, right: -7, width: 0, height: 0, borderLeftWidth: 39, borderRightWidth: 39, borderBottomWidth: 33, borderLeftColor: "transparent", borderRightColor: "transparent", borderBottomColor: "#7F9BAB" },
+  activityCoverGlyph: { color: "#FFFFFF", fontSize: 17, fontWeight: "700" },
   activityTitle: { color: "#444444", fontSize: 9, fontWeight: "600", textAlign: "center" },
   activityDescription: { color: "#888888", fontSize: 7, textAlign: "center" },
   activityLink: { color: "#555555", fontSize: 7 },

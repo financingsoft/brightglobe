@@ -94,9 +94,9 @@ export default function TasksScreen() {
   ];
 
   const missions: Mission[] = [
-    { id: "shopping", title: t("淘宝40–100直减优惠", "Shopping offers"), hint: t("全场参加折扣", "Eligible featured offers"), reward: t("每日1~5原力", "1–5 Power daily") },
-    { id: "games", title: t("玩转各游戏做飞仙", "Play featured games"), hint: t("跟踪友好活动与任务", "Explore game missions"), reward: t("每日3~8原力", "3–8 Power daily") },
-    { id: "reading", title: t("看小说坐拥江山美人", "Read selected novels"), hint: t("浏览精选小说内容", "Explore selected novels"), reward: t("每日3~8原力", "3–8 Power daily") },
+    { id: "shopping", title: t("购物任务", "Shopping missions"), hint: t("完成指定任务获取原力", "Complete selected missions to earn Power"), reward: t("每日1~5原力", "1–5 Power daily") },
+    { id: "games", title: t("游戏任务", "Game missions"), hint: t("参与游戏活动获取原力", "Join game activities to earn Power"), reward: t("每日3~8原力", "3–8 Power daily") },
+    { id: "reading", title: t("小说阅读", "Read selected novels"), hint: t("浏览精选小说内容", "Explore selected novels"), reward: t("每日3~8原力", "3–8 Power daily") },
     { id: "news", title: t("看新闻", "Read the news"), hint: t("了解最新时事动态", "Keep up with current topics"), reward: t("每日1~3原力", "1–3 Power daily") },
     { id: "invite", title: t("邀请好友", "Invite friends"), hint: t("+10原力/被邀请人", "+10 Power per accepted invite"), reward: t("+10~500原力", "+10–500 Power") },
     { id: "follow", title: t("关注微信公众号", "Follow the official account"), hint: t("关注获取最新动态", "Follow official updates"), reward: t("+2原力", "+2 Power") }

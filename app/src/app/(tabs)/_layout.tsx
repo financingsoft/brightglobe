@@ -41,17 +41,17 @@ export default function TabLayout() {
       <Tabs.Screen name="tasks" options={{ title: t("navDiscover"), tabBarIcon: ({ focused }) => <TabGlyph glyph="▤" focused={focused} /> }} />
       <Tabs.Screen name="profile" options={{ title: t("navMe"), tabBarIcon: ({ focused }) => <TabGlyph glyph="♙" focused={focused} /> }} />
 
-      <Tabs.Screen name="rewards" options={{ href: null }} />
-      <Tabs.Screen name="wallet" options={{ href: null }} />
-      <Tabs.Screen name="force-record" options={{ href: null }} />
-      <Tabs.Screen name="announcements" options={{ href: null }} />
-      <Tabs.Screen name="invite" options={{ href: null }} />
-      <Tabs.Screen name="passport" options={{ href: null }} />
-      <Tabs.Screen name="base" options={{ href: null }} />
-      <Tabs.Screen name="settings" options={{ href: null }} />
-      <Tabs.Screen name="category" options={{ href: null }} />
-      <Tabs.Screen name="activity" options={{ href: null }} />
-      <Tabs.Screen name="help" options={{ href: null }} />
+      <Tabs.Screen name="rewards" options={{ href: null, tabBarStyle: { display: "none" } }} />
+      <Tabs.Screen name="wallet" options={{ href: null, tabBarStyle: { display: "none" } }} />
+      <Tabs.Screen name="force-record" options={{ href: null, tabBarStyle: { display: "none" } }} />
+      <Tabs.Screen name="announcements" options={{ href: null, tabBarStyle: { display: "none" } }} />
+      <Tabs.Screen name="invite" options={{ href: null, tabBarStyle: { display: "none" } }} />
+      <Tabs.Screen name="passport" options={{ href: null, tabBarStyle: { display: "none" } }} />
+      <Tabs.Screen name="base" options={{ href: null, tabBarStyle: { display: "none" } }} />
+      <Tabs.Screen name="settings" options={{ href: null, tabBarStyle: { display: "none" } }} />
+      <Tabs.Screen name="category" options={{ href: null, tabBarStyle: { display: "none" } }} />
+      <Tabs.Screen name="activity" options={{ href: null, tabBarStyle: { display: "none" } }} />
+      <Tabs.Screen name="help" options={{ href: null, tabBarStyle: { display: "none" } }} />
     </Tabs>
   );
 }

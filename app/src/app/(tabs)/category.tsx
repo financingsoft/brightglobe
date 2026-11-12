@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { AppScreen } from "@/components/ui";
 import { useI18n } from "@/i18n/locale";
@@ -28,7 +28,25 @@ function WireframeImage({ width, height, cover = false }: { width?: number; heig
 }
 
 function SearchBar({ placeholder }: { placeholder: string }) {
-  return <View style={styles.searchBar}><Text style={styles.searchGlyph}>⌕</Text><Text style={styles.searchPlaceholder}>{placeholder}</Text></View>;
+  const [query, setQuery] = useState("");
+  return (
+    <View style={styles.searchBar}>
+      <Text style={styles.searchGlyph}>⌕</Text>
+      <TextInput value={query} onChangeText={setQuery} placeholder={placeholder} placeholderTextColor="#A0A0A0" style={styles.searchInput} returnKeyType="search" />
+    </View>
+  );
+}
+
+function ChannelTabs({ items, active, onSelect }: { items: { key: string; label: string }[]; active: string; onSelect: (key: string) => void }) {
+  return (
+    <View style={styles.channelTabs}>
+      {items.map((item) => (
+        <Pressable key={item.key} onPress={() => onSelect(item.key)} style={[styles.channelTabButton, active === item.key && styles.channelTabButtonActive]}>
+          <Text style={[styles.channelTab, active === item.key && styles.channelTabActive]}>{item.label}</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
 }
 
 export default function CategoryScreen() {
@@ -36,6 +54,12 @@ export default function CategoryScreen() {
   const { locale } = useI18n();
   const router = useRouter();
   const [competitionTab, setCompetitionTab] = useState<"active" | "ended">("active");
+  const [shopChannel, setShopChannel] = useState("taobao");
+  const [gameChannel, setGameChannel] = useState("online");
+  const [readingChannel, setReadingChannel] = useState("male");
+  const [newsChannel, setNewsChannel] = useState("recommend");
+  const [comicsChannel, setComicsChannel] = useState("featured");
+  const [musicChannel, setMusicChannel] = useState("featured");
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
   const names: Record<ScreenKind, [string, string]> = {
     shopping: ["购物", "Shopping"],
@@ -87,9 +111,11 @@ export default function CategoryScreen() {
   const renderShopping = () => (
     <View style={styles.content}>
       <SearchBar placeholder={t("输入商品名称", "Search products")} />
-      <View style={styles.channelTabs}>
-        {[["淘宝", "Taobao"], ["考拉", "Kaola"], ["严选", "NetEase Select"]].map(([zh, en], i) => <Text key={zh} style={[styles.channelTab, i === 0 && styles.channelTabActive]}>{t(zh, en)}</Text>)}
-      </View>
+      <ChannelTabs active={shopChannel} onSelect={setShopChannel} items={[
+        { key: "taobao", label: t("淘宝", "Taobao") },
+        { key: "kaola", label: t("考拉", "Kaola") },
+        { key: "select", label: t("严选", "NetEase Select") }
+      ]} />
       <View style={styles.shopCategories}>
         {["女装", "男装", "内衣", "美妆", "配饰", "鞋品", "居家", "数码"].map((item, i) => (
           <Pressable key={item} style={styles.shopCategory} onPress={() => openActivity(item)}>
@@ -116,9 +142,11 @@ export default function CategoryScreen() {
         <Text style={styles.bannerTitle}>{t("发现好玩的游戏", "Discover games to play")}</Text>
         <Text style={styles.bannerSub}>{t("精选游戏与社区互动", "Selected games and community activities")}</Text>
       </View>
-      <View style={styles.channelTabs}>
-        {[["网游", "Online"], ["小游戏", "Mini games"], ["收藏", "Saved"]].map(([zh, en], i) => <Text key={zh} style={[styles.channelTab, i === 0 && styles.channelTabActive]}>{t(zh, en)}</Text>)}
-      </View>
+      <ChannelTabs active={gameChannel} onSelect={setGameChannel} items={[
+        { key: "online", label: t("网游", "Online") },
+        { key: "mini", label: t("小游戏", "Mini games") },
+        { key: "saved", label: t("收藏", "Saved") }
+      ]} />
       {["精选游戏挑战", "社区小游戏", "本周人气游戏"].map((item, i) => (
         <Pressable key={item} onPress={() => openActivity(item)} style={styles.gameRow}>
           <WireframeImage width={54} height={54} />
@@ -131,9 +159,14 @@ export default function CategoryScreen() {
 
   const renderReading = () => (
     <View style={styles.content}>
-      <View style={styles.channelTabs}>
-        {["男频", "女频", "出版", "分类", "免费", "排行"].map((item, i) => <Text key={item} style={[styles.channelTab, i === 0 && styles.channelTabActive]}>{t(item, ["Men", "Women", "Books", "Genres", "Free", "Rank"][i])}</Text>)}
-      </View>
+      <ChannelTabs active={readingChannel} onSelect={setReadingChannel} items={[
+        { key: "male", label: t("男频", "Men") },
+        { key: "female", label: t("女频", "Women") },
+        { key: "books", label: t("出版", "Books") },
+        { key: "genres", label: t("分类", "Genres") },
+        { key: "free", label: t("免费", "Free") },
+        { key: "rank", label: t("排行", "Rank") }
+      ]} />
       <SearchBar placeholder={t("输入书名或作者", "Search title or author")} />
       <View style={styles.featureBanner}>
         <WireframeImage height={111} cover />
@@ -153,7 +186,15 @@ export default function CategoryScreen() {
   const renderNews = () => (
     <View style={styles.content}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.newsTabs}>
-        {["推荐", "头条", "视频", "体育", "娱乐", "区块链", "财经", "科技"].map((item, i) => <Text key={item} style={[styles.newsTab, i === 0 && styles.newsTabActive]}>{t(item, ["Top", "Headlines", "Video", "Sports", "Entertainment", "Web3", "Finance", "Tech"][i])}</Text>)}
+        {[
+          ["recommend", "推荐", "Top"], ["headlines", "头条", "Headlines"], ["video", "视频", "Video"],
+          ["sports", "体育", "Sports"], ["entertainment", "娱乐", "Entertainment"], ["web3", "区块链", "Web3"],
+          ["finance", "财经", "Finance"], ["tech", "科技", "Tech"]
+        ].map(([key, zh, en]) => (
+          <Pressable key={key} onPress={() => setNewsChannel(key)} style={[styles.newsTabButton, newsChannel === key && styles.newsTabButtonActive]}>
+            <Text style={[styles.newsTab, newsChannel === key && styles.newsTabActive]}>{t(zh, en)}</Text>
+          </Pressable>
+        ))}
       </ScrollView>
       <SearchBar placeholder={t("搜索新闻", "Search news")} />
       {["全球科技动态", "人工智能产业观察", "社区精选观点", "今日热点追踪"].map((item, i) => (
@@ -174,9 +215,13 @@ export default function CategoryScreen() {
         <Text style={styles.bannerSub}>{t("优质作品持续更新", "New stories updated regularly")}</Text>
       </View>
       <SearchBar placeholder={t("搜索漫画", "Search comics")} />
-      <View style={styles.channelTabs}>
-        {["推荐", "热血", "恋爱", "悬疑", "奇幻"].map((item, i) => <Text key={item} style={[styles.channelTab, i === 0 && styles.channelTabActive]}>{t(item, ["Top", "Action", "Romance", "Mystery", "Fantasy"][i])}</Text>)}
-      </View>
+      <ChannelTabs active={comicsChannel} onSelect={setComicsChannel} items={[
+        { key: "featured", label: t("推荐", "Top") },
+        { key: "action", label: t("热血", "Action") },
+        { key: "romance", label: t("恋爱", "Romance") },
+        { key: "mystery", label: t("悬疑", "Mystery") },
+        { key: "fantasy", label: t("奇幻", "Fantasy") }
+      ]} />
       {["本周人气漫画", "编辑精选作品", "最新连载"].map((item, i) => (
         <Pressable key={item} onPress={() => openActivity(item)} style={styles.comicRow}>
           <WireframeImage width={58} height={66} />
@@ -195,9 +240,12 @@ export default function CategoryScreen() {
         <Text style={styles.bannerSub}>{t("发现歌单与精选音乐", "Explore playlists and selected music")}</Text>
       </View>
       <SearchBar placeholder={t("搜索歌曲、歌单或歌手", "Search songs, playlists, or artists")} />
-      <View style={styles.channelTabs}>
-        {["推荐", "歌单", "排行榜", "电台"].map((item, i) => <Text key={item} style={[styles.channelTab, i === 0 && styles.channelTabActive]}>{t(item, ["Top", "Playlists", "Charts", "Radio"][i])}</Text>)}
-      </View>
+      <ChannelTabs active={musicChannel} onSelect={setMusicChannel} items={[
+        { key: "featured", label: t("推荐", "Top") },
+        { key: "playlists", label: t("歌单", "Playlists") },
+        { key: "charts", label: t("排行榜", "Charts") },
+        { key: "radio", label: t("电台", "Radio") }
+      ]} />
       <SectionTitle title={t("推荐歌单", "Recommended playlists")} action={t("更多", "More")} />
       <View style={styles.bookRow}>
         {["每日精选", "独立音乐", "轻松时刻"].map((item, i) => <Pressable key={item} onPress={() => openActivity(item)} style={styles.bookCard}><View style={[styles.bookCover, i % 2 === 0 ? styles.thumbCool : styles.thumbWarm]}><Text style={styles.bookCoverGlyph}>♫</Text></View><Text style={styles.bookTitle}>{t(item, ["Daily mix", "Indie music", "Easy listening"][i])}</Text><Text style={styles.bookAuthor}>{t("精选歌单", "Featured playlist")}</Text></Pressable>)}
@@ -278,8 +326,11 @@ const styles = StyleSheet.create({
   content: { flex: 1 },
   searchBar: { height: 29, borderWidth: 1, borderColor: "#DCDCDC", borderRadius: 15, flexDirection: "row", alignItems: "center", paddingHorizontal: 10, marginTop: 5, marginBottom: 7 },
   searchGlyph: { color: "#999999", fontSize: 15, marginRight: 6 }, searchPlaceholder: { color: "#A0A0A0", fontSize: 8 },
+  searchInput: { flex: 1, color: "#555555", fontSize: 8, paddingVertical: 0 },
+  channelTabButton: { minWidth: 42, minHeight: 30, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
+  channelTabButtonActive: { borderBottomWidth: 2, borderBottomColor: "#555555" },
   channelTabs: { flexDirection: "row", minHeight: 31, alignItems: "center", justifyContent: "space-around", borderBottomWidth: 1, borderColor: "#E5E5E5" },
-  channelTab: { color: "#888888", fontSize: 8, paddingVertical: 8 }, channelTabActive: { color: "#333333", fontWeight: "700", borderBottomWidth: 2, borderBottomColor: "#555555" },
+  channelTab: { color: "#888888", fontSize: 8 }, channelTabActive: { color: "#333333", fontWeight: "700" },
   shopCategories: { flexDirection: "row", flexWrap: "wrap", paddingVertical: 7, borderBottomWidth: 1, borderColor: "#E7E7E7" },
   shopCategory: { width: "25%", alignItems: "center", paddingVertical: 5, gap: 4 },
   shopCategoryIcon: { width: 33, height: 33, borderRadius: 17, alignItems: "center", justifyContent: "center" },
@@ -305,7 +356,7 @@ const styles = StyleSheet.create({
   entertainmentItem: { flex: 1, alignItems: "center", gap: 5 },
   entertainmentIcon: { width: 33, height: 33, borderRadius: 17, backgroundColor: "#F0F0F0", justifyContent: "center", alignItems: "center" }, entertainmentGlyph: { color: "#555555", fontSize: 17 }, entertainmentLabel: { color: "#666666", fontSize: 7 },
   simpleRow: { minHeight: 40, flexDirection: "row", alignItems: "center", borderBottomWidth: 1, borderColor: "#E9E9E9", gap: 8 }, simpleIcon: { color: "#777777", fontSize: 16, width: 22 }, simpleTitle: { color: "#555555", flex: 1, fontSize: 8 }, chevron: { color: "#999999", fontSize: 17 },
-  newsTabs: { gap: 14, alignItems: "center", paddingHorizontal: 5 }, newsTab: { color: "#888888", fontSize: 8, paddingVertical: 8 }, newsTabActive: { color: "#333333", fontWeight: "700" },
+  newsTabs: { gap: 12, alignItems: "center", paddingHorizontal: 5 }, newsTabButton: { paddingVertical: 8, borderBottomWidth: 2, borderBottomColor: "transparent" }, newsTabButtonActive: { borderBottomColor: "#555555" }, newsTab: { color: "#888888", fontSize: 8 }, newsTabActive: { color: "#333333", fontWeight: "700" },
   newsRow: { minHeight: 81, flexDirection: "row", alignItems: "center", borderBottomWidth: 1, borderColor: "#E9E9E9", gap: 8, paddingVertical: 7 },
   newsThumb: { width: 80, height: 58, alignItems: "center", justifyContent: "center" }, newsGlyph: { color: "#FFFFFF", fontSize: 23 },
   newsCopy: { flex: 1, gap: 5 }, newsTitle: { color: "#454545", fontSize: 8, fontWeight: "700" }, newsDescription: { color: "#999999", fontSize: 7, lineHeight: 11 }, newsMeta: { color: "#AAAAAA", fontSize: 6 },

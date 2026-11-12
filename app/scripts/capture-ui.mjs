@@ -139,8 +139,15 @@ try {
 
   for (const [fileName, route, expectedTitle] of routeCaptures) {
     await page.goto(`http://127.0.0.1:${port}${basePath}${route}`, { waitUntil: "networkidle", timeout: 60000 });
-    await page.getByText(expectedTitle, { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
-    await page.waitForTimeout(180);
+    await page.waitForTimeout(300);
+    try {
+      await page.getByText(expectedTitle, { exact: true }).first().waitFor({ state: "visible", timeout: 8000 });
+    } catch {
+      const bodyText = (await page.locator("body").innerText()).slice(0, 1200);
+      await page.screenshot({ path: resolve(outputRoot, `route-debug-${fileName}`) });
+      console.error(`ROUTE ASSERTION FAILED ${route} expected=${expectedTitle} body=${bodyText} pageErrors=${consoleErrors.join(" | ")}`);
+      throw new Error(`Route ${route} did not render expected title: ${expectedTitle}`);
+    }
     await page.screenshot({ path: resolve(outputRoot, fileName) });
   }
 

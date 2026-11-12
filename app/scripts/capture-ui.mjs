@@ -3,7 +3,7 @@ import { createServer } from "node:http";
 import { mkdir, readFile, stat } from "node:fs/promises";
 import { extname, resolve } from "node:path";
 
-const appRoot = resolve(process.cwd(), "dist");
+const appRoot = resolve(process.env.BRIGHTGLOBE_WEB_EXPORT_DIR ?? resolve(process.cwd(), "dist"));
 const outputRoot = resolve(process.cwd(), "artifacts/ui-baseline");
 const basePath = "/brightglobe";
 const port = 4173;

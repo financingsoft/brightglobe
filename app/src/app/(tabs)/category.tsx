@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { AppScreen } from "@/components/ui";
 import { useI18n } from "@/i18n/locale";
 
-type ScreenKind = "shopping" | "games" | "entertainment" | "reading" | "news" | "comics" | "bidding" | "treasure" | "finance" | "wellness";
+type ScreenKind = "shopping" | "games" | "entertainment" | "reading" | "news" | "comics" | "music" | "bidding" | "treasure" | "finance" | "wellness";
 
 function PageHeader({ title, onBack, onClose }: { title: string; onBack: () => void; onClose: () => void }) {
   return (
@@ -33,12 +33,13 @@ export default function CategoryScreen() {
     reading: ["小说", "Reading"],
     news: ["资讯", "News"],
     comics: ["漫画", "Comics"],
+    music: ["网易云音乐", "NetEase Cloud Music"],
     bidding: ["竞猜", "Competition"],
     treasure: ["挖宝", "Treasure hunt"],
     finance: ["来钱", "Finance"],
     wellness: ["健康", "Wellness"]
   };
-  const allowed: ScreenKind[] = ["shopping", "games", "entertainment", "reading", "news", "comics", "bidding", "treasure", "finance", "wellness"];
+  const allowed: ScreenKind[] = ["shopping", "games", "entertainment", "reading", "news", "comics", "music", "bidding", "treasure", "finance", "wellness"];
   const key: ScreenKind = typeof category === "string" && allowed.includes(category as ScreenKind) ? category as ScreenKind : "shopping";
   const title = t(names[key][0], names[key][1]);
   const openActivity = (name: string) => router.push({ pathname: "/activity", params: { title: name } });
@@ -51,7 +52,7 @@ export default function CategoryScreen() {
           { key: "reading" as const, glyph: "▤", zh: "小说", en: "Reading" },
           { key: "comics" as const, glyph: "▧", zh: "漫画", en: "Comics" },
           { key: "news" as const, glyph: "▥", zh: "新闻", en: "News" },
-          { key: "reading" as const, glyph: "♫", zh: "音乐", en: "Music" }
+          { key: "music" as const, glyph: "♫", zh: "音乐", en: "Music" }
         ].map((item) => (
           <Pressable key={item.zh} style={styles.entertainmentItem} onPress={() => go(item.key)}>
             <View style={styles.entertainmentIcon}><Text style={styles.entertainmentGlyph}>{item.glyph}</Text></View>
@@ -170,6 +171,26 @@ export default function CategoryScreen() {
     </View>
   );
 
+  const renderMusic = () => (
+    <View style={styles.content}>
+      <View style={styles.featureBanner}>
+        <Text style={styles.bannerCaption}>NETEASE CLOUD MUSIC</Text>
+        <Text style={styles.bannerTitle}>{t("音乐，让生活更有温度", "Music for every moment")}</Text>
+        <Text style={styles.bannerSub}>{t("发现歌单与精选音乐", "Explore playlists and selected music")}</Text>
+      </View>
+      <SearchBar placeholder={t("搜索歌曲、歌单或歌手", "Search songs, playlists, or artists")} />
+      <View style={styles.channelTabs}>
+        {["推荐", "歌单", "排行榜", "电台"].map((item, i) => <Text key={item} style={[styles.channelTab, i === 0 && styles.channelTabActive]}>{t(item, ["Top", "Playlists", "Charts", "Radio"][i])}</Text>)}
+      </View>
+      <SectionTitle title={t("推荐歌单", "Recommended playlists")} action={t("更多", "More")} />
+      <View style={styles.bookRow}>
+        {["每日精选", "独立音乐", "轻松时刻"].map((item, i) => <Pressable key={item} onPress={() => openActivity(item)} style={styles.bookCard}><View style={[styles.bookCover, i % 2 === 0 ? styles.thumbCool : styles.thumbWarm]}><Text style={styles.bookCoverGlyph}>♫</Text></View><Text style={styles.bookTitle}>{t(item, ["Daily mix", "Indie music", "Easy listening"][i])}</Text><Text style={styles.bookAuthor}>{t("精选歌单", "Featured playlist")}</Text></Pressable>)}
+      </View>
+      <SectionTitle title={t("热门推荐", "Popular")} />
+      {["新歌推荐", "经典回顾", "音乐专题"].map(item => <Pressable key={item} onPress={() => openActivity(item)} style={styles.simpleRow}><Text style={styles.simpleIcon}>♫</Text><Text style={styles.simpleTitle}>{t(item, item)}</Text><Text style={styles.chevron}>›</Text></Pressable>)}
+    </View>
+  );
+
   const renderBidding = () => (
     <View style={styles.content}>
       <View style={styles.featureBanner}>
@@ -221,6 +242,7 @@ export default function CategoryScreen() {
         : key === "reading" ? renderReading()
         : key === "news" ? renderNews()
         : key === "comics" ? renderComics()
+        : key === "music" ? renderMusic()
         : key === "bidding" ? renderBidding()
         : key === "treasure" ? renderTreasure()
         : renderUnavailable()}

@@ -38,5 +38,12 @@
     "@types/react": "~19.3.0",
     "typescript": "7.1.0-beta",
     "@types/three": "0.187.0"
+  },
+  "expo": {
+    "install": {
+      "exclude": [
+        "typescript"
+      ]
+    }
   }
 }

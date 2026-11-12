@@ -64,6 +64,7 @@ export default function TabLayout() {
 
       <Tabs.Screen name="rewards" options={{ href: null, tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="wallet" options={{ href: null, tabBarStyle: { display: "none" } }} />
+      <Tabs.Screen name="points-record" options={{ href: null, tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="force-record" options={{ href: null, tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="announcements" options={{ href: null, tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="announcement-detail" options={{ href: null, tabBarStyle: { display: "none" } }} />

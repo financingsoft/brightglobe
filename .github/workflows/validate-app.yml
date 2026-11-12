@@ -62,6 +62,8 @@ jobs:
 
       - name: Capture V1.6 reference viewport screenshots
         working-directory: app
+        env:
+          BRIGHTGLOBE_WEB_EXPORT_DIR: /tmp/brightglobe-web-export
         run: node scripts/capture-ui.mjs
 
       - name: Upload UI screenshots

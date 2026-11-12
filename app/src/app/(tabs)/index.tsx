@@ -12,7 +12,7 @@ import { colors } from "@/constants/theme";
 import { useI18n } from "@/i18n/locale";
 
 export default function HomeScreen() {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
 
   return (
     <AppScreen>
@@ -89,7 +89,7 @@ export default function HomeScreen() {
                 <View style={[styles.weekBar, { height: height + "%" }]} />
               </View>
               <Text style={styles.weekDay}>
-                {["M", "T", "W", "T", "F", "S", "S"][index]}
+                {(locale === "zh-CN" ? ["一", "二", "三", "四", "五", "六", "日"] : ["M", "T", "W", "T", "F", "S", "S"])[index]}
               </Text>
             </View>
           ))}

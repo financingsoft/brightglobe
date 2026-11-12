@@ -14,6 +14,7 @@ The app targets Expo SDK 58, React Native 0.88, and React 19.3.
 | `react-native` | `0.88.1` | React Native runtime patch aligned to Expo Doctor |
 | `expo-asset` | `~58.0.21` | Native asset resolution |
 | `expo-file-system` | `~58.0.13` | Expo GL / native asset support |
+| `expo-device` | `~58.0.5` | Device total-memory metadata for quality selection |
 | `three` | `0.187.0` | 3D scene, geometry, textures, and shaders |
 | `@react-three/fiber` | `9.8.1` | React renderer for Three.js, Native entry point |
 | `@types/three` | `0.187.0` | Three.js TypeScript definitions |
@@ -31,9 +32,9 @@ All five runtime maps come from the official [Solar System Scope texture pack](h
 |---|---|---|---:|
 | `earth-day.jpg` | Earth Day Map | Daytime land/ocean texture | 342,626 bytes |
 | `earth-night.jpg` | Earth Night Map | Night-side city lights | 187,823 bytes |
-| `earth-clouds.jpg` | Earth Clouds | Separate moving cloud shell | 801,558 bytes |
+| `earth-clouds.jpg` | Earth Clouds | Separate moving cloud shell | 865,624 bytes |
 | `earth-normal.jpg` | Earth Normal Map | Surface normal detail for terrain relief | 91,136 bytes |
-| `earth-specular.jpg` | Earth Specular Map | Ocean-only specular highlight mask | 211,373 bytes |
+| `earth-specular.jpg` | Earth Specular Map | Ocean-only specular highlight mask | 225,343 bytes |
 
 Each of the five source maps is bundled in two resolutions: standard 2048×1024 and low-memory 1024×512. The downloader optimizes the images for mobile use, preserves RGB channels in the normal map, and converts cloud/specular masks to grayscale. The manifest records source URLs, both output sizes, SHA-256 checksums, and license metadata in `app/assets/earth/ASSET_MANIFEST.json`. The low-memory set is loaded on devices reporting less than 4 GiB total RAM. Attribution is preserved in `app/assets/earth/ATTRIBUTION.md`.
 

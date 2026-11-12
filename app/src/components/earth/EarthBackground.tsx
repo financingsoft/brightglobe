@@ -3,10 +3,12 @@ import { StyleSheet, View } from "react-native";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber/native";
 import * as THREE from "three";
 
+// Static require() calls let Metro bundle these textures into the native app.
+// React Three Fiber's Native entry point patches TextureLoader to resolve Expo assets.
 const TEXTURES = {
-  day: "https://threejs.org/examples/textures/planets/earth_day_4096.jpg",
-  night: "https://assets.science.nasa.gov/content/dam/science/esd/eo/images/imagerecords/144000/144898/BlackMarble_2016_01deg.jpg",
-  clouds: "https://threejs.org/examples/textures/planets/earth_clouds_1024.png"
+  day: require("../../../assets/earth/earth-day.jpg") as unknown as string,
+  night: require("../../../assets/earth/earth-night.jpg") as unknown as string,
+  clouds: require("../../../assets/earth/earth-clouds.jpg") as unknown as string
 } as const;
 
 const EARTH_VERTEX_SHADER = `

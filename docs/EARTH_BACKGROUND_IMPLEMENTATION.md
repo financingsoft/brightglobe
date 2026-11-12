@@ -97,11 +97,11 @@ Status: visual fidelity pass implemented; final tuning awaits device screenshots
 
 ### Phase 4 — Lifecycle and performance
 
-Status: adaptive source implementation added; physical-device profiling pending.
+Status: adaptive source implementation and automated bundle validation passed; physical-device profiling pending.
 
 - Use `expo-device` total-memory metadata as a conservative scene-budget proxy: low below 4 GiB, balanced from 4 GiB to below 8 GiB, and high at 8 GiB or above. Unknown memory defaults to balanced.
 - Low quality loads 1K texture maps, fewer stars and mesh segments, lower anisotropy, and disables antialiasing. Balanced and high use the standard 2K maps with increasing geometry and filtering detail.
-- Use demand-driven rendering with target update rates of 20 / 24 / 30 FPS for low / balanced / high. The Canvas stops completely when Home loses focus or the app is backgrounded.
+- Use demand-driven rendering with target update rates of 20 / 24 / 30 FPS for low / balanced / high. These are scheduling targets, not measured device frame-rate guarantees. The Canvas stops completely when Home loses focus or the app is backgrounded.
 - Device RAM is not a direct GPU benchmark. Validate actual memory pressure, GPU load, frame pacing, heat, and battery impact on physical iPad/iPhone and Android hardware before finalizing thresholds.
 - Keep the Earth decorative: no pointer interaction or continuous gestures are required for the first release.
 
@@ -121,7 +121,7 @@ Expo's internal distribution profile creates a directly installable Android APK.
 
 ### Phase 5 — Release acceptance
 
-Status: pending automated and physical-device validation.
+Status: automated source/bundle validation passed; EAS signing and physical-device validation pending.
 
 - Home remains readable and all controls remain tappable.
 - No black canvas, missing-texture flash, or unhandled GL crash on supported physical devices.
@@ -152,4 +152,4 @@ Then create EAS development/preview builds and test on physical devices. Native 
 
 ## Honest status
 
-The texture download workflow has completed successfully and GitHub contains all three bundled local image assets. Source code and documentation have been committed. The last completed successful app validation was Phase 3 commit `3a59ee92e4620e5be4e8003d1655695cef1292b0`. Phase 4 has added adaptive quality profiles, 1K low-memory maps, demand-driven rendering, a Metro iOS export check, and a manually dispatched EAS preview workflow. The Phase 4 validation workflow is running/pending and must pass before calling this source revision validated. EAS iOS/Android builds and physical-device rendering tests have not yet been performed. Do not describe the Earth background as production-certified until native builds and device tests pass.
+The texture download workflow has completed successfully and GitHub contains all three bundled local image assets. Source code and documentation have been committed. Phase 4 app commit `8bef0d8544748808f3d62b362f71982ca321b421` passed the GitHub Actions validation workflow: `npm install`, TypeScript 7.1 `tsc --noEmit`, Expo Doctor (20/20), and `npx expo export --platform ios`. Metro exported a 5.2 MB iOS JavaScript bundle and listed all ten bundled Earth texture variants. The follow-up documentation commit does not change the app source. The EAS preview workflow is prepared but has not been dispatched; it requires `EXPO_TOKEN`, `EAS_PROJECT_ID`, configured signing credentials, and a registered iPad UDID for Ad Hoc installation. No EAS IPA/APK or physical-device performance measurements have been produced yet. Do not describe the Earth background as production-certified until native builds and device tests pass.

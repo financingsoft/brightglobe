@@ -478,3 +478,34 @@ Release gate:
 9. 2018-07-17 Planet 1.3.0 release report (historical context only): https://news.ikanchai.com/2018/0717/224290.shtml
 10. 2018 Force task production screenshot (skin reference for task surfaces only): https://image.woshipm.com/wp-files/2018/03/F7K5tusDLJ06kqxK9D4S.jpg
 11. 2018 Black Diamond activities production screenshot (dark activity skin only; four-tab shell is non-binding): https://image.woshipm.com/wp-files/2018/10/HhRbQVojaZC1O8IsF6RT.jpeg
+
+---
+
+## 8. BrightGlobe implementation route map
+
+The V1.6 page families must remain separate in the app router. In particular, the Home points capsule and the My-page wallet card are different source flows and must not point to one interchangeable screen.
+
+| Contract page / entry | BrightGlobe route | Notes |
+|---|---|---|
+| Home | `/(tabs)` | Three-tab shell, Home selected |
+| Discover Force | `/(tabs)/tasks` | Three-tab shell, Force selected |
+| My | `/(tabs)/profile` | Three-tab shell, My selected |
+| Home → Black Diamond record | `/points-record` | Fig. 12 record screen |
+| My → My wallet | `/wallet` | Fig. 17 account/points wallet screen |
+| Contribution Power record | `/force-record` | Effective / inactive record states |
+| Announcement list | `/announcements` | Fig. 12 announcement list |
+| Announcement detail | `/announcement-detail` | Opened from a selected announcement |
+| Invitation code | `/invite` | Fig. 16 / Fig. 17 invite flow |
+| Data passport | `/passport` | Safe BrightGlobe contribution profile |
+| Community base | `/base` | Fig. 17 base page |
+| Settings | `/settings` | Fig. 17 account settings |
+| Shopping / games / reading / news / comics / music / competition / treasure | `/category` with the selected category parameter | Distinct page templates and in-app navigation |
+| Member benefits / Black Diamond activities | `/rewards` | Secondary destination; not a primary tab |
+| Activity / mission detail | `/activity` | Used only for activity-specific detail content |
+
+### 8.1 Route ownership rules
+
+- The Home points capsule opens `/points-record`; the My-page wallet asset opens `/wallet`.
+- The three primary tabs remain Home, Discover Force, and My. Category, history, and benefit destinations are secondary routes.
+- Parameterized destinations must be reached through in-app navigation when validating web preview. Direct static URLs with arbitrary query parameters can produce a React hydration mismatch in the Expo static export and are not representative of the native tap flow.
+- `app/scripts/capture-ui.mjs` captures the contracted screen families at a fixed 375 × 667 CSS-pixel viewport, captures a 390 × 844 Home viewport, and exercises the local check-in and category navigation flow. Reference source images are packaged alongside the preview captures for side-by-side inspection.

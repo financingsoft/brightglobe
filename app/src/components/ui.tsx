@@ -277,10 +277,10 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.canvas },
   scroll: { flex: 1 },
   content: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: 34,
-    gap: spacing.lg
+    paddingHorizontal: 12,
+    paddingTop: 5,
+    paddingBottom: 16,
+    gap: 0
   },
   brandHeader: {
     minHeight: 48,

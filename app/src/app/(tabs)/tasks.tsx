@@ -13,9 +13,9 @@ export default function TasksScreen() {
   const { t } = useI18n();
 
   const missions = [
-    { icon: "☀", title: t("dailyMission"), detail: "Daily participation", reward: "+20 XP · +10" + " " + t("points"), status: t("completed"), tone: "green" as const },
-    { icon: "◎", title: t("exploreMission"), detail: "Discover topics and communities", reward: "+30 XP · +15" + " " + t("points"), status: t("available"), tone: "blue" as const },
-    { icon: "↗", title: t("inviteMission"), detail: "Share BrightGlobe with someone", reward: "+100 XP · +50" + " " + t("points"), status: t("available"), tone: "blue" as const }
+    { icon: "☀", title: t("dailyMission"), detail: t("taskDailyDetail"), reward: "+20 XP · +10" + " " + t("points"), status: t("completed"), tone: "green" as const },
+    { icon: "◎", title: t("exploreMission"), detail: t("taskExploreDetail"), reward: "+30 XP · +15" + " " + t("points"), status: t("available"), tone: "blue" as const },
+    { icon: "↗", title: t("inviteMission"), detail: t("taskInviteDetail"), reward: "+100 XP · +50" + " " + t("points"), status: t("available"), tone: "blue" as const }
   ];
 
   return (

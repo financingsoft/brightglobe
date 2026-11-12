@@ -9,6 +9,8 @@ const basePath = "/brightglobe";
 const port = 4173;
 
 const referenceImages = [
+  ["reference-login-fig11.png", "https://image.woshipm.com/wp-files/2018/10/Gd17d1oR62KMpTyLRRtW.png"],
+  ["reference-invite-fig16.png", "https://image.woshipm.com/wp-files/2018/10/Q46DJneg8QEV4V9o6ENP.png"],
   ["reference-home-fig12.png", "https://image.woshipm.com/wp-files/2018/10/WloTKKM6kTz2nVfwapX7.png"],
   ["reference-home-activity-fig13.png", "https://image.woshipm.com/wp-files/2018/10/VKZ3IfsoETBUvC4Bekrm.png"],
   ["reference-force-checkin-fig14.png", "https://image.woshipm.com/wp-files/2018/10/aVB8QLvGZjzTxGbVpmC7.png"],

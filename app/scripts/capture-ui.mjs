@@ -124,6 +124,7 @@ try {
     ["settings-375x667.png", "/settings"],
     ["benefits-375x667.png", "/rewards"],
     ["activity-detail-375x667.png", "/activity"],
+    ["official-follow-375x667.png", "/official-follow"],
     ["shopping-375x667.png", "/category"]
   ];
 
@@ -201,7 +202,11 @@ try {
   await page.waitForTimeout(180);
   await page.getByText("关注微信公众号", { exact: true }).click();
   await page.waitForTimeout(180);
-  await page.screenshot({ path: resolve(outputRoot, "official-follow-activity-375x667.png") });
+  await page.screenshot({ path: resolve(outputRoot, "official-follow-375x667.png") });
+  await page.getByPlaceholder("请输入公众号提供的验证码").fill("BG2026");
+  await page.getByText("提交验证", { exact: true }).click();
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: resolve(outputRoot, "official-follow-verified-375x667.png") });
 
   // Follow the Home announcement entry to its list and detail screens.
   await page.goBack();

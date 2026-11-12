@@ -112,7 +112,8 @@ try {
   await page.setViewportSize({ width: 375, height: 667 });
   const routeCaptures = [
     ["login-375x667.png", "/login"],
-    ["points-record-375x667.png", "/wallet"],
+    ["wallet-375x667.png", "/wallet"],
+    ["points-record-375x667.png", "/points-record"],
     ["force-record-375x667.png", "/force-record"],
     ["announcements-375x667.png", "/announcements"],
     ["announcement-detail-375x667.png", "/announcement-detail"],

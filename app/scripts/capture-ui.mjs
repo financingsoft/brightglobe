@@ -162,79 +162,95 @@ try {
   await page.screenshot({ path: resolve(outputRoot, "logout-confirmation-375x667.png") });
 
   // Exercise real in-app navigation for parameterized destinations (no query-string hydration shortcuts).
-  await page.goto(`http://127.0.0.1:${port}${basePath}/login`, { waitUntil: "networkidle", timeout: 60000 });
-  await page.getByText("进入本地预览账户", { exact: true }).click();
-  await page.waitForTimeout(250);
-  await page.getByText("发现原力", { exact: true }).last().click();
-  await page.waitForTimeout(250);
-  await page.getByText("签到", { exact: true }).click();
-  await page.waitForTimeout(200);
-  await page.screenshot({ path: resolve(outputRoot, "check-in-dialog-375x667.png") });
-  await page.getByText("不用了", { exact: true }).click();
-  await page.waitForTimeout(180);
-
-  const captureCategoryFromForce = async (label, fileName) => {
-    await page.getByText(label, { exact: true }).click();
-    await page.waitForTimeout(200);
-    await page.screenshot({ path: resolve(outputRoot, fileName) });
-    await page.goBack();
-    await page.waitForTimeout(180);
+  const waitForPath = async (suffix) => page.waitForURL((url) => url.pathname.endsWith(suffix), { timeout: 15000 });
+  const waitForCategory = async (categoryId) => page.waitForURL(
+    (url) => url.pathname.endsWith("/category") && url.searchParams.get("category") === categoryId,
+    { timeout: 15000 }
+  );
+  const waitForTasks = async () => {
+    await waitForPath("/tasks");
+    await page.getByText("发现原力", { exact: true }).last().waitFor({ state: "visible", timeout: 10000 });
   };
 
-  await captureCategoryFromForce("购物", "shopping-from-force-375x667.png");
-  await captureCategoryFromForce("游戏", "games-from-force-375x667.png");
-  await page.getByText("娱乐", { exact: true }).click();
-  await page.waitForTimeout(180);
+  await page.goto(`http://127.0.0.1:${port}${basePath}/login`, { waitUntil: "networkidle", timeout: 60000 });
+  await page.getByText("进入本地预览账户", { exact: true }).click();
+  await page.getByText("发现原力", { exact: true }).last().waitFor({ state: "visible", timeout: 10000 });
+  await page.getByText("发现原力", { exact: true }).last().click();
+  await waitForTasks();
+  await page.getByText("签到", { exact: true }).click();
+  await page.getByText("签到成功", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
+  await page.screenshot({ path: resolve(outputRoot, "check-in-dialog-375x667.png") });
+  await page.getByText("不用了", { exact: true }).click();
+  await waitForTasks();
+
+  const captureCategoryFromForce = async (label, categoryId, fileName) => {
+    await page.getByText(label, { exact: true }).last().click();
+    await waitForCategory(categoryId);
+    await page.getByText(label, { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
+    await page.screenshot({ path: resolve(outputRoot, fileName) });
+    await page.goBack();
+    await waitForTasks();
+  };
+
+  await captureCategoryFromForce("购物", "shopping", "shopping-from-force-375x667.png");
+  await captureCategoryFromForce("游戏", "games", "games-from-force-375x667.png");
+
+  await page.getByText("娱乐", { exact: true }).last().click();
+  await waitForCategory("entertainment");
+  await page.getByText("小说", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
   await page.screenshot({ path: resolve(outputRoot, "entertainment-375x667.png") });
 
   const entertainmentDestinations = [
-    ["小说", "reading-375x667.png"],
-    ["漫画", "comics-375x667.png"],
-    ["新闻", "news-375x667.png"],
-    ["音乐", "music-375x667.png"]
+    ["小说", "reading", "reading-375x667.png"],
+    ["漫画", "comics", "comics-375x667.png"],
+    ["新闻", "news", "news-375x667.png"],
+    ["音乐", "music", "music-375x667.png"]
   ];
   for (let index = 0; index < entertainmentDestinations.length; index += 1) {
-    const [label, fileName] = entertainmentDestinations[index];
+    const [label, categoryId, fileName] = entertainmentDestinations[index];
     await page.getByText(label, { exact: true }).click();
-    await page.waitForTimeout(180);
+    await waitForCategory(categoryId);
+    await page.getByText(label, { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
     await page.screenshot({ path: resolve(outputRoot, fileName) });
     if (index < entertainmentDestinations.length - 1) {
-      // A category detail returns directly to the entertainment gateway.
       await page.goBack();
-      await page.waitForTimeout(160);
+      await waitForCategory("entertainment");
     }
   }
 
   await page.goBack();
-  await page.waitForTimeout(180);
-  await page.goBack();
-  await page.waitForTimeout(180);
-  await captureCategoryFromForce("来钱", "finance-unavailable-375x667.png");
-  await captureCategoryFromForce("健康", "wellness-unavailable-375x667.png");
+  await waitForTasks();
+  await captureCategoryFromForce("来钱", "finance", "finance-unavailable-375x667.png");
+  await captureCategoryFromForce("健康", "wellness", "wellness-unavailable-375x667.png");
 
   await page.getByText("邀请好友", { exact: true }).click();
-  await page.waitForTimeout(180);
+  await waitForPath("/invite");
+  await page.getByText("邀请码", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
   await page.screenshot({ path: resolve(outputRoot, "invite-from-force-375x667.png") });
   await page.goBack();
-  await page.waitForTimeout(180);
+  await waitForTasks();
+
   await page.getByText("关注微信公众号", { exact: true }).click();
-  await page.waitForTimeout(180);
+  await waitForPath("/official-follow");
+  await page.getByText("关注微信公众号", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
   await page.screenshot({ path: resolve(outputRoot, "official-follow-375x667.png") });
   await page.getByPlaceholder("请输入公众号提供的验证码").fill("BG2026");
   await page.getByText("提交验证", { exact: true }).click();
-  await page.waitForTimeout(150);
+  await page.getByText("验证成功", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
   await page.screenshot({ path: resolve(outputRoot, "official-follow-verified-375x667.png") });
+  await page.goBack();
+  await waitForTasks();
 
   // Follow the Home announcement entry to its list and detail screens.
-  await page.goBack();
-  await page.waitForTimeout(180);
   await page.getByText("首页", { exact: true }).last().click();
-  await page.waitForTimeout(180);
+  await page.getByText("星球秉持共建精神中，欢迎试用并留下宝贵建议", { exact: false }).waitFor({ state: "visible", timeout: 10000 });
   await page.getByText("更多", { exact: true }).click();
-  await page.waitForTimeout(180);
+  await waitForPath("/announcements");
+  await page.getByText("星球公告", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
   await page.screenshot({ path: resolve(outputRoot, "announcements-from-home-375x667.png") });
   await page.getByText("立即查看", { exact: true }).first().click();
-  await page.waitForTimeout(180);
+  await waitForPath("/announcement-detail");
+  await page.getByText("公告详情", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
   await page.screenshot({ path: resolve(outputRoot, "announcement-detail-from-home-375x667.png") });
 
   if (consoleErrors.length > 0) {

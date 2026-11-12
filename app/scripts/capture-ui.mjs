@@ -205,7 +205,7 @@ try {
   await page.waitForTimeout(180);
   await page.screenshot({ path: resolve(outputRoot, "announcement-detail-from-home-375x667.png") });
 
-  if (consoleErrors.length > 0) {  if (consoleErrors.length > 0) {
+  if (consoleErrors.length > 0) {
     throw new Error(`Browser runtime errors:\n${consoleErrors.join("\n")}`);
   }
 

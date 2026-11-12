@@ -135,6 +135,7 @@ export default function CategoryScreen() {
       </View>
       <SearchBar placeholder={t("输入书名或作者", "Search title or author")} />
       <View style={styles.featureBanner}>
+        <WireframeImage height={111} cover />
         <Text style={styles.bannerCaption}>{t("精选书单", "EDITOR'S PICKS")}</Text>
         <Text style={styles.bannerTitle}>{t("海量免费小说、图书", "Books and stories to discover")}</Text>
         <Text style={styles.bannerSub}>{t("发现下一本值得阅读的作品", "Find your next great read")}</Text>
@@ -166,6 +167,7 @@ export default function CategoryScreen() {
   const renderComics = () => (
     <View style={styles.content}>
       <View style={styles.featureBanner}>
+        <WireframeImage height={111} cover />
         <Text style={styles.bannerCaption}>{t("精品漫画", "FEATURED COMICS")}</Text>
         <Text style={styles.bannerTitle}>{t("海量精品动漫 / 漫画", "Discover comics and illustrated stories")}</Text>
         <Text style={styles.bannerSub}>{t("优质作品持续更新", "New stories updated regularly")}</Text>
@@ -186,6 +188,7 @@ export default function CategoryScreen() {
   const renderMusic = () => (
     <View style={styles.content}>
       <View style={styles.featureBanner}>
+        <WireframeImage height={111} cover />
         <Text style={styles.bannerCaption}>NETEASE CLOUD MUSIC</Text>
         <Text style={styles.bannerTitle}>{t("音乐，让生活更有温度", "Music for every moment")}</Text>
         <Text style={styles.bannerSub}>{t("发现歌单与精选音乐", "Explore playlists and selected music")}</Text>
@@ -206,6 +209,7 @@ export default function CategoryScreen() {
   const renderBidding = () => (
     <View style={styles.content}>
       <View style={styles.featureBanner}>
+        <WireframeImage height={111} cover />
         <Text style={styles.bannerCaption}>{t("体育赛事竞猜", "SPORTS CHALLENGE")}</Text>
         <Text style={styles.bannerTitle}>{t("参与竞猜互动", "Join the community challenge")}</Text>
         <Text style={styles.bannerSub}>{t("活动规则与参与说明", "Rules and participation details")}</Text>

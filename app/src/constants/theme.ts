@@ -1,18 +1,22 @@
 export const colors = {
-  ink: "#10243A",
-  inkMuted: "#63758A",
-  brand: "#246BFD",
-  brandDark: "#174FC5",
-  brandSoft: "#EAF1FF",
-  teal: "#16A58A",
-  tealSoft: "#E5F7F2",
-  gold: "#E8A23A",
-  goldSoft: "#FFF4DF",
-  canvas: "#F5F7FB",
+  ink: "#24133F",
+  inkMuted: "#81758F",
+  brand: "#7A35D7",
+  brandDark: "#54209D",
+  brandSoft: "#F1E8FF",
+  violet: "#A96AF2",
+  violetDeep: "#24103F",
+  purpleNight: "#140A28",
+  magenta: "#D642CB",
+  teal: "#20B8A2",
+  tealSoft: "#E2F8F3",
+  gold: "#F3B94F",
+  goldSoft: "#FFF5DF",
+  canvas: "#F7F5FA",
   surface: "#FFFFFF",
-  border: "#E7ECF3",
-  success: "#18866D",
-  warning: "#A46B18",
+  border: "#EAE5F0",
+  success: "#239A79",
+  warning: "#A46B1C",
   danger: "#C34B4B"
 } as const;
 
@@ -28,6 +32,6 @@ export const spacing = {
   sm: 8,
   md: 12,
   lg: 16,
-  xl: 24,
-  xxl: 32
+  xl: 22,
+  xxl: 30
 } as const;

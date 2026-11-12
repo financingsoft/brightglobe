@@ -18,19 +18,24 @@ type AppScreenProps = {
   showHeader?: boolean;
 };
 
+export function PreviewStatusBar() {
+  if (Platform.OS !== "web") return null;
+  return (
+    <View style={styles.webStatusBar}>
+      <View style={styles.statusSide}><Text style={styles.statusSymbols}>●●●  ◔</Text></View>
+      <Text style={styles.statusTime}>6:00 PM</Text>
+      <View style={[styles.statusSide, styles.statusRight]}>
+        <Text style={styles.statusPercent}>100%</Text>
+        <View style={styles.batteryBody}><View style={styles.batteryFill} /></View>
+      </View>
+    </View>
+  );
+}
+
 export function AppScreen({ children, showHeader = false }: AppScreenProps) {
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      {Platform.OS === "web" ? (
-        <View style={styles.webStatusBar}>
-          <View style={styles.statusSide}><Text style={styles.statusSymbols}>●●●  ◔</Text></View>
-          <Text style={styles.statusTime}>6:00 PM</Text>
-          <View style={[styles.statusSide, styles.statusRight]}>
-            <Text style={styles.statusPercent}>100%</Text>
-            <View style={styles.batteryBody}><View style={styles.batteryFill} /></View>
-          </View>
-        </View>
-      ) : null}
+      <PreviewStatusBar />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}

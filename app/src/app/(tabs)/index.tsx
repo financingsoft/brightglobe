@@ -3,6 +3,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-nati
 import { useRouter } from "expo-router";
 import { AppScreen } from "@/components/ui";
 import { useI18n } from "@/i18n/locale";
+import { useAuth } from "@/auth/session";
 
 export default function HomeScreen() {
   const { locale } = useI18n();
@@ -10,8 +11,15 @@ export default function HomeScreen() {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
 
-  const openPoints = () => router.push("/wallet");
-  const openForce = () => router.push("/force-record");
+  const requireHomeLogin = (action: () => void) => {
+    if (!isAuthenticated) {
+      setShowLoginPrompt(true);
+      return;
+    }
+    action();
+  };
+  const openPoints = () => requireHomeLogin(() => router.push("/wallet"));
+  const openForce = () => requireHomeLogin(() => router.push("/force-record"));
 
   return (
     <AppScreen>
@@ -30,7 +38,7 @@ export default function HomeScreen() {
         </Pressable>
       </View>
 
-      <Pressable accessibilityRole="button" onPress={() => router.push("/announcements")} style={styles.noticeBar}>
+      <Pressable accessibilityRole="button" onPress={() => requireHomeLogin(() => router.push("/announcements"))} style={styles.noticeBar}>
         <Text style={styles.noticeIcon}>◖</Text>
         <Text numberOfLines={1} style={styles.noticeText}>
           {t("星球秉持共建精神中，欢迎试用并留下宝贵建议", "BrightGlobe community announcement — share your feedback")}
@@ -39,7 +47,7 @@ export default function HomeScreen() {
       </Pressable>
 
       <View style={styles.productionStage}>
-        <Pressable onPress={() => router.push({ pathname: "/activity", params: { title: t("黑钻挖宝", "Point mining") } })} style={styles.mineEntry}>
+        <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/activity", params: { title: t("黑钻挖宝", "Point mining") } }))} style={styles.mineEntry}>
           <View style={styles.mineOrb}>
             <Text style={styles.mineGlyph}>◇</Text>
           </View>
@@ -65,25 +73,25 @@ export default function HomeScreen() {
         <Text style={styles.activityHint}>{t("左右滑动查看更多", "Swipe to see more")}</Text>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.activityRail}>
-        <Pressable onPress={() => router.push({ pathname: "/category", params: { category: "shopping" } })} style={styles.activityTile}>
+        <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "shopping" } }))} style={styles.activityTile}>
           <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>◎</Text></View>
           <Text style={styles.activityTitle}>{t("淘宝得黑钻", "Shopping rewards")}</Text>
           <Text style={styles.activityDescription}>{t("精选优惠券每日领取", "Daily featured offers")}</Text>
           <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
         </Pressable>
-        <Pressable onPress={() => router.push({ pathname: "/category", params: { category: "games" } })} style={styles.activityTile}>
+        <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "games" } }))} style={styles.activityTile}>
           <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>◉</Text></View>
           <Text style={styles.activityTitle}>{t("游戏得黑钻", "Game rewards")}</Text>
           <Text style={styles.activityDescription}>{t("凡人飞仙等你来挑战", "Take on a new challenge")}</Text>
           <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
         </Pressable>
-        <Pressable onPress={() => router.push({ pathname: "/category", params: { category: "entertainment" } })} style={styles.activityTile}>
+        <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "entertainment" } }))} style={styles.activityTile}>
           <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>♫</Text></View>
           <Text style={styles.activityTitle}>{t("阅读得黑钻", "Reading rewards")}</Text>
           <Text style={styles.activityDescription}>{t("阅读优质内容", "Read quality content")}</Text>
           <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
         </Pressable>
-        <Pressable onPress={() => router.push("/rewards")} style={styles.activityTile}>
+        <Pressable onPress={() => requireHomeLogin(() => router.push("/rewards"))} style={styles.activityTile}>
           <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>◇</Text></View>
           <Text style={styles.activityTitle}>{t("黑钻活动", "Point activities")}</Text>
           <Text style={styles.activityDescription}>{t("活动与星球集市", "Events and marketplace")}</Text>
@@ -102,7 +110,7 @@ export default function HomeScreen() {
               <Pressable onPress={() => setShowLoginPrompt(false)} style={styles.dialogSecondary}>
                 <Text style={styles.dialogSecondaryText}>{t("暂不登录", "Not now")}</Text>
               </Pressable>
-              <Pressable onPress={() => { setShowLoginPrompt(false); router.push("/settings"); }} style={styles.dialogPrimary}>
+              <Pressable onPress={() => { setShowLoginPrompt(false); router.push("/login"); }} style={styles.dialogPrimary}>
                 <Text style={styles.dialogPrimaryText}>{t("了解账户", "Account info")}</Text>
               </Pressable>
             </View>

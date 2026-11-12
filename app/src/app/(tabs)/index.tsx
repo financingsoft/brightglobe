@@ -49,7 +49,7 @@ export default function HomeScreen() {
       </Pressable>
 
       <View style={styles.productionStage}>
-        <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/activity", params: { title: t("黑钻挖宝", "Point mining") } }))} style={styles.mineEntry}>
+        <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "treasure" } }))} style={styles.mineEntry}>
           <View style={styles.mineOrb}>
             <Text style={styles.mineGlyph}>◇</Text>
           </View>
@@ -58,12 +58,13 @@ export default function HomeScreen() {
 
         {isAuthenticated && claimed ? (
           <View style={styles.growingValues}>
-            <View style={styles.growingValue}><Text style={styles.smallGem}>♢</Text><Text style={styles.smallValue}>0.05904</Text></View>
-            <View style={styles.growingValue}><Text style={styles.smallGem}>♢</Text><Text style={styles.smallValue}>0.012333</Text></View>
-            <View style={styles.growingValue}><Text style={styles.smallGem}>♢</Text><Text style={styles.smallValue}>0.05939</Text></View>
+            <View style={[styles.growingValue, styles.valueOne]}><Text style={styles.smallGem}>♢</Text><Text style={styles.smallValue}>0.05904</Text></View>
+            <View style={[styles.growingValue, styles.valueTwo]}><Text style={styles.smallGem}>♢</Text><Text style={styles.smallValue}>0.012333</Text></View>
+            <View style={[styles.growingValue, styles.valueThree]}><Text style={styles.smallGem}>♢</Text><Text style={styles.smallValue}>0.05939</Text></View>
           </View>
         ) : (
           <Pressable
+            accessibilityRole="button"
             onPress={() => requireHomeLogin(() => setClaimed(true))}
             style={styles.growthEntry}
           >
@@ -73,14 +74,6 @@ export default function HomeScreen() {
             </Text>
           </Pressable>
         )}
-
-        <Pressable onPress={() => requireHomeLogin(() => setClaimed(true))} style={styles.growthState}>
-          <Text style={styles.growthStateText}>
-            {isAuthenticated
-              ? (claimed ? t("黑钻已生长 · 本地预览", "Points grown · local preview") : t("点击黑钻，查看已生长黑钻", "Tap the gem to reveal grown points"))
-              : t("点击黑钻，查看领取状态", "Tap the gem to view its status")}
-          </Text>
-        </Pressable>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.activityRail}>
@@ -134,22 +127,19 @@ const styles = StyleSheet.create({
   noticeText: { flex: 1, color: "#777777", fontSize: 8 },
   noticeMore: { color: "#444444", fontSize: 8 },
   productionStage: { height: 245, position: "relative", backgroundColor: "#FFFFFF" },
-  mineEntry: { position: "absolute", right: 24, top: 25, width: 67, alignItems: "center" },
-  mineOrb: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#777777", alignItems: "center", justifyContent: "center" },
-  mineGlyph: { color: "#FFFFFF", fontSize: 23 },
+  mineEntry: { position: "absolute", right: 27, top: 32, width: 62, alignItems: "center" },
+  mineOrb: { width: 34, height: 34, borderRadius: 17, backgroundColor: "#777777", alignItems: "center", justifyContent: "center" },
+  mineGlyph: { color: "#FFFFFF", fontSize: 20 },
   mineLabel: { color: "#333333", fontSize: 8, marginTop: 4 },
-  growthEntry: { position: "absolute", top: 88, left: "43%", alignItems: "center", justifyContent: "center" },
-  growthGem: { color: "#4A4A4A", fontSize: 24, lineHeight: 26 },
+  growthEntry: { position: "absolute", top: 92, left: "40%", alignItems: "center", justifyContent: "center" },
+  growthGem: { color: "#4A4A4A", fontSize: 22, lineHeight: 24 },
   growthLabel: { color: "#555555", fontSize: 8, marginTop: 2 },
-  growingValues: { position: "absolute", left: 14, right: 14, top: 165, flexDirection: "row", justifyContent: "space-around" },
-  growingValue: { alignItems: "center", gap: 2 },
-  smallGem: { color: "#555555", fontSize: 16 },
-  smallValue: { color: "#555555", fontSize: 7 },
-  growthState: { position: "absolute", left: 0, right: 0, bottom: 15, alignItems: "center", paddingVertical: 7 },
-  growthStateText: { color: "#777777", fontSize: 8 },
-  growingValues: { position: "absolute", left: 12, right: 12, top: 83, flexDirection: "row", justifyContent: "space-around" },
-  growingValue: { alignItems: "center", gap: 2 },
-  smallGem: { color: "#555555", fontSize: 17 },
+  growingValues: { position: "absolute", left: 0, right: 0, top: 64, bottom: 24 },
+  growingValue: { position: "absolute", alignItems: "center", gap: 1 },
+  valueOne: { left: "20%", top: 4 },
+  valueTwo: { left: "61%", top: 43 },
+  valueThree: { left: "39%", top: 104 },
+  smallGem: { color: "#555555", fontSize: 17, lineHeight: 19 },
   smallValue: { color: "#555555", fontSize: 7 },
   activityRail: { gap: 7, paddingBottom: 4, alignItems: "flex-start" },
   activityTile: { width: 106, height: 105, backgroundColor: "#F2F2F2", borderRadius: 4, padding: 8, alignItems: "center", justifyContent: "space-between" },

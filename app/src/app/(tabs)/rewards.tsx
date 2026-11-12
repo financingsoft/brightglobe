@@ -28,7 +28,6 @@ export default function RewardsScreen() {
         </View>
 
         <Pressable onPress={() => router.push("/activity")} style={styles.hero}>
-          <Text style={styles.heroKicker}>BRIGHTGLOBE EVENT</Text>
           <Text style={styles.heroTitle}>{t("精彩活动  等你参与", "Special events are waiting")}</Text>
           <Text style={styles.heroSubtitle}>{t("社区活动与专属权益", "Community events and member benefits")}</Text>
           <Text style={styles.heroAction}>{t("立即查看", "Explore now")} ›</Text>
@@ -75,7 +74,6 @@ const styles = StyleSheet.create({
   balance: { borderRadius: 12, backgroundColor: "rgba(255,255,255,0.12)", paddingHorizontal: 8, paddingVertical: 5 },
   balanceText: { color: "#FFFFFF", fontSize: 7, fontWeight: "600" },
   hero: { height: 104, backgroundColor: "#E84C4C", borderRadius: 4, padding: 12, justifyContent: "center", overflow: "hidden", gap: 4 },
-  heroKicker: { color: "#FFD8D8", fontSize: 6, letterSpacing: 1.1, fontWeight: "700" },
   heroTitle: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" },
   heroSubtitle: { color: "#FFE4E4", fontSize: 8 },
   heroAction: { color: "#FFFFFF", fontSize: 8, fontWeight: "700", marginTop: 2 },

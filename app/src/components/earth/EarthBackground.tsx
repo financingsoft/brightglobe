@@ -5,7 +5,7 @@ import * as THREE from "three";
 
 const TEXTURES = {
   day: "https://threejs.org/examples/textures/planets/earth_day_4096.jpg",
-  night: "https://threejs.org/examples/textures/planets/earth_night_4096.jpg",
+  night: "https://assets.science.nasa.gov/content/dam/science/esd/eo/images/imagerecords/144000/144898/BlackMarble_2016_01deg.jpg",
   clouds: "https://threejs.org/examples/textures/planets/earth_clouds_1024.png"
 } as const;
 

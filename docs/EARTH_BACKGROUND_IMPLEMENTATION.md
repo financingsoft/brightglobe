@@ -35,7 +35,7 @@ All five runtime maps come from the official [Solar System Scope texture pack](h
 | `earth-normal.jpg` | Earth Normal Map | Surface normal detail for terrain relief | 91,136 bytes |
 | `earth-specular.jpg` | Earth Specular Map | Ocean-only specular highlight mask | 211,373 bytes |
 
-All five images are 2048×1024. The downloader optimizes the images for mobile use, preserves RGB channels in the normal map, and converts cloud/specular masks to grayscale. The five textures total approximately 1.56 MiB. Source URLs, dimensions, SHA-256 checksums, and license metadata are recorded in `app/assets/earth/ASSET_MANIFEST.json`. Attribution is preserved in `app/assets/earth/ATTRIBUTION.md`.
+Each of the five source maps is bundled in two resolutions: standard 2048×1024 and low-memory 1024×512. The downloader optimizes the images for mobile use, preserves RGB channels in the normal map, and converts cloud/specular masks to grayscale. The manifest records source URLs, both output sizes, SHA-256 checksums, and license metadata in `app/assets/earth/ASSET_MANIFEST.json`. The low-memory set is loaded on devices reporting less than 4 GiB total RAM. Attribution is preserved in `app/assets/earth/ATTRIBUTION.md`.
 
 The current app imports these files with static `require()` calls. They are bundled into the native app; Earth rendering does not make a runtime request to a third-party image CDN.
 
@@ -96,12 +96,27 @@ Status: visual fidelity pass implemented; final tuning awaits device screenshots
 
 ### Phase 4 — Lifecycle and performance
 
-Status: basic pause behavior implemented; profiling pending.
+Status: adaptive source implementation added; physical-device profiling pending.
 
-- Pause rendering when Home is not focused or the app is backgrounded.
-- Measure memory, GPU use, startup delay, and frame pacing on physical iOS and Android devices.
-- Add quality tiers (low / balanced / high) based on device capability.
+- Use `expo-device` total-memory metadata as a conservative scene-budget proxy: low below 4 GiB, balanced from 4 GiB to below 8 GiB, and high at 8 GiB or above. Unknown memory defaults to balanced.
+- Low quality loads 1K texture maps, fewer stars and mesh segments, lower anisotropy, and disables antialiasing. Balanced and high use the standard 2K maps with increasing geometry and filtering detail.
+- Use demand-driven rendering with target update rates of 20 / 24 / 30 FPS for low / balanced / high. The Canvas stops completely when Home loses focus or the app is backgrounded.
+- Device RAM is not a direct GPU benchmark. Validate actual memory pressure, GPU load, frame pacing, heat, and battery impact on physical iPad/iPhone and Android hardware before finalizing thresholds.
 - Keep the Earth decorative: no pointer interaction or continuous gestures are required for the first release.
+
+### EAS preview builds
+
+The repository includes `.github/workflows/eas-preview-build.yml`, a manually dispatched internal preview build workflow. It reads `EXPO_TOKEN` from GitHub Actions secrets and `EAS_PROJECT_ID` from repository variables. `app/app.config.js` injects that project ID into Expo config at build time.
+
+Before the workflow can create a build:
+
+1. Create/link the BrightGlobe project with `npx eas-cli@latest init` from `app/` and record its EAS project ID.
+2. Add an Expo access token as the `EXPO_TOKEN` GitHub Actions secret.
+3. Add the project UUID as the `EAS_PROJECT_ID` GitHub repository variable.
+4. Configure EAS-managed signing credentials. For an iOS Ad Hoc build, register the target iPad first with `eas device:create`; the device UDID must be included in the provisioning profile. A paid Apple Developer account is required for normal Ad Hoc distribution.
+5. Run **Build BrightGlobe preview** from GitHub Actions and select `ios`, `android`, or `all`.
+
+Expo's internal distribution profile creates a directly installable Android APK. For iOS it creates an Ad Hoc or Enterprise-signed build; Ad Hoc installations are restricted to devices registered in that provisioning profile. See [Expo internal distribution](https://docs.expo.dev/build/internal-distribution/) and [iOS device cloud build](https://docs.expo.dev/tutorial/eas/ios-development-build-for-devices/).
 
 ### Phase 5 — Release acceptance
 
@@ -136,4 +151,4 @@ Then create EAS development/preview builds and test on physical devices. Native 
 
 ## Honest status
 
-The texture download workflow has completed successfully and GitHub contains all three bundled local image assets. Source code and documentation have been committed. The GitHub Actions run for Phase 3 app commit `3a59ee92e4620e5be4e8003d1655695cef1292b0` passed `npm install`, TypeScript 7.1 `tsc --noEmit`, and Expo Doctor (20/20). EAS iOS/Android builds and physical-device rendering tests have not yet been performed. Do not describe the Earth background as production-certified until native builds and device tests pass.
+The texture download workflow has completed successfully and GitHub contains all three bundled local image assets. Source code and documentation have been committed. The last completed successful app validation was Phase 3 commit `3a59ee92e4620e5be4e8003d1655695cef1292b0`. Phase 4 has added adaptive quality profiles, 1K low-memory maps, demand-driven rendering, a Metro iOS export check, and a manually dispatched EAS preview workflow. The Phase 4 validation workflow is running/pending and must pass before calling this source revision validated. EAS iOS/Android builds and physical-device rendering tests have not yet been performed. Do not describe the Earth background as production-certified until native builds and device tests pass.

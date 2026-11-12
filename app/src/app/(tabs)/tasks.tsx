@@ -23,13 +23,51 @@ function CategoryGlyph({ category, small = false }: { category: CategoryId; smal
   return <Text style={[styles.heartGlyph, small && styles.smallGlyph]}>♥</Text>;
 }
 
+type MissionId = "shopping" | "games" | "reading" | "news" | "invite" | "follow";
+
 type Mission = {
-  id: string;
-  category: CategoryId;
+  id: MissionId;
   title: string;
   hint: string;
   reward: string;
 };
+
+function MissionGlyph({ id }: { id: MissionId }) {
+  if (id === "shopping") return <CategoryGlyph category="shopping" small />;
+  if (id === "games") return <CategoryGlyph category="games" small />;
+  if (id === "reading") {
+    return (
+      <View style={styles.bookIcon}>
+        <View style={styles.bookPageLeft}><View style={styles.bookLine} /><View style={styles.bookLine} /></View>
+        <View style={styles.bookPageRight}><View style={styles.bookLine} /><View style={styles.bookLine} /></View>
+      </View>
+    );
+  }
+  if (id === "news") {
+    return (
+      <View style={styles.globeIcon}>
+        <View style={styles.globeEquator} />
+        <View style={styles.globeMeridian} />
+      </View>
+    );
+  }
+  if (id === "invite") {
+    return (
+      <View style={styles.inviteIcon}>
+        <View style={styles.inviteHead} />
+        <View style={styles.inviteBody} />
+        <View style={styles.invitePlusHorizontal} />
+        <View style={styles.invitePlusVertical} />
+      </View>
+    );
+  }
+  return (
+    <View style={styles.chatIcon}>
+      <View style={styles.chatMain}><View style={styles.chatDot} /><View style={styles.chatDot} /><View style={styles.chatDot} /></View>
+      <View style={styles.chatSecond} />
+    </View>
+  );
+}
 
 export default function TasksScreen() {
   const { locale } = useI18n();
@@ -56,13 +94,12 @@ export default function TasksScreen() {
   ];
 
   const missions: Mission[] = [
-    { id: "shop", category: "shopping", title: t("精选商城每日浏览", "Browse the featured marketplace"), hint: t("发现每日精选内容", "Discover daily highlights"), reward: t("每日1~5原力", "1–5 Power daily") },
-    { id: "game", category: "games", title: t("凡人飞仙游戏", "Play the featured game"), hint: t("参与游戏获得原力", "Earn Power through game participation"), reward: t("每日3~8原力", "3–8 Power daily") },
-    { id: "reading", category: "entertainment", title: t("小说阅读", "Read novels"), hint: t("浏览精选小说内容", "Explore selected novels"), reward: t("每日1~3原力", "1–3 Power daily") },
-    { id: "comics", category: "entertainment", title: t("看漫画", "Read comics"), hint: t("发现优质漫画内容", "Discover selected comics"), reward: t("每日1~3原力", "1–3 Power daily") },
-    { id: "news", category: "entertainment", title: t("看新闻", "Read the news"), hint: t("了解最新时事动态", "Keep up with current topics"), reward: t("每日1~3原力", "1–3 Power daily") },
-    { id: "invite", category: "shopping", title: t("邀请好友", "Invite friends"), hint: t("+10原力/被邀请人", "+10 Power per accepted invite"), reward: t("+10~500原力", "+10–500 Power") },
-    { id: "follow", category: "entertainment", title: t("关注官方公众号", "Follow the official account"), hint: t("关注并获取最新动态", "Follow official updates"), reward: t("+2原力", "+2 Power") }
+    { id: "shopping", title: t("淘宝40–100直减优惠", "Shopping offers"), hint: t("全场参加折扣", "Eligible featured offers"), reward: t("每日1~5原力", "1–5 Power daily") },
+    { id: "games", title: t("玩转各游戏做飞仙", "Play featured games"), hint: t("跟踪友好活动与任务", "Explore game missions"), reward: t("每日3~8原力", "3–8 Power daily") },
+    { id: "reading", title: t("看小说坐拥江山美人", "Read selected novels"), hint: t("浏览精选小说内容", "Explore selected novels"), reward: t("每日3~8原力", "3–8 Power daily") },
+    { id: "news", title: t("看新闻", "Read the news"), hint: t("了解最新时事动态", "Keep up with current topics"), reward: t("每日1~3原力", "1–3 Power daily") },
+    { id: "invite", title: t("邀请好友", "Invite friends"), hint: t("+10原力/被邀请人", "+10 Power per accepted invite"), reward: t("+10~500原力", "+10–500 Power") },
+    { id: "follow", title: t("关注微信公众号", "Follow the official account"), hint: t("关注获取最新动态", "Follow official updates"), reward: t("+2原力", "+2 Power") }
   ];
 
   return (
@@ -119,7 +156,7 @@ export default function TasksScreen() {
         {missions.map((mission, index) => (
           <View key={mission.id} style={[styles.missionRow, index < missions.length - 1 && styles.missionDivider]}>
             <View style={styles.missionIcon}>
-              <CategoryGlyph category={mission.category} small />
+              <MissionGlyph id={mission.id} />
             </View>
             <Pressable
               onPress={() => requireLogin(() => router.push({ pathname: "/activity", params: { title: mission.title } }))}
@@ -200,36 +237,52 @@ const styles = StyleSheet.create({
   sectionHeader: { minHeight: 28, justifyContent: "center", borderBottomWidth: 1, borderColor: "#E0E0E0" },
   sectionTitle: { color: "#444444", fontSize: 10, fontWeight: "700" },
   categoryGrid: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, borderBottomWidth: 1, borderColor: "#E0E0E0" },
-  categoryItem: { flex: 1, alignItems: "center", justifyContent: "center", gap: 3, minHeight: 44 },
-  cart: { width: 25, height: 23, alignItems: "flex-end", justifyContent: "flex-start" },
-  cartHandle: { position: "absolute", top: 2, left: 1, width: 7, height: 2, backgroundColor: "#171717", transform: [{ rotate: "25deg" }] },
-  cartBasket: { position: "absolute", top: 5, left: 7, width: 16, height: 10, backgroundColor: "#171717", borderRadius: 1, transform: [{ skewX: "-12deg" }] },
-  cartWheelLeft: { position: "absolute", bottom: 1, left: 9, width: 4, height: 4, borderRadius: 2, backgroundColor: "#171717" },
-  cartWheelRight: { position: "absolute", bottom: 1, right: 2, width: 4, height: 4, borderRadius: 2, backgroundColor: "#171717" },
-  gamepad: { width: 27, height: 18, borderRadius: 7, backgroundColor: "#171717", position: "relative" },
-  gamepadCrossH: { position: "absolute", left: 4, top: 7, width: 8, height: 2, backgroundColor: "#FFFFFF" },
-  gamepadCrossV: { position: "absolute", left: 7, top: 4, width: 2, height: 8, backgroundColor: "#FFFFFF" },
-  gamepadDotOne: { position: "absolute", right: 5, top: 4, width: 3, height: 3, borderRadius: 2, backgroundColor: "#FFFFFF" },
-  gamepadDotTwo: { position: "absolute", right: 2, top: 8, width: 3, height: 3, borderRadius: 2, backgroundColor: "#FFFFFF" },
-  mic: { width: 25, height: 24, alignItems: "center", position: "relative" },
-  micHead: { width: 10, height: 14, borderRadius: 6, backgroundColor: "#171717" },
-  micArc: { width: 16, height: 8, borderBottomWidth: 2, borderLeftWidth: 2, borderRightWidth: 2, borderColor: "#171717", borderBottomLeftRadius: 9, borderBottomRightRadius: 9, marginTop: -3 },
+  categoryItem: { flex: 1, alignItems: "center", justifyContent: "center", gap: 3, minHeight: 49 },
+  cart: { width: 30, height: 27, alignItems: "flex-end", justifyContent: "flex-start" },
+  cartHandle: { position: "absolute", top: 3, left: 1, width: 8, height: 2, backgroundColor: "#171717", transform: [{ rotate: "25deg" }] },
+  cartBasket: { position: "absolute", top: 6, left: 8, width: 19, height: 12, backgroundColor: "#171717", borderRadius: 1, transform: [{ skewX: "-12deg" }] },
+  cartWheelLeft: { position: "absolute", bottom: 1, left: 11, width: 4, height: 4, borderRadius: 2, backgroundColor: "#171717" },
+  cartWheelRight: { position: "absolute", bottom: 1, right: 1, width: 4, height: 4, borderRadius: 2, backgroundColor: "#171717" },
+  gamepad: { width: 30, height: 20, borderRadius: 7, backgroundColor: "#171717", position: "relative" },
+  gamepadCrossH: { position: "absolute", left: 5, top: 8, width: 8, height: 2, backgroundColor: "#FFFFFF" },
+  gamepadCrossV: { position: "absolute", left: 8, top: 5, width: 2, height: 8, backgroundColor: "#FFFFFF" },
+  gamepadDotOne: { position: "absolute", right: 6, top: 5, width: 3, height: 3, borderRadius: 2, backgroundColor: "#FFFFFF" },
+  gamepadDotTwo: { position: "absolute", right: 3, top: 9, width: 3, height: 3, borderRadius: 2, backgroundColor: "#FFFFFF" },
+  mic: { width: 27, height: 27, alignItems: "center", position: "relative" },
+  micHead: { width: 11, height: 16, borderRadius: 6, backgroundColor: "#171717" },
+  micArc: { width: 18, height: 9, borderBottomWidth: 2, borderLeftWidth: 2, borderRightWidth: 2, borderColor: "#171717", borderBottomLeftRadius: 9, borderBottomRightRadius: 9, marginTop: -3 },
   micStand: { width: 2, height: 5, backgroundColor: "#171717", marginTop: 0 },
-  moneyIcon: { width: 25, height: 18, borderRadius: 2, backgroundColor: "#171717", alignItems: "center", justifyContent: "center" },
+  moneyIcon: { width: 28, height: 20, borderRadius: 2, backgroundColor: "#171717", alignItems: "center", justifyContent: "center" },
   moneyGlyph: { color: "#FFFFFF", fontSize: 12, fontWeight: "800", lineHeight: 14 },
-  heartGlyph: { color: "#171717", fontSize: 23, lineHeight: 25 },
+  heartGlyph: { color: "#171717", fontSize: 25, lineHeight: 27 },
   smallGlyph: { transform: [{ scale: 0.78 }] },
-  categoryLabel: { color: "#444444", fontSize: 8 },
+  categoryLabel: { color: "#444444", fontSize: 9 },
   missionList: { borderTopWidth: 1, borderColor: "#E0E0E0" },
-  missionRow: { minHeight: 37, flexDirection: "row", alignItems: "center", gap: 6 },
+  missionRow: { minHeight: 41, flexDirection: "row", alignItems: "center", gap: 6 },
   missionDivider: { borderBottomWidth: 1, borderColor: "#E8E8E8" },
   missionIcon: { width: 27, alignItems: "center", justifyContent: "center" },
+  bookIcon: { width: 25, height: 22, flexDirection: "row", alignItems: "center", justifyContent: "center" },
+  bookPageLeft: { width: 12, height: 19, borderWidth: 2, borderColor: "#171717", borderTopLeftRadius: 3, borderBottomLeftRadius: 3, paddingTop: 4, paddingHorizontal: 2, gap: 3 },
+  bookPageRight: { width: 12, height: 19, borderWidth: 2, borderColor: "#171717", borderTopRightRadius: 3, borderBottomRightRadius: 3, paddingTop: 4, paddingHorizontal: 2, gap: 3 },
+  bookLine: { height: 1, backgroundColor: "#171717" },
+  globeIcon: { width: 22, height: 22, borderWidth: 2, borderColor: "#171717", borderRadius: 11, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  globeEquator: { width: 18, height: 7, borderTopWidth: 1, borderBottomWidth: 1, borderColor: "#171717", borderRadius: 5 },
+  globeMeridian: { position: "absolute", height: 18, width: 8, borderLeftWidth: 1, borderRightWidth: 1, borderColor: "#171717", borderRadius: 6 },
+  inviteIcon: { width: 25, height: 24, position: "relative", alignItems: "center" },
+  inviteHead: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#171717", position: "absolute", left: 2, top: 1 },
+  inviteBody: { width: 15, height: 10, borderTopLeftRadius: 8, borderTopRightRadius: 8, backgroundColor: "#171717", position: "absolute", left: 0, bottom: 1 },
+  invitePlusHorizontal: { width: 10, height: 2, backgroundColor: "#171717", position: "absolute", right: 0, top: 8 },
+  invitePlusVertical: { width: 2, height: 10, backgroundColor: "#171717", position: "absolute", right: 4, top: 4 },
+  chatIcon: { width: 26, height: 22, position: "relative" },
+  chatMain: { width: 18, height: 15, borderRadius: 8, backgroundColor: "#171717", position: "absolute", left: 0, top: 0, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 2 },
+  chatDot: { width: 2, height: 2, borderRadius: 1, backgroundColor: "#FFFFFF" },
+  chatSecond: { width: 9, height: 8, borderRadius: 4, backgroundColor: "#171717", position: "absolute", right: 0, bottom: 1, borderWidth: 1, borderColor: "#FFFFFF" },
 
   missionCopy: { flex: 1, gap: 3 },
   missionTitle: { color: "#3D3D3D", fontSize: 9, fontWeight: "600" },
   missionHint: { color: "#999999", fontSize: 7 },
   missionReward: { color: "#777777", fontSize: 8, fontWeight: "600", marginRight: 1 },
-  infoButton: { width: 15, height: 15, borderRadius: 8, borderWidth: 1, borderColor: "#A4A4A4", alignItems: "center", justifyContent: "center", marginHorizontal: 2 },
+  infoButton: { width: 16, height: 16, borderRadius: 8, borderWidth: 1, borderColor: "#A4A4A4", alignItems: "center", justifyContent: "center", marginHorizontal: 2 },
   infoGlyph: { color: "#888888", fontSize: 9, fontWeight: "600" },
   bottomNote: { alignSelf: "center", color: "#AAAAAA", fontSize: 7, paddingVertical: 5 },
   pressed: { opacity: 0.7 },

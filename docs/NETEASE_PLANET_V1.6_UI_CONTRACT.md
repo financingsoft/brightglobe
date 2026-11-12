@@ -508,6 +508,7 @@ The V1.6 page families must remain separate in the app router. In particular, th
 
 - The Home points capsule opens `/points-record`; the My-page wallet asset opens `/wallet`.
 - The three primary tabs remain Home, Discover Force, and My. Category, history, and benefit destinations are secondary routes.
+- All secondary destinations are root Stack routes. Do not register them as hidden `Tabs.Screen` entries with `href: null`; that configuration caused direct/static route loads to resolve to the Home tab instead of the requested page. Keep the Tab Navigator limited to Home, Discover Force, and My.
 - The recommended “follow official account” task opens `/official-follow`, not the generic activity detail route. The local demo code is a preview interaction only and never credits real Contribution Power.
 - Parameterized destinations must be reached through in-app navigation when validating web preview. Direct static URLs with arbitrary query parameters can produce a React hydration mismatch in the Expo static export and are not representative of the native tap flow.
 - `app/scripts/capture-ui.mjs` captures the contracted screen families at a fixed 375 × 667 CSS-pixel viewport, captures a 390 × 844 Home viewport, and exercises the local check-in and category navigation flow. Reference source images are packaged alongside the preview captures for side-by-side inspection.

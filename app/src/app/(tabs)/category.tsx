@@ -16,6 +16,16 @@ function PageHeader({ title, onBack, onClose }: { title: string; onBack: () => v
   );
 }
 
+function WireframeImage({ width, height }: { width: number; height: number }) {
+  return (
+    <View style={[styles.wireframeImage, { width, height }]}>
+      <View style={{ position: "absolute", top: height * 0.16, right: width * 0.2, width: height * 0.09, height: height * 0.09, borderRadius: height * 0.05, backgroundColor: "#C5C5C5" }} />
+      <View style={{ position: "absolute", bottom: -height * 0.08, left: -width * 0.12, width: 0, height: 0, borderLeftWidth: width * 0.34, borderRightWidth: width * 0.34, borderBottomWidth: height * 0.62, borderLeftColor: "transparent", borderRightColor: "transparent", borderBottomColor: "#69B3D5" }} />
+      <View style={{ position: "absolute", bottom: -height * 0.1, right: -width * 0.13, width: 0, height: 0, borderLeftWidth: width * 0.38, borderRightWidth: width * 0.38, borderBottomWidth: height * 0.48, borderLeftColor: "transparent", borderRightColor: "transparent", borderBottomColor: "#318FC0" }} />
+    </View>
+  );
+}
+
 function SearchBar({ placeholder }: { placeholder: string }) {
   return <View style={styles.searchBar}><Text style={styles.searchGlyph}>⌕</Text><Text style={styles.searchPlaceholder}>{placeholder}</Text></View>;
 }
@@ -81,7 +91,7 @@ export default function CategoryScreen() {
       <View style={styles.shopCategories}>
         {["女装", "男装", "内衣", "美妆", "配饰", "鞋品", "居家", "数码"].map((item, i) => (
           <Pressable key={item} style={styles.shopCategory} onPress={() => openActivity(item)}>
-            <View style={[styles.shopCategoryIcon, i % 2 === 0 ? styles.thumbCool : styles.thumbWarm]}><Text style={styles.shopCategoryGlyph}>{["♧", "◇", "○", "✧", "⌁", "◈", "⌂", "▣"][i]}</Text></View>
+            <WireframeImage width={37} height={28} />
             <Text style={styles.shopCategoryLabel}>{t(item, ["Women", "Men", "Underwear", "Beauty", "Accessories", "Shoes", "Home", "Digital"][i])}</Text>
           </Pressable>
         ))}
@@ -89,7 +99,7 @@ export default function CategoryScreen() {
       <SectionTitle title={t("精选推荐", "Featured picks")} />
       {["每日精选好物", "人气品牌优惠", "会员专属权益"].map((item, i) => (
         <Pressable key={item} onPress={() => openActivity(item)} style={styles.productRow}>
-          <View style={[styles.productThumb, i % 2 === 0 ? styles.thumbCool : styles.thumbWarm]}><Text style={styles.productGlyph}>◇</Text></View>
+          <WireframeImage width={60} height={60} />
           <View style={styles.productCopy}><Text style={styles.productTitle}>{t(item, ["Daily picks", "Popular brand offers", "Member benefits"][i])}</Text><Text style={styles.productDescription}>{t("精选内容与优惠信息", "Selected offers and information")}</Text><Text style={styles.productPrice}>{t("活动详情 ›", "View details ›")}</Text></View>
         </Pressable>
       ))}
@@ -108,7 +118,7 @@ export default function CategoryScreen() {
       </View>
       {["精选游戏挑战", "社区小游戏", "本周人气游戏"].map((item, i) => (
         <Pressable key={item} onPress={() => openActivity(item)} style={styles.gameRow}>
-          <View style={[styles.gameThumb, i % 2 === 0 ? styles.thumbCool : styles.thumbWarm]}><Text style={styles.gameGlyph}>{["✣", "◉", "★"][i]}</Text></View>
+          <WireframeImage width={54} height={54} />
           <View style={styles.gameCopy}><Text style={styles.productTitle}>{t(item, ["Featured game challenges", "Community mini games", "Popular games this week"][i])}</Text><Text style={styles.productDescription}>{t("游戏介绍与参与方式", "Game details and participation")}</Text><Text style={styles.gameMeta}>★★★★★　{t("人气推荐", "Popular")}</Text></View>
           <Text style={styles.openButton}>{t("开启", "Open")}</Text>
         </Pressable>
@@ -129,7 +139,7 @@ export default function CategoryScreen() {
       </View>
       <SectionTitle title={t("阅读历史", "Reading history")} action={t("我的书架", "My shelf")} />
       <View style={styles.bookRow}>
-        {["山海经异闻", "星际旅人", "世界尽头"].map((item, i) => <Pressable key={item} onPress={() => openActivity(item)} style={styles.bookCard}><View style={[styles.bookCover, i % 2 === 0 ? styles.thumbCool : styles.thumbWarm]}><Text style={styles.bookCoverGlyph}>▤</Text></View><Text style={styles.bookTitle}>{t(item, ["Legends", "Stellar traveler", "The edge of the world"][i])}</Text><Text style={styles.bookAuthor}>{t("精选作者", "Featured author")}</Text></Pressable>)}
+        {["山海经异闻", "星际旅人", "世界尽头"].map((item, i) => <Pressable key={item} onPress={() => openActivity(item)} style={styles.bookCard}><WireframeImage width={84} height={96} /><Text style={styles.bookTitle}>{t(item, ["Legends", "Stellar traveler", "The edge of the world"][i])}</Text><Text style={styles.bookAuthor}>{t("精选作者", "Featured author")}</Text></Pressable>)}
       </View>
       <SectionTitle title={t("人气推荐", "Popular reads")} />
       {["今日热门作品", "编辑精选", "新书上架"].map(item => <Pressable key={item} onPress={() => openActivity(item)} style={styles.simpleRow}><Text style={styles.simpleIcon}>▤</Text><Text style={styles.simpleTitle}>{t(item, item)}</Text><Text style={styles.chevron}>›</Text></Pressable>)}
@@ -144,7 +154,7 @@ export default function CategoryScreen() {
       <SearchBar placeholder={t("搜索新闻", "Search news")} />
       {["全球科技动态", "人工智能产业观察", "社区精选观点", "今日热点追踪"].map((item, i) => (
         <Pressable key={item} onPress={() => openActivity(item)} style={styles.newsRow}>
-          <View style={[styles.newsThumb, i % 2 === 0 ? styles.thumbCool : styles.thumbWarm]}><Text style={styles.newsGlyph}>▧</Text></View>
+          <WireframeImage width={80} height={58} />
           <View style={styles.newsCopy}><Text style={styles.newsTitle}>{t(item, ["Global technology update", "AI industry watch", "Community perspectives", "Today's top stories"][i])}</Text><Text style={styles.newsDescription}>{t("精选资讯摘要与内容介绍，点击查看完整内容。", "Selected news summary and story details.")}</Text><Text style={styles.newsMeta}>BrightGlobe　{t("刚刚", "Just now")}</Text></View>
         </Pressable>
       ))}
@@ -164,7 +174,7 @@ export default function CategoryScreen() {
       </View>
       {["本周人气漫画", "编辑精选作品", "最新连载"].map((item, i) => (
         <Pressable key={item} onPress={() => openActivity(item)} style={styles.comicRow}>
-          <View style={[styles.comicThumb, i % 2 === 0 ? styles.thumbCool : styles.thumbWarm]}><Text style={styles.comicGlyph}>▧</Text></View>
+          <WireframeImage width={58} height={66} />
           <View style={styles.productCopy}><Text style={styles.productTitle}>{t(item, ["Popular comics", "Editor's picks", "Latest series"][i])}</Text><Text style={styles.productDescription}>{t("作品简介与作者信息", "Story description and creator")}</Text><Text style={styles.productPrice}>{t("连载中", "Ongoing")}</Text></View>
         </Pressable>
       ))}
@@ -267,7 +277,8 @@ const styles = StyleSheet.create({
   shopCategory: { width: "25%", alignItems: "center", paddingVertical: 5, gap: 4 },
   shopCategoryIcon: { width: 33, height: 33, borderRadius: 17, alignItems: "center", justifyContent: "center" },
   shopCategoryGlyph: { color: "#FFFFFF", fontSize: 17 }, shopCategoryLabel: { color: "#666666", fontSize: 7 },
-  thumbCool: { backgroundColor: "#66AFC7" }, thumbWarm: { backgroundColor: "#CF9569" },
+  wireframeImage: { backgroundColor: "#E9E9E9", overflow: "hidden", position: "relative" },
+  thumbCool: { backgroundColor: "#E9E9E9" }, thumbWarm: { backgroundColor: "#E9E9E9" },
   sectionHeading: { minHeight: 30, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "#E5E5E5" },
   sectionHeadingText: { color: "#444444", fontSize: 9, fontWeight: "700" }, sectionAction: { color: "#888888", fontSize: 7 },
   productRow: { minHeight: 76, flexDirection: "row", alignItems: "center", gap: 9, borderBottomWidth: 1, borderColor: "#EAEAEA", paddingVertical: 6 },

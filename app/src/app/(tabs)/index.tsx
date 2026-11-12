@@ -73,57 +73,16 @@ export default function HomeScreen() {
         <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "shopping" } }))} style={styles.activityTile}>
           <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>◎</Text></View>
           <Text style={styles.activityTitle}>{t("淘宝得黑钻", "Shopping rewards")}</Text>
-          <Text style={styles.activityDescription}>{t("精选优惠券每日领取", "Daily featured offers")}</Text>
+          <Text style={styles.activityDescription}>{t("淘宝919年中大促", "Featured shopping event")}</Text>
           <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
         </Pressable>
         <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "games" } }))} style={styles.activityTile}>
           <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>◉</Text></View>
           <Text style={styles.activityTitle}>{t("游戏得黑钻", "Game rewards")}</Text>
-          <Text style={styles.activityDescription}>{t("凡人飞仙等你来挑战", "Take on a new challenge")}</Text>
+          <Text style={styles.activityDescription}>{t("凡人飞仙传", "Featured game")}</Text>
           <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
         </Pressable>
-        <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "entertainment" } }))} style={styles.activityTile}>
-          <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>♫</Text></View>
-          <Text style={styles.activityTitle}>{t("阅读得黑钻", "Reading rewards")}</Text>
-          <Text style={styles.activityDescription}>{t("阅读优质内容", "Read quality content")}</Text>
-          <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
-        </Pressable>
-        <Pressable onPress={() => requireHomeLogin(() => router.push("/rewards"))} style={styles.activityTile}>
-          <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>◇</Text></View>
-          <Text style={styles.activityTitle}>{t("黑钻活动", "Point activities")}</Text>
-          <Text style={styles.activityDescription}>{t("活动与星球集市", "Events and marketplace")}</Text>
-          <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
-        </Pressable>
-        <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "reading" } }))} style={styles.activityTile}>
-          <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>▤</Text></View>
-          <Text style={styles.activityTitle}>{t("小说", "Reading")}</Text>
-          <Text style={styles.activityDescription}>{t("海量免费小说", "Explore stories")}</Text>
-          <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
-        </Pressable>
-        <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "news" } }))} style={styles.activityTile}>
-          <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>▥</Text></View>
-          <Text style={styles.activityTitle}>{t("资讯", "News")}</Text>
-          <Text style={styles.activityDescription}>{t("精选时事内容", "Selected stories")}</Text>
-          <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
-        </Pressable>
-        <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "comics" } }))} style={styles.activityTile}>
-          <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>▧</Text></View>
-          <Text style={styles.activityTitle}>{t("漫画", "Comics")}</Text>
-          <Text style={styles.activityDescription}>{t("精品漫画内容", "Featured comics")}</Text>
-          <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
-        </Pressable>
-        <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "bidding" } }))} style={styles.activityTile}>
-          <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>★</Text></View>
-          <Text style={styles.activityTitle}>{t("竞猜", "Competition")}</Text>
-          <Text style={styles.activityDescription}>{t("赛事互动挑战", "Community challenge")}</Text>
-          <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
-        </Pressable>
-        <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "treasure" } }))} style={styles.activityTile}>
-          <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>♙</Text></View>
-          <Text style={styles.activityTitle}>{t("挖宝", "Treasure hunt")}</Text>
-          <Text style={styles.activityDescription}>{t("开启探索矿区", "Explore zones")}</Text>
-          <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
-        </Pressable>
+        <View style={styles.activityMore}><Text style={styles.activityMoreGlyph}>···</Text></View>
       </ScrollView>
 
       <Modal visible={showLoginPrompt} transparent animationType="fade" onRequestClose={() => setShowLoginPrompt(false)}>
@@ -160,12 +119,12 @@ const styles = StyleSheet.create({
   noticeIcon: { color: "#777777", fontSize: 12 },
   noticeText: { flex: 1, color: "#777777", fontSize: 8 },
   noticeMore: { color: "#444444", fontSize: 8 },
-  productionStage: { height: 280, position: "relative", backgroundColor: "#FFFFFF" },
-  mineEntry: { position: "absolute", right: 21, top: 27, width: 75, alignItems: "center" },
-  mineOrb: { width: 49, height: 49, borderRadius: 25, backgroundColor: "#777777", alignItems: "center", justifyContent: "center" },
+  productionStage: { height: 245, position: "relative", backgroundColor: "#FFFFFF" },
+  mineEntry: { position: "absolute", right: 24, top: 25, width: 67, alignItems: "center" },
+  mineOrb: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#777777", alignItems: "center", justifyContent: "center" },
   mineGlyph: { color: "#FFFFFF", fontSize: 23 },
   mineLabel: { color: "#333333", fontSize: 8, marginTop: 4 },
-  growthEntry: { position: "absolute", top: 112, left: "43%", alignItems: "center", justifyContent: "center" },
+  growthEntry: { position: "absolute", top: 88, left: "43%", alignItems: "center", justifyContent: "center" },
   growthGem: { color: "#4A4A4A", fontSize: 24, lineHeight: 26 },
   growthLabel: { color: "#555555", fontSize: 8, marginTop: 2 },
   growingValues: { position: "absolute", left: 14, right: 14, top: 165, flexDirection: "row", justifyContent: "space-around" },
@@ -174,8 +133,10 @@ const styles = StyleSheet.create({
   smallValue: { color: "#555555", fontSize: 7 },
   growthState: { position: "absolute", left: 0, right: 0, bottom: 15, alignItems: "center", paddingVertical: 7 },
   growthStateText: { color: "#777777", fontSize: 8 },
-  activityRail: { gap: 7, paddingBottom: 4 },
-  activityTile: { width: 118, minHeight: 128, backgroundColor: "#F2F2F2", borderRadius: 4, padding: 8, alignItems: "center", justifyContent: "space-between" },
+  activityRail: { gap: 7, paddingBottom: 4, alignItems: "flex-start" },
+  activityTile: { width: 106, height: 105, backgroundColor: "#F2F2F2", borderRadius: 4, padding: 8, alignItems: "center", justifyContent: "space-between" },
+  activityMore: { width: 17, height: 105, alignItems: "center", justifyContent: "center" },
+  activityMoreGlyph: { color: "#999999", fontSize: 20, letterSpacing: 1 },
   activityIconCircle: { width: 27, height: 27, borderRadius: 14, borderWidth: 1, borderColor: "#999999", alignItems: "center", justifyContent: "center" },
   activityGlyph: { color: "#555555", fontSize: 15 },
   activityTitle: { color: "#444444", fontSize: 9, fontWeight: "600", textAlign: "center" },

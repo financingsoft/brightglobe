@@ -25,7 +25,6 @@ function CategoryGlyph({ category, small = false }: { category: CategoryId; smal
 type Mission = {
   id: string;
   category: CategoryId;
-  icon: string;
   title: string;
   hint: string;
   reward: string;
@@ -54,14 +53,6 @@ export default function TasksScreen() {
     { id: "invite", category: "shopping", title: t("邀请好友", "Invite friends"), hint: t("+10原力/被邀请人", "+10 Power per accepted invite"), reward: t("+10~500原力", "+10–500 Power") },
     { id: "follow", category: "entertainment", title: t("关注 BrightGlobe 社区", "Follow BrightGlobe community"), hint: t("关注官方社区动态", "Follow official community updates"), reward: t("+2原力", "+2 Power") }
   ];
-
-  const categoryDescriptions: Record<CategoryId, [string, string]> = {
-    shopping: ["购物", "包含精选商品、合作商城和日常优惠任务。"],
-    games: ["游戏", "包含社区小游戏和合作游戏任务。"],
-    entertainment: ["娱乐", "进入小说、漫画、新闻和音乐等内容分类。"],
-    finance: ["来钱", "金融合作服务入口；BrightGlobe 预览暂未开放。"],
-    wellness: ["健康", "健康类任务入口；BrightGlobe 预览暂未开放。"]
-  };
 
   return (
     <AppScreen>
@@ -155,7 +146,7 @@ export default function TasksScreen() {
               <Pressable onPress={() => { setCheckedIn(true); setShowCheckin(false); }} style={styles.dialogButton}>
                 <Text style={styles.dialogButtonText}>{t("不用了", "Not now")}</Text>
               </Pressable>
-              <Pressable onPress={() => { setCheckedIn(true); setShowCheckin(false); router.push("/category?category=games"); }} style={styles.dialogButton}>
+              <Pressable onPress={() => { setCheckedIn(true); setShowCheckin(false); router.push({ pathname: "/category", params: { category: "games" } }); }} style={styles.dialogButton}>
                 <Text style={styles.dialogButtonText}>{t("去探索", "Explore")}</Text>
               </Pressable>
             </View>

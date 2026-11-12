@@ -134,6 +134,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  pressed: { opacity: 0.74 },
   statBar: { flexDirection: "row", gap: 8, marginBottom: 10 },
   statPill: { flex: 1, minHeight: 38, borderRadius: 20, borderWidth: 1, borderColor: "#E5E1E9", backgroundColor: "#FFFFFF", flexDirection: "row", alignItems: "center", paddingHorizontal: 10, gap: 5 },
   statDiamond: { color: "#8E4DCB", fontSize: 11 },

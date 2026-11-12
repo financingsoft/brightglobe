@@ -8,7 +8,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <LocaleProvider>
-        <StatusBar style="dark" backgroundColor={colors.canvas} />
+        <StatusBar style="dark" />
         <Stack
           screenOptions={{
             headerShown: false,

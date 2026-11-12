@@ -25,23 +25,23 @@ TypeScript 7.1 is a beta compiler line. Keep it explicitly marked as pre-release
 
 ## Earth texture provenance and licensing
 
-The three runtime maps come from the official [Solar System Scope texture pack](https://www.solarsystemscope.com/textures/), which states that the textures are provided under the [Creative Commons Attribution 4.0 International license](https://creativecommons.org/licenses/by/4.0/). The provider describes them as real planetary maps in equirectangular projection, based on merged geospatial data and NASA Blue Marble imagery. The provider explicitly permits commercial use subject to attribution.
+All five runtime maps come from the official [Solar System Scope texture pack](https://www.solarsystemscope.com/textures/), which states that the textures are provided under the [Creative Commons Attribution 4.0 International license](https://creativecommons.org/licenses/by/4.0/). The provider describes them as real planetary maps in equirectangular projection, based on merged geospatial data and NASA Blue Marble imagery. The provider explicitly permits commercial use subject to attribution.
 
 | Bundled file | Source map | Runtime use | Bundled size |
 |---|---|---|---:|
-| `earth-day.jpg` | Earth Day Map | Daytime land/ocean texture | 308,624 bytes |
-| `earth-night.jpg` | Earth Night Map | Night-side city lights | 170,657 bytes |
+| `earth-day.jpg` | Earth Day Map | Daytime land/ocean texture | 342,626 bytes |
+| `earth-night.jpg` | Earth Night Map | Night-side city lights | 187,823 bytes |
 | `earth-clouds.jpg` | Earth Clouds | Separate moving cloud shell | 801,558 bytes |
 | `earth-normal.jpg` | Earth Normal Map | Surface normal detail for terrain relief | 91,136 bytes |
 | `earth-specular.jpg` | Earth Specular Map | Ocean-only specular highlight mask | 211,373 bytes |
 
-All three images are 2048×1024. The downloader optimizes the images for mobile use and converts the cloud map to grayscale. Source URLs, dimensions, SHA-256 checksums, and license metadata are recorded in `app/assets/earth/ASSET_MANIFEST.json`. Attribution is preserved in `app/assets/earth/ATTRIBUTION.md`.
+All five images are 2048×1024. The downloader optimizes the images for mobile use, preserves RGB channels in the normal map, and converts cloud/specular masks to grayscale. The five textures total approximately 1.56 MiB. Source URLs, dimensions, SHA-256 checksums, and license metadata are recorded in `app/assets/earth/ASSET_MANIFEST.json`. Attribution is preserved in `app/assets/earth/ATTRIBUTION.md`.
 
 The current app imports these files with static `require()` calls. They are bundled into the native app; Earth rendering does not make a runtime request to a third-party image CDN.
 
 ## Asset build pipeline
 
-- `app/scripts/download-earth-assets.py` downloads the three official 2K maps, verifies JPEG signatures and 2:1 aspect ratios, optimizes them, and writes a manifest plus attribution file.
+- `app/scripts/download-earth-assets.py` downloads the five official 2K maps, verifies image signatures and 2:1 equirectangular dimensions with Pillow, optimizes them, and writes a manifest plus attribution file.
 - `.github/workflows/prepare-earth-assets.yml` runs the download once from a marker-file push or can be manually dispatched.
 - The workflow commits the binary assets into `app/assets/earth/` using the repository's GitHub Actions token.
 - Do not remove or replace the attribution file when updating the assets.
@@ -58,7 +58,7 @@ To refresh the assets, run the **Prepare bundled Earth textures** workflow in Gi
 - The Earth Specular Map limits directional sun glints to ocean surfaces.
 - Clouds are rendered on an independent translucent sphere, lit separately, and rotate slightly faster than the ground surface.
 - A sun-aware blue atmospheric rim and a restrained star field complete the scene.
-- The component is non-interactive and uses a low-power GPU preference with a capped device-pixel ratio.
+- The component is non-interactive, uses a low-power GPU preference, and keeps geometry/texture filtering deliberately modest for a decorative mobile background.
 - Rendering pauses when the app enters the background.
 - The Home route passes its navigation focus state to the Earth component so the animation pauses when another tab is selected.
 
@@ -80,7 +80,7 @@ Status: source implemented; physical-device validation pending.
 Status: <strong>completed in source repository</strong>; verify the first install/build on devices.
 
 - Approved CC BY 4.0 texture source selected.
-- 2K day, night, and cloud textures committed to `app/assets/earth/`.
+- 2K day, night, cloud, normal, and specular textures committed to `app/assets/earth/`.
 - Source manifest, checksums, and attribution committed.
 - Runtime switched to static local asset references; no runtime CDN dependency remains.
 
@@ -136,4 +136,4 @@ Then create EAS development/preview builds and test on physical devices. Native 
 
 ## Honest status
 
-The texture download workflow has completed successfully and GitHub contains all three bundled local image assets. Source code and documentation have been committed. The previous GitHub Actions run for app commit `360c4bc7e1257e3605f7f4d23edb66413c236bd7` passed `npm install`, TypeScript 7.1 `tsc --noEmit`, and Expo Doctor (20/20). The current Phase 3 shader and new texture references require a fresh validation run. EAS iOS/Android builds and physical-device rendering tests have not yet been performed. Do not describe the Earth background as production-certified until native builds and device tests pass.
+The texture download workflow has completed successfully and GitHub contains all three bundled local image assets. Source code and documentation have been committed. The GitHub Actions run for Phase 3 app commit `3a59ee92e4620e5be4e8003d1655695cef1292b0` passed `npm install`, TypeScript 7.1 `tsc --noEmit`, and Expo Doctor (20/20). EAS iOS/Android builds and physical-device rendering tests have not yet been performed. Do not describe the Earth background as production-certified until native builds and device tests pass.

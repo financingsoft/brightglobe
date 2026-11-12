@@ -108,6 +108,49 @@ try {
   await page.waitForTimeout(350);
   await page.screenshot({ path: resolve(outputRoot, "home-390x844.png") });
 
+  // Capture all routes in the V1.6 acceptance matrix at a fixed phone viewport.
+  await page.setViewportSize({ width: 375, height: 667 });
+  const routeCaptures = [
+    ["login-375x667.png", "/login"],
+    ["points-record-375x667.png", "/wallet"],
+    ["force-record-375x667.png", "/force-record"],
+    ["announcements-375x667.png", "/announcements"],
+    ["announcement-detail-375x667.png", "/announcement-detail?title=BrightGlobe%20community%20announcement&body=Take%20part%20in%20building%20the%20community&date=2026.11.13"],
+    ["invite-375x667.png", "/invite"],
+    ["passport-375x667.png", "/passport"],
+    ["community-base-375x667.png", "/base"],
+    ["settings-375x667.png", "/settings"],
+    ["benefits-375x667.png", "/rewards"],
+    ["activity-detail-375x667.png", "/activity?title=Community%20mission"],
+    ["shopping-375x667.png", "/category?category=shopping"],
+    ["games-375x667.png", "/category?category=games"],
+    ["entertainment-375x667.png", "/category?category=entertainment"],
+    ["reading-375x667.png", "/category?category=reading"],
+    ["news-375x667.png", "/category?category=news"],
+    ["comics-375x667.png", "/category?category=comics"],
+    ["music-375x667.png", "/category?category=music"],
+    ["competition-375x667.png", "/category?category=bidding"],
+    ["treasure-hunt-375x667.png", "/category?category=treasure"],
+    ["finance-unavailable-375x667.png", "/category?category=finance"],
+    ["wellness-unavailable-375x667.png", "/category?category=wellness"]
+  ];
+
+  for (const [fileName, route] of routeCaptures) {
+    await page.goto(`http://127.0.0.1:${port}${basePath}${route}`, { waitUntil: "networkidle", timeout: 60000 });
+    await page.waitForTimeout(180);
+    await page.screenshot({ path: resolve(outputRoot, fileName) });
+  }
+
+  // Exercise the preview-account path and capture the documented check-in dialog.
+  await page.goto(`http://127.0.0.1:${port}${basePath}/login`, { waitUntil: "networkidle", timeout: 60000 });
+  await page.getByText("进入本地预览账户", { exact: true }).click();
+  await page.waitForTimeout(250);
+  await page.getByText("发现原力", { exact: true }).last().click();
+  await page.waitForTimeout(250);
+  await page.getByText("签到", { exact: true }).click();
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: resolve(outputRoot, "check-in-dialog-375x667.png") });
+
   if (consoleErrors.length > 0) {
     throw new Error(`Browser runtime errors:\n${consoleErrors.join("\n")}`);
   }

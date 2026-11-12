@@ -13,12 +13,12 @@ BrightGlobe is a global contribution and rewards platform. Its product foundatio
 - [x] Expo SDK 58 app workspace created
 - [x] Five primary app routes scaffolded: Home, Tasks, Rewards, Wallet, Profile
 - [x] English and Simplified Chinese locale foundation
-- [x] Native 3D Earth background integrated into Home with bundled 2K day/night/cloud maps (device validation pending)
+- [x] Native 3D Earth background integrated into Home with five bundled 2K texture maps (device validation pending)
 - [x] API client foundation and EAS build profiles
 - [ ] Backend API and authentication integration
 - [ ] Server-authoritative rewards and append-only ledger
 - [ ] Persistent account and locale preferences
-- [x] GitHub Actions validation: npm install, TypeScript 7.1 typecheck, Expo Doctor (20/20)
+- [x] GitHub Actions validation: npm install, TypeScript 7.1 typecheck, Expo Doctor (20/20; Phase 3 source)
 
 ## Product safety boundary
 

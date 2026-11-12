@@ -66,7 +66,10 @@ const messages = {
     rewardThree: "Event access",
     rewardThreeDesc: "Priority access to selected online community events.",
     notConnected: "Not connected",
-    apiNotice: "Account and reward data will connect to the BrightGlobe API in a later milestone."
+    apiNotice: "Account and reward data will connect to the BrightGlobe API in a later milestone.",
+    notFoundTitle: "Page not found",
+    notFoundDescription: "This BrightGlobe route does not exist.",
+    goHome: "Return home"
   },
   "zh-CN": {
     brandTagline: "全球贡献者网络",
@@ -131,7 +134,10 @@ const messages = {
     rewardThree: "活动参与资格",
     rewardThreeDesc: "优先参与部分线上社区活动。",
     notConnected: "尚未连接",
-    apiNotice: "账户和奖励数据将在后续里程碑接入 BrightGlobe API。"
+    apiNotice: "账户和奖励数据将在后续里程碑接入 BrightGlobe API。",
+    notFoundTitle: "页面不存在",
+    notFoundDescription: "你访问的 BrightGlobe 页面不存在。",
+    goHome: "返回首页"
   }
 } as const;
 

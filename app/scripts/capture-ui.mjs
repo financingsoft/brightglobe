@@ -55,8 +55,15 @@ const server = createServer(async (request, response) => {
       const fileInfo = await stat(filePath);
       if (fileInfo.isDirectory()) filePath = resolve(filePath, "index.html");
     } catch {
-      // Expo Router uses client-side navigation. Unknown page paths fall back to index.html.
-      filePath = resolve(appRoot, "index.html");
+      // Expo's static export emits most route documents as <route>.html.
+      const htmlRoute = resolve(appRoot, `.${pathname}.html`);
+      try {
+        await stat(htmlRoute);
+        filePath = htmlRoute;
+      } catch {
+        // Only unknown paths should fall back to the app shell.
+        filePath = resolve(appRoot, "index.html");
+      }
     }
 
     const body = await readFile(filePath);
@@ -114,24 +121,25 @@ try {
   // Capture all routes in the V1.6 acceptance matrix at a fixed phone viewport.
   await page.setViewportSize({ width: 375, height: 667 });
   const routeCaptures = [
-    ["login-375x667.png", "/login"],
-    ["wallet-375x667.png", "/wallet"],
-    ["points-record-375x667.png", "/points-record"],
-    ["force-record-375x667.png", "/force-record"],
-    ["announcements-375x667.png", "/announcements"],
-    ["announcement-detail-375x667.png", "/announcement-detail"],
-    ["invite-375x667.png", "/invite"],
-    ["passport-375x667.png", "/passport"],
-    ["community-base-375x667.png", "/base"],
-    ["settings-375x667.png", "/settings"],
-    ["benefits-375x667.png", "/rewards"],
-    ["activity-detail-375x667.png", "/activity"],
-    ["official-follow-375x667.png", "/official-follow"],
-    ["shopping-375x667.png", "/category"]
+    ["login-375x667.png", "/login", "登录注册"],
+    ["wallet-375x667.png", "/wallet", "我的钱包"],
+    ["points-record-375x667.png", "/points-record", "黑钻记录"],
+    ["force-record-375x667.png", "/force-record", "原力记录"],
+    ["announcements-375x667.png", "/announcements", "星球公告"],
+    ["announcement-detail-375x667.png", "/announcement-detail", "公告详情"],
+    ["invite-375x667.png", "/invite", "邀请码"],
+    ["passport-375x667.png", "/passport", "数据护照"],
+    ["community-base-375x667.png", "/base", "星球基地"],
+    ["settings-375x667.png", "/settings", "账户设置"],
+    ["benefits-375x667.png", "/rewards", "玩转黑钻"],
+    ["activity-detail-375x667.png", "/activity", "社区活动"],
+    ["official-follow-375x667.png", "/official-follow", "关注微信公众号"],
+    ["shopping-375x667.png", "/category", "购物"]
   ];
 
-  for (const [fileName, route] of routeCaptures) {
+  for (const [fileName, route, expectedTitle] of routeCaptures) {
     await page.goto(`http://127.0.0.1:${port}${basePath}${route}`, { waitUntil: "networkidle", timeout: 60000 });
+    await page.getByText(expectedTitle, { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
     await page.waitForTimeout(180);
     await page.screenshot({ path: resolve(outputRoot, fileName) });
   }

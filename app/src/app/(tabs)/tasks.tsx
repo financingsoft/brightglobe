@@ -3,6 +3,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { AppScreen } from "@/components/ui";
 import { useI18n } from "@/i18n/locale";
+import { useAuth } from "@/auth/session";
 
 type CategoryId = "shopping" | "games" | "entertainment" | "finance" | "wellness";
 
@@ -37,6 +38,13 @@ export default function TasksScreen() {
   const [checkedIn, setCheckedIn] = useState(false);
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
+  const requireLogin = (action: () => void) => {
+    if (!isAuthenticated) {
+      router.push("/login");
+      return;
+    }
+    action();
+  };
 
   const categories: { id: CategoryId; label: string }[] = [
     { id: "shopping", label: t("购物", "Shopping") },
@@ -58,7 +66,7 @@ export default function TasksScreen() {
     <AppScreen>
       <View style={styles.pageHeader}>
         <Text style={styles.pageTitle}>{t("发现原力", "Discover Power")}</Text>
-        <Pressable accessibilityRole="button" onPress={() => router.push("/help")} style={styles.helpButton}>
+        <Pressable accessibilityRole="button" onPress={() => requireLogin(() => router.push("/help"))} style={styles.helpButton}>
           <Text style={styles.helpGlyph}>?</Text>
         </Pressable>
       </View>
@@ -75,7 +83,7 @@ export default function TasksScreen() {
         </View>
         <Pressable
           accessibilityRole="button"
-          onPress={() => setShowCheckin(true)}
+          onPress={() => requireLogin(() => setShowCheckin(true))}
           style={({ pressed }) => [styles.checkinButton, checkedIn && styles.checkinButtonDone, pressed && styles.pressed]}
         >
           <Text style={[styles.checkinText, checkedIn && styles.checkinTextDone]}>
@@ -92,7 +100,7 @@ export default function TasksScreen() {
           <Pressable
             key={item.id}
             accessibilityRole="button"
-            onPress={() => router.push({ pathname: "/category", params: { category: item.id } })}
+            onPress={() => requireLogin(() => router.push({ pathname: "/category", params: { category: item.id } }))}
             style={styles.categoryItem}
           >
             <CategoryGlyph category={item.id} />
@@ -111,14 +119,14 @@ export default function TasksScreen() {
               <CategoryGlyph category={mission.category} small />
             </View>
             <Pressable
-              onPress={() => router.push({ pathname: "/activity", params: { title: mission.title } })}
+              onPress={() => requireLogin(() => router.push({ pathname: "/activity", params: { title: mission.title } }))}
               style={styles.missionCopy}
             >
               <Text style={styles.missionTitle}>{mission.title}</Text>
               <Text style={styles.missionHint}>{mission.hint}</Text>
             </Pressable>
             <Text style={styles.missionReward}>{mission.reward}</Text>
-            <Pressable accessibilityRole="button" onPress={() => setSelectedMission(mission)} style={styles.infoButton}>
+            <Pressable accessibilityRole="button" onPress={() => requireLogin(() => setSelectedMission(mission))} style={styles.infoButton}>
               <Text style={styles.infoGlyph}>i</Text>
             </Pressable>
           </View>

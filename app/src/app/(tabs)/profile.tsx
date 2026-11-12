@@ -4,6 +4,35 @@ import { AppScreen } from "@/components/ui";
 import { useI18n } from "@/i18n/locale";
 import { useAuth } from "@/auth/session";
 
+type ProfileIconKind = "force" | "invite" | "base" | "settings";
+
+function ProfileGlyph({ kind }: { kind: ProfileIconKind }) {
+  if (kind === "force") {
+    return <View style={styles.forceGlyph}><View style={styles.forceRing}><View style={styles.forceCenter} /></View></View>;
+  }
+  if (kind === "invite") {
+    return (
+      <View style={styles.inviteGlyph}>
+        <View style={styles.inviteLinkHorizontal} />
+        <View style={styles.inviteLinkVertical} />
+        <View style={[styles.inviteNode, styles.inviteNodeTop]} />
+        <View style={[styles.inviteNode, styles.inviteNodeLeft]} />
+        <View style={[styles.inviteNode, styles.inviteNodeRight]} />
+      </View>
+    );
+  }
+  if (kind === "base") {
+    return (
+      <View style={styles.baseGlyph}>
+        <View style={styles.baseRoofLeft} />
+        <View style={styles.baseRoofRight} />
+        <View style={styles.baseBody} />
+      </View>
+    );
+  }
+  return <Text style={styles.settingsGlyph}>⚙</Text>;
+}
+
 export default function ProfileScreen() {
   const { locale } = useI18n();
   const router = useRouter();
@@ -49,25 +78,25 @@ export default function ProfileScreen() {
       </View>
 
       <Pressable onPress={() => openProtected("/force-record")} style={styles.menuRow}>
-        <Text style={styles.menuIcon}>◎</Text>
+        <ProfileGlyph kind="force" />
         <Text style={styles.menuTitle}>{t("我的原力值", "My Contribution Power")}</Text>
         <Text style={styles.menuValue}>534</Text>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
       <Pressable onPress={() => openProtected("/invite")} style={styles.menuRow}>
-        <Text style={styles.menuIcon}>♧</Text>
+        <ProfileGlyph kind="invite" />
         <Text style={styles.menuTitle}>{t("我的邀请码", "My invitation code")}</Text>
         <Text style={styles.menuValue}>{t("邀请好友", "Invite friends")}</Text>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
       <Pressable onPress={() => openProtected("/base")} style={styles.menuRow}>
-        <Text style={styles.menuIcon}>⌂</Text>
+        <ProfileGlyph kind="base" />
         <Text style={styles.menuTitle}>{t("星球基地", "Community base")}</Text>
         <Text style={styles.menuValue} />
         <Text style={styles.chevron}>›</Text>
       </Pressable>
       <Pressable onPress={() => openProtected("/settings")} style={styles.menuRow}>
-        <Text style={styles.menuIcon}>⚙</Text>
+        <ProfileGlyph kind="settings" />
         <Text style={styles.menuTitle}>{t("设置", "Settings")}</Text>
         <Text style={styles.menuValue} />
         <Text style={styles.chevron}>›</Text>
@@ -93,7 +122,21 @@ const styles = StyleSheet.create({
   assetValue: { color: "#333333", fontSize: 14, fontWeight: "700" },
   assetHint: { color: "#888888", fontSize: 8 },
   menuRow: { minHeight: 46, borderBottomWidth: 1, borderColor: "#E5E5E5", flexDirection: "row", alignItems: "center", gap: 10 },
-  menuIcon: { color: "#777777", fontSize: 18, width: 22, textAlign: "center" },
+  forceGlyph: { width: 22, height: 22, alignItems: "center", justifyContent: "center" },
+  forceRing: { width: 14, height: 14, borderRadius: 7, borderWidth: 1.5, borderColor: "#777777", alignItems: "center", justifyContent: "center" },
+  forceCenter: { width: 4, height: 4, borderRadius: 2, backgroundColor: "#777777" },
+  inviteGlyph: { width: 22, height: 22, position: "relative" },
+  inviteLinkHorizontal: { position: "absolute", height: 1.4, left: 6, right: 6, top: 10, backgroundColor: "#777777" },
+  inviteLinkVertical: { position: "absolute", width: 1.4, height: 7, left: 10, top: 4, backgroundColor: "#777777" },
+  inviteNode: { position: "absolute", width: 6, height: 6, borderRadius: 3, borderWidth: 1.2, borderColor: "#777777", backgroundColor: "#FFFFFF" },
+  inviteNodeTop: { left: 8, top: 1 },
+  inviteNodeLeft: { left: 2, top: 13 },
+  inviteNodeRight: { right: 2, top: 13 },
+  baseGlyph: { width: 22, height: 22, position: "relative", alignItems: "center" },
+  baseRoofLeft: { position: "absolute", top: 5, left: 3, width: 10, height: 1.6, backgroundColor: "#777777", transform: [{ rotate: "-35deg" }] },
+  baseRoofRight: { position: "absolute", top: 5, right: 3, width: 10, height: 1.6, backgroundColor: "#777777", transform: [{ rotate: "35deg" }] },
+  baseBody: { position: "absolute", top: 8, width: 14, height: 11, borderWidth: 1.4, borderColor: "#777777", borderBottomWidth: 1.4 },
+  settingsGlyph: { color: "#777777", fontSize: 17, width: 22, textAlign: "center" },
   menuTitle: { color: "#444444", fontSize: 11, flex: 1 },
   menuValue: { color: "#999999", fontSize: 9 },
   chevron: { color: "#888888", fontSize: 18, marginLeft: 1 }

@@ -67,8 +67,9 @@ jobs:
         run: node scripts/capture-ui.mjs
 
       - name: Upload UI screenshots
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: brightglobe-v1.6-ui-baseline
           path: app/artifacts/ui-baseline/
-          if-no-files-found: error
+          if-no-files-found: warn

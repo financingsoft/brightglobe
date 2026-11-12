@@ -32,6 +32,8 @@ The three runtime maps come from the official [Solar System Scope texture pack](
 | `earth-day.jpg` | Earth Day Map | Daytime land/ocean texture | 308,624 bytes |
 | `earth-night.jpg` | Earth Night Map | Night-side city lights | 170,657 bytes |
 | `earth-clouds.jpg` | Earth Clouds | Separate moving cloud shell | 801,558 bytes |
+| `earth-normal.jpg` | Earth Normal Map | Surface normal detail for terrain relief | 91,136 bytes |
+| `earth-specular.jpg` | Earth Specular Map | Ocean-only specular highlight mask | 211,373 bytes |
 
 All three images are 2048×1024. The downloader optimizes the images for mobile use and converts the cloud map to grayscale. Source URLs, dimensions, SHA-256 checksums, and license metadata are recorded in `app/assets/earth/ASSET_MANIFEST.json`. Attribution is preserved in `app/assets/earth/ATTRIBUTION.md`.
 
@@ -50,10 +52,12 @@ To refresh the assets, run the **Prepare bundled Earth textures** workflow in Gi
 
 `app/src/components/earth/EarthBackground.tsx` contains the native Three.js scene:
 
-- The day and night surface maps blend using a GLSL day/night terminator.
-- City lights are shown on the night side.
-- Clouds are rendered on an independent translucent sphere and rotate slightly faster than the ground surface.
-- A blue atmospheric rim and a restrained star field complete the scene.
+- The day and night surface maps blend using a GLSL day/night terminator driven by a fixed world-space sun direction.
+- City lights are shown on the night side; a subtle twilight band softens the day/night boundary.
+- The Earth Normal Map perturbs the surface normal to add fine terrain relief.
+- The Earth Specular Map limits directional sun glints to ocean surfaces.
+- Clouds are rendered on an independent translucent sphere, lit separately, and rotate slightly faster than the ground surface.
+- A sun-aware blue atmospheric rim and a restrained star field complete the scene.
 - The component is non-interactive and uses a low-power GPU preference with a capped device-pixel ratio.
 - Rendering pauses when the app enters the background.
 - The Home route passes its navigation focus state to the Earth component so the animation pauses when another tab is selected.
@@ -82,13 +86,13 @@ Status: <strong>completed in source repository</strong>; verify the first instal
 
 ### Phase 3 — Visual fidelity
 
-Status: first pass implemented; tune after device screenshots.
+Status: visual fidelity pass implemented; final tuning awaits device screenshots.
 
-- Day/night terminator and night lights implemented.
-- Clouds now use a separate translucent shell.
-- Blue atmospheric rim implemented.
-- Further tune cloud opacity, light direction, land brightness, and visual framing against physical-device screenshots.
-- Add a normal/bump map only if it noticeably improves the mobile result.
+- Day/night terminator and night lights are driven by a fixed world-space sun direction.
+- Normal map and ocean specular map add terrain and sea-light detail.
+- Clouds use a separate translucent shell with independent drift and solar lighting.
+- Atmosphere shading responds to the lit side of the planet.
+- Framing and rotation speed have been tuned for the Home hero card; adjust after physical-device screenshots.
 
 ### Phase 4 — Lifecycle and performance
 
@@ -132,4 +136,4 @@ Then create EAS development/preview builds and test on physical devices. Native 
 
 ## Honest status
 
-The texture download workflow has completed successfully and GitHub contains all three bundled local image assets. Source code and documentation have been committed. The GitHub Actions validation run for app commit `360c4bc7e1257e3605f7f4d23edb66413c236bd7` completed successfully: `npm install`, TypeScript 7.1 `tsc --noEmit`, and Expo Doctor (20/20 checks) all passed. The follow-up documentation-only commit does not change the validated app sources. EAS iOS/Android builds and physical-device rendering tests have not yet been performed. Do not describe the Earth background as production-certified until native builds and device tests pass.
+The texture download workflow has completed successfully and GitHub contains all three bundled local image assets. Source code and documentation have been committed. The previous GitHub Actions run for app commit `360c4bc7e1257e3605f7f4d23edb66413c236bd7` passed `npm install`, TypeScript 7.1 `tsc --noEmit`, and Expo Doctor (20/20). The current Phase 3 shader and new texture references require a fresh validation run. EAS iOS/Android builds and physical-device rendering tests have not yet been performed. Do not describe the Earth background as production-certified until native builds and device tests pass.

@@ -17,11 +17,12 @@ function PageHeader({ title, onBack, onClose }: { title: string; onBack: () => v
 }
 
 function WireframeImage({ width, height, cover = false }: { width?: number; height: number; cover?: boolean }) {
+  const canvasWidth = width ?? 320;
   return (
     <View style={[styles.wireframeImage, { height }, width ? { width } : styles.wireframeStretch, cover && styles.wireframeCover]}>
-      <View style={{ position: "absolute", top: height * 0.16, right: width * 0.2, width: height * 0.09, height: height * 0.09, borderRadius: height * 0.05, backgroundColor: "#C5C5C5" }} />
-      <View style={{ position: "absolute", bottom: -height * 0.08, left: -width * 0.12, width: 0, height: 0, borderLeftWidth: width * 0.34, borderRightWidth: width * 0.34, borderBottomWidth: height * 0.62, borderLeftColor: "transparent", borderRightColor: "transparent", borderBottomColor: "#69B3D5" }} />
-      <View style={{ position: "absolute", bottom: -height * 0.1, right: -width * 0.13, width: 0, height: 0, borderLeftWidth: width * 0.38, borderRightWidth: width * 0.38, borderBottomWidth: height * 0.48, borderLeftColor: "transparent", borderRightColor: "transparent", borderBottomColor: "#318FC0" }} />
+      <View style={{ position: "absolute", top: height * 0.16, right: canvasWidth * 0.2, width: height * 0.09, height: height * 0.09, borderRadius: height * 0.05, backgroundColor: "#C5C5C5" }} />
+      <View style={{ position: "absolute", bottom: -height * 0.08, left: -canvasWidth * 0.12, width: 0, height: 0, borderLeftWidth: canvasWidth * 0.34, borderRightWidth: canvasWidth * 0.34, borderBottomWidth: height * 0.62, borderLeftColor: "transparent", borderRightColor: "transparent", borderBottomColor: "#69B3D5" }} />
+      <View style={{ position: "absolute", bottom: -height * 0.1, right: -canvasWidth * 0.13, width: 0, height: 0, borderLeftWidth: canvasWidth * 0.38, borderRightWidth: canvasWidth * 0.38, borderBottomWidth: height * 0.48, borderLeftColor: "transparent", borderRightColor: "transparent", borderBottomColor: "#318FC0" }} />
     </View>
   );
 }
@@ -70,8 +71,8 @@ export default function CategoryScreen() {
           </Pressable>
         ))}
       </View>
-      <View style={styles.featureBanner}
-        <WireframeImage height={111} cover />>
+      <View style={styles.featureBanner}>
+        <WireframeImage height={111} cover />
         <Text style={styles.bannerCaption}>{t("精选内容", "FEATURED CONTENT")}</Text>
         <Text style={styles.bannerTitle}>{t("发现值得阅读与分享的内容", "Discover stories worth reading and sharing")}</Text>
         <Text style={styles.bannerSub}>{t("小说 · 漫画 · 资讯 · 音乐", "Reading · Comics · News · Music")}</Text>
@@ -109,8 +110,8 @@ export default function CategoryScreen() {
 
   const renderGames = () => (
     <View style={styles.content}>
-      <View style={styles.gameBanner}
-        <WireframeImage height={112} cover />>
+      <View style={styles.gameBanner}>
+        <WireframeImage height={112} cover />
         <Text style={styles.bannerCaption}>{t("网易游戏", "NETEASE GAMES")}</Text>
         <Text style={styles.bannerTitle}>{t("发现好玩的游戏", "Discover games to play")}</Text>
         <Text style={styles.bannerSub}>{t("精选游戏与社区互动", "Selected games and community activities")}</Text>

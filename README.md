@@ -18,7 +18,7 @@ BrightGlobe is a global contribution and rewards platform. Its product foundatio
 - [ ] Backend API and authentication integration
 - [ ] Server-authoritative rewards and append-only ledger
 - [ ] Persistent account and locale preferences
-- [x] GitHub Actions validation workflow configured (first run pending)
+- [x] GitHub Actions validation: npm install, TypeScript 7.1 typecheck, Expo Doctor (20/20)
 
 ## Product safety boundary
 

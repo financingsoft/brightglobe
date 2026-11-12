@@ -2,8 +2,9 @@
 
 **Status:** Binding implementation contract  
 **Target reference:** NetEase Planet PRD V1.6.0, authored 2018-10-05 and published 2018-10-08  
-**Contract revision:** 1.0  
+**Contract revision:** 1.1  
 **Applies to:** React Native app screens, navigation, shared components, interaction states, and browser preview  
+**Revision date:** 2026-11-13  
 **Rule:** Implementation must follow this document. A visually attractive reinterpretation is not acceptance.
 
 ---
@@ -314,17 +315,85 @@ Language switching may be placed here as a BrightGlobe-specific setting.
 
 ### 4.13 Category and activity detail pages
 
-Reference: Fig. 13 and Fig. 15.
+Reference: Fig. 13 and Fig. 15. Fig. 13 contains distinct wireframes for the Home, shopping, games, novel/reading, news, comics, competition/bidding, and treasure-hunt destinations. These are separate page templates, not one generic list screen with a changed title.
 
-Implement only the categories actually shown by the PRD:
-- Shopping
-- Games
-- Entertainment second-level categories (reading, comics, news, music)
-- Finance
-- Wellness
-- Home activity detail / benefit detail
+**Shopping page**
+- Top secondary-page navigation.
+- Search field.
+- Partner/channel switcher.
+- Category icon grid.
+- Featured product / offer list with image thumbnail, item title and short detail / reward affordance.
+- Selecting a category or offer opens its corresponding detail.
 
-Content may be BrightGlobe-native, but the list/detail hierarchy and navigation must follow the source. Detailed task-provider pages are not fully documented by the PRD; mark their internals as product-specific instead of inventing a fake NetEase match.
+**Games page**
+- Top secondary-page navigation.
+- Featured game / activity banner.
+- Game-type or channel tabs.
+- Vertical game list: icon/cover, game name, compact description, popularity/status and action.
+- Selecting a game opens the game/task detail destination.
+
+**Novel / reading page**
+- Top secondary-page navigation.
+- Content-channel tabs and search field.
+- Featured-book banner.
+- Reading history / bookshelf area with horizontal cover thumbnails.
+- Recommended books in compact rows or cards.
+
+**News page**
+- Top secondary-page navigation.
+- Horizontal news-channel strip.
+- Search affordance.
+- Vertical article list with thumbnail, title, brief summary and source/time metadata.
+
+**Comics page**
+- Top secondary-page navigation.
+- Featured-comics banner.
+- Search field and genre/category strip.
+- Vertical comic list with cover, title, short description and update/status metadata.
+
+**Competition / bidding page**
+- Top secondary-page navigation.
+- Featured competition banner and rules entry.
+- Two states/tabs for ongoing and completed competitions.
+- Competition/match cards with participant/team identity, status and detail entry.
+- BrightGlobe must not add cash betting, wagering, or gambling functionality; preserve only a harmless community prediction/challenge structure where legally appropriate.
+
+**Treasure-hunt page**
+- Top secondary-page navigation.
+- Rules / explanation panel.
+- A vertical list of zones or stages.
+- Each zone shows lock/open state, requirement/progress and a clear next action.
+- BrightGlobe may use a non-cash exploration challenge; do not imply mining cryptocurrency or guaranteed yield.
+
+**Entertainment gateway**
+- Shows separate entries for reading/novels, comics, news and music. Each entry must route to a distinct destination page. Music is a BrightGlobe mapping because the PRD Fig. 13 set is not a complete production specification for the music provider.
+
+**Finance and wellness**
+- The Force-category map names these categories, but the source pages do not provide enough detailed provider UI to reconstruct their inner screens. Implement a category landing/unavailable state with clear source-gap labeling rather than fabricating detailed provider features.
+
+**Evidence boundary**
+The above page structures are grounded in the Fig. 13 page montage; text/content, product providers, final production assets, exact colors, and precise spacing are not fully specified. BrightGlobe-native content can fill the semantic slots, but those replacements must not be described as pixel-exact NetEase content.
+
+### 4.14 Source coverage matrix
+
+| Reference | Screen / flow | Binding coverage | Confidence |
+|---|---|---|---|
+| Fig. 11 | Login, registration, nickname, optional invitation code, identity/help | Shared SMS entry; safe preview-only signup flow | High for structure; actual identity verification omitted for safety |
+| Fig. 12 | Home, points record, Force record, announcement | Required hierarchy and navigation | High for structure |
+| Fig. 13 A | Home | Home entry layout | High for structure |
+| Fig. 13 B | Shopping | Search, partner tabs, category grid, product rows | High for structure |
+| Fig. 13 C | Games | Feature area, tabs, game rows | High for structure |
+| Fig. 13 D | Novel / reading | Channel tabs, search, featured book, history, recommendations | High for structure |
+| Fig. 13 E | News | Channel tabs, search, article rows | High for structure |
+| Fig. 13 F | Comics | Feature area, search, genre tabs, comic rows | High for structure |
+| Fig. 13 G | Competition | Rules/banner, ongoing/completed states, event rows | High for structure; BrightGlobe excludes wagering |
+| Fig. 13 H | Treasure hunt | Rules, zone states and progress | High for structure; BrightGlobe excludes token mining |
+| Fig. 14 | Check-in dialog | Center dialog, reward copy, image area, two actions | High for structure |
+| Fig. 15 | Force categories | Category entry destinations | High for structure |
+| Fig. 16 | Invitation / follow official account | Invitation code and official-follow task | High for structure |
+| Fig. 17 | My and account subpages | Assets, wallet/points, Force, invite, passport, base, settings | High for structure; blockchain-only private-key functions excluded |
+
+Do not treat “High for structure” as high-fidelity visual evidence. The embedded images are wireframes, not final released-app screenshots.
 
 ---
 

@@ -173,7 +173,7 @@ try {
   };
 
   const tapInAppBack = async () => {
-    await page.getByText("‹", { exact: true }).first().click();
+    await page.getByText("‹", { exact: true }).last().click();
   };
 
   await page.goto(`http://127.0.0.1:${port}${basePath}/login`, { waitUntil: "networkidle", timeout: 60000 });

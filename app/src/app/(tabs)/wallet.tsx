@@ -11,7 +11,7 @@ export default function WalletScreen() {
     { title: t("每日签到", "Daily check-in"), time: t("今天 09:12", "Today 09:12"), value: "+3" },
     { title: t("阅读精选内容", "Read selected content"), time: t("昨天 18:40", "Yesterday 18:40"), value: "+1.2" },
     { title: t("社区活动参与", "Community activity"), time: t("11月08日 15:20", "Nov 08 15:20"), value: "+5" },
-    { title: t("权益兑换", "Benefit redemption"), time: t("11月06日 12:05", "Nov 06 12:05"), value: "−8" }
+    { title: t("任务奖励发放", "Mission reward"), time: t("11月06日 12:05", "Nov 06 12:05"), value: "+2.0" }
   ];
 
   return (

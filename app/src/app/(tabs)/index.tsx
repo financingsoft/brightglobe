@@ -26,21 +26,21 @@ export default function HomeScreen() {
       <View style={styles.heroPanel}>
         <EarthBackground />
         <View style={styles.heroContent}>
-        <View style={styles.heroTopRow}>
-          <Pill label={t("preview")} tone="gold" />
-          <Text style={styles.heroSymbol}>✦</Text>
-        </View>
-        <Text style={styles.heroLabel}>{t("contributionPower")}</Text>
-        <Text style={styles.heroValue}>1,280</Text>
-        <Text style={styles.heroHint}>
-          {t("currentLevel")}  ·  {t("levelLabel")} 4
-        </Text>
-        <View style={styles.heroDivider} />
-        <View style={styles.progressHeader}>
-          <Text style={styles.progressTitle}>{t("todayProgress")}</Text>
-          <Text style={styles.progressCount}>2 / 4</Text>
-        </View>
-        <ProgressTrack progress={50} />
+          <View style={styles.heroTopRow}>
+            <Pill label={t("preview")} tone="gold" />
+            <Text style={styles.heroSymbol}>✦</Text>
+          </View>
+          <Text style={styles.heroLabel}>{t("contributionPower")}</Text>
+          <Text style={styles.heroValue}>1,280</Text>
+          <Text style={styles.heroHint}>
+            {t("currentLevel")}  ·  {t("levelLabel")} 4
+          </Text>
+          <View style={styles.heroDivider} />
+          <View style={styles.progressHeader}>
+            <Text style={styles.progressTitle}>{t("todayProgress")}</Text>
+            <Text style={styles.progressCount}>2 / 4</Text>
+          </View>
+          <ProgressTrack progress={50} />
         </View>
       </View>
 

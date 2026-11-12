@@ -94,6 +94,36 @@ export default function HomeScreen() {
           <Text style={styles.activityDescription}>{t("活动与星球集市", "Events and marketplace")}</Text>
           <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
         </Pressable>
+        <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "reading" } }))} style={styles.activityTile}>
+          <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>▤</Text></View>
+          <Text style={styles.activityTitle}>{t("小说", "Reading")}</Text>
+          <Text style={styles.activityDescription}>{t("海量免费小说", "Explore stories")}</Text>
+          <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
+        </Pressable>
+        <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "news" } }))} style={styles.activityTile}>
+          <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>▥</Text></View>
+          <Text style={styles.activityTitle}>{t("资讯", "News")}</Text>
+          <Text style={styles.activityDescription}>{t("精选时事内容", "Selected stories")}</Text>
+          <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
+        </Pressable>
+        <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "comics" } }))} style={styles.activityTile}>
+          <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>▧</Text></View>
+          <Text style={styles.activityTitle}>{t("漫画", "Comics")}</Text>
+          <Text style={styles.activityDescription}>{t("精品漫画内容", "Featured comics")}</Text>
+          <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
+        </Pressable>
+        <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "bidding" } }))} style={styles.activityTile}>
+          <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>★</Text></View>
+          <Text style={styles.activityTitle}>{t("竞猜", "Competition")}</Text>
+          <Text style={styles.activityDescription}>{t("赛事互动挑战", "Community challenge")}</Text>
+          <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
+        </Pressable>
+        <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "treasure" } }))} style={styles.activityTile}>
+          <View style={styles.activityIconCircle}><Text style={styles.activityGlyph}>♙</Text></View>
+          <Text style={styles.activityTitle}>{t("挖宝", "Treasure hunt")}</Text>
+          <Text style={styles.activityDescription}>{t("开启探索矿区", "Explore zones")}</Text>
+          <Text style={styles.activityLink}>{t("查看", "View")} ›</Text>
+        </Pressable>
       </ScrollView>
 
       <Modal visible={showLoginPrompt} transparent animationType="fade" onRequestClose={() => setShowLoginPrompt(false)}>

@@ -132,4 +132,4 @@ Then create EAS development/preview builds and test on physical devices. Native 
 
 ## Honest status
 
-The texture download workflow has completed successfully and GitHub contains all three bundled local image assets. Source code and documentation have been committed. The app has not yet been certified by a completed npm/typecheck/Expo Doctor workflow, EAS build, or physical-device test. Do not describe it as production-ready until those checks pass.
+The texture download workflow has completed successfully and GitHub contains all three bundled local image assets. Source code and documentation have been committed. The GitHub Actions validation run for app commit `360c4bc7e1257e3605f7f4d23edb66413c236bd7` completed successfully: `npm install`, TypeScript 7.1 `tsc --noEmit`, and Expo Doctor (20/20 checks) all passed. The follow-up documentation-only commit does not change the validated app sources. EAS iOS/Android builds and physical-device rendering tests have not yet been performed. Do not describe the Earth background as production-certified until native builds and device tests pass.

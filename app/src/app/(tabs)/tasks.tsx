@@ -58,9 +58,10 @@ export default function TasksScreen() {
   const missions: Mission[] = [
     { id: "shop", category: "shopping", title: t("精选商城每日浏览", "Browse the featured marketplace"), hint: t("发现每日精选内容", "Discover daily highlights"), reward: t("每日1~5原力", "1–5 Power daily") },
     { id: "game", category: "games", title: t("参与社区小游戏", "Play a community mini game"), hint: t("完成游戏互动任务", "Complete a game activity"), reward: t("每日3~8原力", "3–8 Power daily") },
-    { id: "read", category: "entertainment", title: t("阅读精选内容", "Read selected content"), hint: t("浏览文章、漫画与资讯", "Explore articles, comics, and news"), reward: t("每日1~3原力", "1–3 Power daily") },
+    { id: "comics", category: "entertainment", title: t("浏览精选漫画", "Browse selected comics"), hint: t("发现优质漫画内容", "Discover selected comics"), reward: t("每日1~3原力", "1–3 Power daily") },
+    { id: "news", category: "entertainment", title: t("查看新闻", "Read the news"), hint: t("了解最新时事动态", "Keep up with current topics"), reward: t("每日1~3原力", "1–3 Power daily") },
     { id: "invite", category: "shopping", title: t("邀请好友", "Invite friends"), hint: t("+10原力/被邀请人", "+10 Power per accepted invite"), reward: t("+10~500原力", "+10–500 Power") },
-    { id: "follow", category: "entertainment", title: t("关注 BrightGlobe 社区", "Follow BrightGlobe community"), hint: t("关注官方社区动态", "Follow official community updates"), reward: t("+2原力", "+2 Power") }
+    { id: "follow", category: "entertainment", title: t("关注官方公众号", "Follow the official account"), hint: t("关注并获取最新动态", "Follow official updates"), reward: t("+2原力", "+2 Power") }
   ];
 
   return (
@@ -93,10 +94,9 @@ export default function TasksScreen() {
         </Pressable>
       </View>
 
-      <View style={styles.sectionHeader}>
+      <View style={styles.categoryPanel}>
         <Text style={styles.sectionTitle}>{t("原力分类", "Power categories")}</Text>
-      </View>
-      <View style={styles.categoryGrid}>
+        <View style={styles.categoryGrid}>
         {categories.map((item) => (
           <Pressable
             key={item.id}
@@ -108,6 +108,7 @@ export default function TasksScreen() {
             <Text style={styles.categoryLabel}>{item.label}</Text>
           </Pressable>
         ))}
+        </View>
       </View>
 
       <View style={styles.sectionHeader}>
@@ -197,24 +198,25 @@ const styles = StyleSheet.create({
   checkinTextDone: { color: "#999999" },
   sectionHeader: { minHeight: 28, justifyContent: "center", borderBottomWidth: 1, borderColor: "#E0E0E0" },
   sectionTitle: { color: "#444444", fontSize: 10, fontWeight: "700" },
-  categoryGrid: { flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "#E0E0E0", paddingVertical: 9 },
+  categoryPanel: { borderWidth: 1, borderColor: "#DCDCDC", borderRadius: 8, paddingHorizontal: 9, paddingTop: 9, paddingBottom: 6, marginTop: 3 },
+  categoryGrid: { flexDirection: "row", justifyContent: "space-between", paddingTop: 9 },
   categoryItem: { flex: 1, alignItems: "center", justifyContent: "center", gap: 3, minHeight: 44 },
   cart: { width: 25, height: 23, alignItems: "flex-end", justifyContent: "flex-start" },
   cartHandle: { position: "absolute", top: 2, left: 1, width: 7, height: 2, backgroundColor: "#171717", transform: [{ rotate: "25deg" }] },
-  cartBasket: { position: "absolute", top: 5, left: 7, width: 16, height: 10, borderLeftWidth: 2, borderRightWidth: 2, borderBottomWidth: 2, borderColor: "#171717", transform: [{ skewX: "-12deg" }] },
+  cartBasket: { position: "absolute", top: 5, left: 7, width: 16, height: 10, backgroundColor: "#171717", borderRadius: 1, transform: [{ skewX: "-12deg" }] },
   cartWheelLeft: { position: "absolute", bottom: 1, left: 9, width: 4, height: 4, borderRadius: 2, backgroundColor: "#171717" },
   cartWheelRight: { position: "absolute", bottom: 1, right: 2, width: 4, height: 4, borderRadius: 2, backgroundColor: "#171717" },
-  gamepad: { width: 25, height: 16, borderRadius: 7, borderWidth: 2, borderColor: "#171717", position: "relative" },
-  gamepadCrossH: { position: "absolute", left: 4, top: 6, width: 8, height: 2, backgroundColor: "#171717" },
-  gamepadCrossV: { position: "absolute", left: 7, top: 3, width: 2, height: 8, backgroundColor: "#171717" },
-  gamepadDotOne: { position: "absolute", right: 5, top: 4, width: 3, height: 3, borderRadius: 2, backgroundColor: "#171717" },
-  gamepadDotTwo: { position: "absolute", right: 2, top: 8, width: 3, height: 3, borderRadius: 2, backgroundColor: "#171717" },
+  gamepad: { width: 27, height: 18, borderRadius: 7, backgroundColor: "#171717", position: "relative" },
+  gamepadCrossH: { position: "absolute", left: 4, top: 7, width: 8, height: 2, backgroundColor: "#FFFFFF" },
+  gamepadCrossV: { position: "absolute", left: 7, top: 4, width: 2, height: 8, backgroundColor: "#FFFFFF" },
+  gamepadDotOne: { position: "absolute", right: 5, top: 4, width: 3, height: 3, borderRadius: 2, backgroundColor: "#FFFFFF" },
+  gamepadDotTwo: { position: "absolute", right: 2, top: 8, width: 3, height: 3, borderRadius: 2, backgroundColor: "#FFFFFF" },
   mic: { width: 25, height: 24, alignItems: "center", position: "relative" },
-  micHead: { width: 9, height: 13, borderRadius: 6, borderWidth: 2, borderColor: "#171717" },
+  micHead: { width: 10, height: 14, borderRadius: 6, backgroundColor: "#171717" },
   micArc: { width: 16, height: 8, borderBottomWidth: 2, borderLeftWidth: 2, borderRightWidth: 2, borderColor: "#171717", borderBottomLeftRadius: 9, borderBottomRightRadius: 9, marginTop: -3 },
   micStand: { width: 2, height: 5, backgroundColor: "#171717", marginTop: 0 },
-  moneyIcon: { width: 24, height: 17, borderWidth: 2, borderColor: "#171717", alignItems: "center", justifyContent: "center" },
-  moneyGlyph: { color: "#171717", fontSize: 12, fontWeight: "800", lineHeight: 14 },
+  moneyIcon: { width: 25, height: 18, borderRadius: 2, backgroundColor: "#171717", alignItems: "center", justifyContent: "center" },
+  moneyGlyph: { color: "#FFFFFF", fontSize: 12, fontWeight: "800", lineHeight: 14 },
   heartGlyph: { color: "#171717", fontSize: 23, lineHeight: 25 },
   smallGlyph: { transform: [{ scale: 0.78 }] },
   categoryLabel: { color: "#444444", fontSize: 8 },

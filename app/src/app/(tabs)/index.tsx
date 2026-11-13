@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useIsFocused, useRouter } from "expo-router";
 import { AppScreen } from "@/components/ui";
+import { EarthBackground } from "@/components/earth/EarthBackground";
 import { useI18n } from "@/i18n/locale";
 import { useAuth } from "@/auth/session";
 
 export default function HomeScreen() {
   const { locale } = useI18n();
   const router = useRouter();
+  const isHomeFocused = useIsFocused();
   const { isAuthenticated } = useAuth();
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [claimed, setClaimed] = useState(false);
@@ -60,6 +62,14 @@ export default function HomeScreen() {
       </Pressable>
 
       <View style={styles.productionStage}>
+        <EarthBackground active={isHomeFocused} />
+        <View pointerEvents="none" style={styles.earthEyebrow}>
+          <Text style={styles.earthEyebrowTitle}>{t("我们的星球", "OUR PLANET")}</Text>
+          <View style={styles.earthEyebrowMeta}>
+            <View style={styles.earthLiveDot} />
+            <Text style={styles.earthEyebrowText}>{t("真实地球 · 昼夜光照", "LIVE EARTH · DAY / NIGHT")}</Text>
+          </View>
+        </View>
         <Pressable onPress={() => requireHomeLogin(() => router.push({ pathname: "/category", params: { category: "treasure" } }))} style={styles.mineEntry}>
           <View style={styles.mineOrb}><View style={styles.mineGem} /></View>
           <Text style={styles.mineLabel}>{t("黑钻挖宝", "Point mining")}</Text>
@@ -138,22 +148,26 @@ const styles = StyleSheet.create({
   noticeIcon: { color: "#777777", fontSize: 12 },
   noticeText: { flex: 1, color: "#777777", fontSize: 9 },
   noticeMore: { color: "#444444", fontSize: 9 },
-  productionStage: { height: 316, position: "relative", backgroundColor: "#FFFFFF" },
-  mineEntry: { position: "absolute", right: 27, top: 44, width: 68, alignItems: "center" },
-  mineOrb: { width: 50, height: 50, borderRadius: 25, backgroundColor: "#777777", alignItems: "center", justifyContent: "center" },
-  mineGem: { width: 11, height: 11, borderWidth: 2, borderColor: "#FFFFFF", transform: [{ rotate: "45deg" }] },
-  
-  mineLabel: { color: "#333333", fontSize: 10, marginTop: 5 },
-  growthEntry: { position: "absolute", top: 122, left: "40%", alignItems: "center", justifyContent: "center" },
-  growthGem: { color: "#4A4A4A", fontSize: 26, lineHeight: 29 },
-  growthLabel: { color: "#555555", fontSize: 10, marginTop: 3 },
-  growingValues: { position: "absolute", left: 0, right: 0, top: 64, bottom: 24 },
-  growingValue: { position: "absolute", alignItems: "center", gap: 1 },
-  valueOne: { left: "20%", top: 4 },
-  valueTwo: { left: "61%", top: 43 },
-  valueThree: { left: "39%", top: 104 },
-  smallGem: { color: "#555555", fontSize: 17, lineHeight: 19 },
-  smallValue: { color: "#555555", fontSize: 7 },
+  productionStage: { height: 316, position: "relative", backgroundColor: "#030C1A", borderRadius: 12, overflow: "hidden", marginTop: 10, marginBottom: 10 },
+  earthEyebrow: { position: "absolute", left: 16, top: 17, zIndex: 2, gap: 5 },
+  earthEyebrowTitle: { color: "#E3F1FF", fontSize: 11, fontWeight: "900", letterSpacing: 1.5 },
+  earthEyebrowMeta: { flexDirection: "row", alignItems: "center", gap: 6 },
+  earthLiveDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: "#61D9FF" },
+  earthEyebrowText: { color: "#8FAFCF", fontSize: 7, fontWeight: "800", letterSpacing: 1.1 },
+  mineEntry: { position: "absolute", left: 16, top: 78, width: 96, alignItems: "flex-start", zIndex: 3 },
+  mineOrb: { width: 48, height: 48, borderRadius: 24, borderWidth: 1, borderColor: "rgba(157, 205, 255, 0.9)", backgroundColor: "rgba(10, 31, 54, 0.94)", alignItems: "center", justifyContent: "center", shadowColor: "#4A9CFF", shadowOpacity: 0.4, shadowRadius: 14, shadowOffset: { width: 0, height: 0 }, elevation: 6 },
+  mineGem: { width: 11, height: 11, borderWidth: 2, borderColor: "#EAF6FF", transform: [{ rotate: "45deg" }] },
+  mineLabel: { color: "#EAF4FF", fontSize: 10, fontWeight: "700", marginTop: 7 },
+  growthEntry: { position: "absolute", top: 166, left: 13, width: 116, minHeight: 58, borderRadius: 13, borderWidth: 1, borderColor: "rgba(138, 190, 244, 0.3)", backgroundColor: "rgba(5, 19, 36, 0.78)", alignItems: "center", justifyContent: "center", zIndex: 3 },
+  growthGem: { color: "#D9EEFF", fontSize: 25, lineHeight: 27 },
+  growthLabel: { color: "#C5D9EE", fontSize: 9, fontWeight: "700", marginTop: 2 },
+  growingValues: { position: "absolute", left: 12, right: 12, top: 164, bottom: 8, zIndex: 3 },
+  growingValue: { position: "absolute", alignItems: "center", gap: 1, minWidth: 66, paddingHorizontal: 7, paddingVertical: 5, borderRadius: 9, borderWidth: 1, borderColor: "rgba(138, 190, 244, 0.25)", backgroundColor: "rgba(5, 19, 36, 0.76)" },
+  valueOne: { left: 0, top: 0 },
+  valueTwo: { left: 0, top: 43 },
+  valueThree: { left: 0, top: 86 },
+  smallGem: { color: "#D9EEFF", fontSize: 16, lineHeight: 18 },
+  smallValue: { color: "#EAF4FF", fontSize: 7, fontWeight: "700" },
   activityRail: { gap: 15, paddingHorizontal: 8, paddingBottom: 4, alignItems: "flex-start" },
   activityTile: { width: 128, height: 135, backgroundColor: "#F0F0F0", borderRadius: 8, padding: 8, alignItems: "center", justifyContent: "space-around" },
   activityIconCircle: { width: 42, height: 42, borderRadius: 21, borderWidth: 3, borderColor: "#777777", alignItems: "center", justifyContent: "center" },

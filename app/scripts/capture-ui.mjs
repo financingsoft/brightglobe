@@ -255,7 +255,7 @@ try {
   await waitForPath("/announcements");
   await page.getByText("星球公告", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
   await page.screenshot({ path: resolve(outputRoot, "announcements-from-home-375x667.png") });
-  await page.getByText("立即查看", { exact: true }).first().click();
+  await page.getByRole("button", { name: "查看公告详情", exact: true }).first().click();
   await waitForPath("/announcement-detail");
   await page.getByText("公告详情", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
   await page.screenshot({ path: resolve(outputRoot, "announcement-detail-from-home-375x667.png") });

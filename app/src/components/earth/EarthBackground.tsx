@@ -278,7 +278,7 @@ const ATMOSPHERE_FRAGMENT_SHADER = `
 // both sunlit terrain and the night-side city lights.
 const SUN_DIRECTION = new THREE.Vector3(0.98, 0.18, 0.22).normalize();
 const EARTH_RADIUS = 1.18;
-const EARTH_POSITION: [number, number, number] = [0.92, 0.015, 0];
+const EARTH_POSITION: [number, number, number] = [0, 0.015, 0];
 
 function Starfield({ count }: { count: number }) {
   const geometry = useMemo(() => {

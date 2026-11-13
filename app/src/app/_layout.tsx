@@ -2,7 +2,6 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { View } from "react-native";
-import { StarfieldBackground } from "@/components/StarfieldBackground";
 import { LocaleProvider } from "@/i18n/locale";
 import { AuthProvider } from "@/auth/session";
 
@@ -12,7 +11,6 @@ export default function RootLayout() {
       <LocaleProvider>
         <AuthProvider>
           <View style={styles.root}>
-            <StarfieldBackground />
             <StatusBar style="light" />
             <Stack
               screenOptions={{

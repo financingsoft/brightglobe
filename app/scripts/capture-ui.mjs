@@ -118,6 +118,16 @@ try {
   await page.waitForTimeout(350);
   await page.screenshot({ path: resolve(outputRoot, "home-390x844.png") });
 
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto(`http://127.0.0.1:${port}${basePath}/`, { waitUntil: "networkidle", timeout: 60000 });
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: resolve(outputRoot, "home-320x568.png") });
+
+  await page.setViewportSize({ width: 430, height: 932 });
+  await page.goto(`http://127.0.0.1:${port}${basePath}/`, { waitUntil: "networkidle", timeout: 60000 });
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: resolve(outputRoot, "home-430x932.png") });
+
   // Capture all routes in the V1.6 acceptance matrix at a fixed phone viewport.
   await page.setViewportSize({ width: 375, height: 667 });
   const routeCaptures = [

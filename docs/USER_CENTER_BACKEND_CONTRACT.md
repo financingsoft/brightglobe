@@ -239,3 +239,21 @@ Implemented in this repository slice:
 - [ ] Production PostgreSQL instance, real SMS delivery, HTTPS deployment, and production secrets.
 
 Passing repository CI does not certify production SMS, hosting, deployment, or native sign-in.
+
+
+## 10. V1.0 BD account module boundary (2026-11-13)
+
+The V1.0 BD internal account is a separate product domain and must not be added as columns to Better Auth `user` or `user_profile`.
+
+- Identity key: canonical Better Auth `user.id`.
+- Storage: BrightGlobe-owned `bd_accounts`, `bd_reward_rules`, `bd_reward_events`, `bd_ledger_transactions` and `bd_ledger_entries`.
+- APIs, all session-protected:
+  - `GET /api/v1/me/bd`
+  - `GET /api/v1/me/bd/history`
+  - `POST /api/v1/me/bd/daily-collection`
+- Amounts are integer base units; no floating-point arithmetic.
+- The client never sends user ID, reward amount, UTC period or rule version.
+- Profile APIs cannot write BD balances. There is no user wallet, SPL token account, transfer, exchange or cash-out in V1.0.
+- The full ledger, migration and posting invariants are specified in [BrightGlobe 1.0 BD Internal Ledger Contract](./BRIGHTGLOBE_V1_BD_LEDGER_CONTRACT.md).
+
+Invitation and other task reward modules remain out of scope until their own eligibility rules, budgets, abuse controls and release approvals exist.

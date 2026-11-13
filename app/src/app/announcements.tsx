@@ -20,7 +20,7 @@ export default function AnnouncementsScreen() {
         <View style={styles.back} />
       </View>
       {items.map((item) => (
-        <Pressable key={item.title} onPress={() => router.push({ pathname: "/announcement-detail", params: { title: item.title, body: item.body, date: item.date } })} style={styles.card}>
+        <Pressable key={item.title} accessibilityRole="button" accessibilityLabel={t("查看公告详情", "Open announcement details")} onPress={() => router.push({ pathname: "/announcement-detail", params: { title: item.title, body: item.body, date: item.date } })} style={styles.card}>
           <Text style={styles.title}>{item.title}</Text>
           <Text style={styles.body}>{item.body}</Text>
           <View style={styles.footer}><Text style={styles.date}>{item.date}</Text><Text style={styles.more}>{t("立即查看", "View now")} ›</Text></View>

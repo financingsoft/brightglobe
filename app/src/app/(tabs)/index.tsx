@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   noticeIcon: { color: "#777777", fontSize: 12 },
   noticeText: { flex: 1, color: "#777777", fontSize: 9 },
   noticeMore: { color: "#444444", fontSize: 9 },
-  productionStage: { height: 316, position: "relative", backgroundColor: "#030C1A", borderRadius: 12, overflow: "hidden", marginTop: 10, marginBottom: 10 },
+  productionStage: { height: 300, position: "relative", backgroundColor: "#030C1A", borderRadius: 12, overflow: "hidden", marginTop: 8, marginBottom: 8 },
   earthEyebrow: { position: "absolute", left: 16, top: 17, zIndex: 2, gap: 5 },
   earthEyebrowTitle: { color: "#E3F1FF", fontSize: 11, fontWeight: "900", letterSpacing: 1.5 },
   earthEyebrowMeta: { flexDirection: "row", alignItems: "center", gap: 6 },

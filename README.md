@@ -21,7 +21,8 @@ BrightGlobe is a global contribution and rewards platform. Its product foundatio
 - [ ] Deploy the backend API behind HTTPS and configure production secrets.
 - [ ] Live end-to-end authentication on iOS and Android against the deployed API.
 - [ ] Implement server-authoritative reward events, Gold ledger, Gold purchases, and spending.
-- [ ] Implement Better Auth-linked self-custodial embedded Solana wallet (provider spike pending).\n- [ ] Implement Solana Devnet SPL BG test flow; no Mainnet deployment or minting authorized.
+- [ ] Implement Better Auth-linked self-custodial embedded Solana wallet (provider spike pending).
+- [ ] Implement Solana Devnet SPL BG test flow; no Mainnet deployment or minting authorized.
 - [ ] Complete tokenomics, legal, custody, and security reviews before any mainnet issuance.
 
 ## Identity, reward, and asset boundaries
@@ -45,4 +46,7 @@ Live UI preview: [https://financingsoft.github.io/brightglobe/](https://financin
 
 - [NetEase Planet V1.6 UI Reconstruction Contract](docs/NETEASE_PLANET_V1.6_UI_CONTRACT.md)
 - [User Center Backend Contract](docs/USER_CENTER_BACKEND_CONTRACT.md)
-- [Gold & BG Token Economy Contract](docs/GOLD_BG_TOKEN_ECONOMY_CONTRACT.md)\n- [Solana Embedded Wallet Contract](docs/SOLANA_WALLET_CONTRACT.md)\n- [BG SPL Token Contract](docs/SOLANA_BG_TOKEN_CONTRACT.md)\n- [Solana Distribution & Gas Sponsorship Contract](docs/SOLANA_DISTRIBUTION_AND_SPONSORSHIP_CONTRACT.md)
+- [Gold & BG Token Economy Contract](docs/GOLD_BG_TOKEN_ECONOMY_CONTRACT.md)
+- [Solana Embedded Wallet Contract](docs/SOLANA_WALLET_CONTRACT.md)
+- [BG SPL Token Contract](docs/SOLANA_BG_TOKEN_CONTRACT.md)
+- [Solana Distribution & Gas Sponsorship Contract](docs/SOLANA_DISTRIBUTION_AND_SPONSORSHIP_CONTRACT.md)

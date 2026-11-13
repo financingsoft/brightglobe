@@ -1,3 +1,5 @@
+> **HISTORICAL / SUPERSEDED — 2026-11-13.** Historical BG/PRE distribution contract; its dual-layer reward and BG supply assumptions are superseded. The current source of truth is [Black Diamond Single-Asset Economy Contract](./BLACK_DIAMOND_ECONOMY_CONTRACT.md). Do not implement conflicting Gold, PRE or BG rules from this file. This file is retained for audit traceability; wallet/security mechanics may be reused only after explicit reconciliation with the current contract.
+
 # BrightGlobe Solana Distribution & Gas Sponsorship Contract
 
 **Status:** Design only; no Sponsor wallet or claim program deployed  

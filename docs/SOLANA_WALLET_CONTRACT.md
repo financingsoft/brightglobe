@@ -1,3 +1,5 @@
+> **V1.0 scope notice (2026-11-13): Not part of V1.0.** This document is retained as a future-release proposal only. BrightGlobe 1.0 does not provision user wallets, store wallet-provider identities, create token accounts or offer signing / transfer flows. Follow the [V1.0 App Core Contract](./BRIGHTGLOBE_V1_APP_CORE_CONTRACT.md) instead.
+
 # BrightGlobe Solana Embedded Wallet Contract
 
 **Status:** Binding architecture design; provider integration not implemented  

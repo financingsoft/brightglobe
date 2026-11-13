@@ -79,7 +79,7 @@ export function StarfieldBackground() {
 
 const styles = StyleSheet.create({
   spaceBase: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "#030817"
   },
   nebula: {

@@ -58,7 +58,7 @@ To refresh the assets, run the **Prepare bundled Earth textures** workflow in Gi
 - The Earth Normal Map perturbs the surface normal to add fine terrain relief.
 - The Earth Specular Map limits directional sun glints to ocean surfaces.
 - Clouds are rendered on an independent translucent sphere, lit separately, and rotate slightly faster than the ground surface.
-- A sun-aware blue atmospheric rim and a restrained star field complete the scene.
+- The additive blue atmospheric halo is intentionally omitted, keeping the Earth silhouette crisp against the star field.
 - The component is non-interactive, uses a low-power GPU preference, and keeps geometry/texture filtering deliberately modest for a decorative mobile background.
 - Rendering pauses when the app enters the background.
 - The Home route passes its navigation focus state to the Earth component so the animation pauses when another tab is selected.
@@ -72,7 +72,7 @@ To refresh the assets, run the **Prepare bundled Earth textures** workflow in Gi
 Status: source implemented; physical-device validation pending.
 
 - Add native 3D dependencies.
-- Render a textured sphere, day/night transition, city lights, moving clouds, atmosphere, and stars.
+- Render a textured sphere, day/night transition, city lights, moving clouds, and stars.
 - Isolate the implementation in `EarthBackground`.
 - Place it behind the existing Home contribution card without capturing touches.
 
@@ -92,7 +92,7 @@ Status: visual fidelity pass implemented; final tuning awaits device screenshots
 - Day/night terminator and night lights are driven by a fixed world-space sun direction.
 - Normal map and ocean specular map add terrain and sea-light detail.
 - Clouds use a separate translucent shell with independent drift and solar lighting.
-- Atmosphere shading responds to the lit side of the planet.
+- The exaggerated additive blue rim is removed; surface lighting, city lights, terrain relief, ocean highlights, and the cloud shell define the globe without an artificial glow.
 - Framing and rotation speed have been tuned for the Home hero card; adjust after physical-device screenshots.
 
 ### Phase 4 — Lifecycle and performance

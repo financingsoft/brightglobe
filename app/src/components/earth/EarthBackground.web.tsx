@@ -136,39 +136,6 @@ const CLOUD_FRAGMENT_SHADER = `
   }
 `;
 
-const ATMOSPHERE_VERTEX_SHADER = `
-  uniform vec3 uSunDirection;
-  varying vec3 vNormalView;
-  varying vec3 vViewDirection;
-  varying vec3 vSunDirectionView;
-  void main() {
-    vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
-    vNormalView = normalize(normalMatrix * normal);
-    vViewDirection = normalize(-modelViewPosition.xyz);
-    vSunDirectionView = normalize(mat3(viewMatrix) * normalize(uSunDirection));
-    gl_Position = projectionMatrix * modelViewPosition;
-  }
-`;
-
-const ATMOSPHERE_FRAGMENT_SHADER = `
-  varying vec3 vNormalView;
-  varying vec3 vViewDirection;
-  varying vec3 vSunDirectionView;
-  void main() {
-    vec3 normal = normalize(vNormalView);
-    vec3 viewDirection = normalize(vViewDirection);
-    float facing = max(dot(normal, viewDirection), 0.0);
-    float rim = pow(1.0 - facing, 3.25);
-    float sunFacing = dot(normal, normalize(vSunDirectionView));
-    float sunlitRim = smoothstep(-0.42, 0.52, sunFacing);
-    vec3 nightBlue = vec3(0.055, 0.20, 0.48);
-    vec3 dayBlue = vec3(0.12, 0.55, 1.0);
-    vec3 atmosphereColor = mix(nightBlue, dayBlue, sunlitRim);
-    float atmosphereAlpha = rim * mix(0.24, 0.52, sunlitRim);
-    gl_FragColor = vec4(atmosphereColor, atmosphereAlpha);
-  }
-`;
-
 function Starfield() {
   const geometry = useMemo(() => {
     const count = 220;
@@ -273,27 +240,12 @@ function EarthScene({ active }: { active: boolean }) {
     [cloudMap]
   );
 
-  const atmosphereMaterial = useMemo(
-    () => new THREE.ShaderMaterial({
-      uniforms: { uSunDirection: { value: SUN_DIRECTION } },
-      vertexShader: ATMOSPHERE_VERTEX_SHADER,
-      fragmentShader: ATMOSPHERE_FRAGMENT_SHADER,
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      side: THREE.FrontSide,
-      toneMapped: false
-    }),
-    []
-  );
-
   useEffect(
     () => () => {
       earthMaterial.dispose();
       cloudMaterial.dispose();
-      atmosphereMaterial.dispose();
     },
-    [earthMaterial, cloudMaterial, atmosphereMaterial]
+    [earthMaterial, cloudMaterial]
   );
 
   useEffect(() => {
@@ -329,10 +281,6 @@ function EarthScene({ active }: { active: boolean }) {
         <mesh>
           <sphereGeometry args={[EARTH_RADIUS, 96, 96]} />
           <primitive object={earthMaterial} attach="material" />
-        </mesh>
-        <mesh scale={1.047} renderOrder={2}>
-          <sphereGeometry args={[EARTH_RADIUS, 72, 72]} />
-          <primitive object={atmosphereMaterial} attach="material" />
         </mesh>
       </group>
       <mesh ref={cloudRef} scale={1.019} renderOrder={1}>

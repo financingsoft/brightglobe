@@ -20,7 +20,6 @@ type QualityProfile = {
   stars: number;
   earthSegments: number;
   cloudSegments: number;
-  atmosphereSegments: number;
   anisotropy: number;
   antialias: boolean;
   normalStrength: number;
@@ -34,7 +33,6 @@ const QUALITY_PROFILES: Record<EarthQuality, QualityProfile> = {
     stars: 72,
     earthSegments: 64,
     cloudSegments: 48,
-    atmosphereSegments: 48,
     anisotropy: 1,
     antialias: false,
     normalStrength: 0.58,
@@ -46,7 +44,6 @@ const QUALITY_PROFILES: Record<EarthQuality, QualityProfile> = {
     stars: 170,
     earthSegments: 88,
     cloudSegments: 72,
-    atmosphereSegments: 64,
     anisotropy: 2,
     antialias: false,
     normalStrength: 0.82,
@@ -58,7 +55,6 @@ const QUALITY_PROFILES: Record<EarthQuality, QualityProfile> = {
     stars: 300,
     earthSegments: 120,
     cloudSegments: 96,
-    atmosphereSegments: 88,
     anisotropy: 4,
     antialias: true,
     normalStrength: 1,
@@ -235,45 +231,6 @@ const CLOUD_FRAGMENT_SHADER = `
   }
 `;
 
-const ATMOSPHERE_VERTEX_SHADER = `
-  uniform vec3 uSunDirection;
-
-  varying vec3 vNormalView;
-  varying vec3 vViewDirection;
-  varying vec3 vSunDirectionView;
-
-  void main() {
-    vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
-    vNormalView = normalize(normalMatrix * normal);
-    vViewDirection = normalize(-modelViewPosition.xyz);
-    vSunDirectionView = normalize(mat3(viewMatrix) * normalize(uSunDirection));
-    gl_Position = projectionMatrix * modelViewPosition;
-  }
-`;
-
-const ATMOSPHERE_FRAGMENT_SHADER = `
-  varying vec3 vNormalView;
-  varying vec3 vViewDirection;
-  varying vec3 vSunDirectionView;
-
-  void main() {
-    vec3 normal = normalize(vNormalView);
-    vec3 viewDirection = normalize(vViewDirection);
-    float facing = max(dot(normal, viewDirection), 0.0);
-    float rim = pow(1.0 - facing, 3.25);
-
-    float sunFacing = dot(normal, normalize(vSunDirectionView));
-    float sunlitRim = smoothstep(-0.42, 0.52, sunFacing);
-
-    vec3 nightBlue = vec3(0.055, 0.20, 0.48);
-    vec3 dayBlue = vec3(0.12, 0.55, 1.0);
-    vec3 atmosphereColor = mix(nightBlue, dayBlue, sunlitRim);
-    float atmosphereAlpha = rim * mix(0.24, 0.52, sunlitRim);
-
-    gl_FragColor = vec4(atmosphereColor, atmosphereAlpha);
-  }
-`;
-
 // Place the terminator across the visible hemisphere so the first frame shows
 // both sunlit terrain and the night-side city lights.
 const SUN_DIRECTION = new THREE.Vector3(0.98, 0.18, 0.22).normalize();
@@ -392,30 +349,12 @@ function EarthScene({ active }: { active: boolean }) {
     [cloudMap]
   );
 
-  const atmosphereMaterial = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        uniforms: {
-          uSunDirection: { value: SUN_DIRECTION }
-        },
-        vertexShader: ATMOSPHERE_VERTEX_SHADER,
-        fragmentShader: ATMOSPHERE_FRAGMENT_SHADER,
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        side: THREE.FrontSide,
-        toneMapped: false
-      }),
-    []
-  );
-
   useEffect(
     () => () => {
       earthMaterial.dispose();
       cloudMaterial.dispose();
-      atmosphereMaterial.dispose();
     },
-    [atmosphereMaterial, cloudMaterial, earthMaterial]
+    [cloudMaterial, earthMaterial]
   );
 
   // Demand rendering caps actual scene renders instead of updating at 60 Hz and
@@ -451,10 +390,6 @@ function EarthScene({ active }: { active: boolean }) {
         <mesh>
           <sphereGeometry args={[EARTH_RADIUS, QUALITY.earthSegments, QUALITY.earthSegments]} />
           <primitive object={earthMaterial} attach="material" />
-        </mesh>
-        <mesh scale={1.047} renderOrder={2}>
-          <sphereGeometry args={[EARTH_RADIUS, QUALITY.atmosphereSegments, QUALITY.atmosphereSegments]} />
-          <primitive object={atmosphereMaterial} attach="material" />
         </mesh>
       </group>
       <mesh ref={cloudRef} scale={1.019} renderOrder={1}>

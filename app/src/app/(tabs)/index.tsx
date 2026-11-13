@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { useIsFocused, useRouter } from "expo-router";
 import { AppScreen } from "@/components/ui";
 import { EarthBackground } from "@/components/earth/EarthBackground";
@@ -16,6 +16,11 @@ import {
 export default function HomeScreen() {
   const { locale } = useI18n();
   const router = useRouter();
+  const { width, height } = useWindowDimensions();
+  const compactScreen = width < 350 || height < 700;
+  const stageHeight = Math.max(320, Math.min(430, height * 0.49));
+  const earthSize = Math.min(310, width - (width < 350 ? 56 : 72), stageHeight - 92);
+  const earthTop = Math.max(54, (stageHeight - earthSize) / 2 - 10);
   const isHomeFocused = useIsFocused();
   const { isAuthenticated, isPreviewAccount, user } = useAuth();
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -164,7 +169,7 @@ export default function HomeScreen() {
         <Text style={styles.balanceHint}>{t("平台内部奖励记录", "Internal platform reward account")}</Text>
       </View>
 
-      <View style={styles.productionStage}>
+      <View style={[styles.productionStage, { height: stageHeight }]}>
         <EarthBackground active={isHomeFocused} />
         <Pressable
           accessibilityRole="button"
@@ -172,7 +177,7 @@ export default function HomeScreen() {
           accessibilityHint={earthActionLabel}
           disabled={claiming || accountLoading}
           onPress={handleEarthTap}
-          style={({ pressed }) => [styles.globeTapTarget, pressed && styles.globePressed]}
+          style={({ pressed }) => [styles.globeTapTarget, { width: earthSize, height: earthSize, top: earthTop, borderRadius: earthSize / 2 }, pressed && styles.globePressed]}
         />
         <View pointerEvents="none" style={styles.earthEyebrow}>
           <Text style={styles.earthEyebrowTitle}>{t("BRIGHTGLOBE", "BRIGHTGLOBE")}</Text>
@@ -252,8 +257,8 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#D8DCE2",
-    backgroundColor: "#FFFFFF",
+    borderColor: "rgba(165, 192, 233, 0.24)",
+    backgroundColor: "rgba(10, 21, 42, 0.88)",
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
@@ -263,30 +268,26 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderWidth: 1.5,
-    borderColor: "#535B66",
+    borderColor: "#B6C9EA",
     transform: [{ rotate: "45deg" }]
   },
-  balanceLabel: { color: "#727985", fontSize: 9, fontWeight: "700", letterSpacing: 0.6 },
-  balanceValue: { color: "#303843", fontSize: 12, fontWeight: "800", flex: 1, textAlign: "right" },
-  balanceArrow: { color: "#A0A7B2", fontSize: 17 },
-  balanceHint: { color: "#A0A7B2", fontSize: 7, marginLeft: 12 },
+  balanceLabel: { color: "#A9BBDC", fontSize: 9, fontWeight: "700", letterSpacing: 0.6 },
+  balanceValue: { color: "#F1F6FF", fontSize: 12, fontWeight: "800", flex: 1, textAlign: "right" },
+  balanceArrow: { color: "#8198BA", fontSize: 17 },
+  balanceHint: { color: "#8498B8", fontSize: 7, marginLeft: 12 },
   productionStage: {
     height: 390,
     position: "relative",
-    backgroundColor: "#030C1A",
+    backgroundColor: "transparent",
     borderRadius: 14,
-    overflow: "hidden",
+    overflow: "visible",
     marginTop: 2,
     marginBottom: 12
   },
   globeTapTarget: {
     position: "absolute",
-    top: 42,
-    width: "82%",
-    maxWidth: 310,
-    height: 310,
+    left: 0,
     alignSelf: "center",
-    borderRadius: 160,
     backgroundColor: "transparent",
     zIndex: 1
   },
@@ -303,6 +304,7 @@ const styles = StyleSheet.create({
     zIndex: 3,
     gap: 5
   },
+  earthInstructionCompact: { bottom: 24, gap: 4 },
   tapIndicator: {
     width: 22,
     height: 22,
@@ -327,7 +329,7 @@ const styles = StyleSheet.create({
     minHeight: 58,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: "#E4E7EB",
+    borderColor: "rgba(154, 180, 220, 0.18)",
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
@@ -335,30 +337,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3
   },
   announcementCopy: { flex: 1, gap: 4 },
-  announcementEyebrow: { color: "#9AA2AC", fontSize: 7, fontWeight: "800", letterSpacing: 1 },
-  announcementTitle: { color: "#66707C", fontSize: 8, lineHeight: 13 },
-  announcementAction: { minWidth: 50, height: 27, borderRadius: 14, borderWidth: 1, borderColor: "#D5DAE1", alignItems: "center", justifyContent: "center" },
-  announcementActionText: { color: "#66707C", fontSize: 8, fontWeight: "700" },
+  announcementEyebrow: { color: "#8298BB", fontSize: 7, fontWeight: "800", letterSpacing: 1 },
+  announcementTitle: { color: "#C7D4EA", fontSize: 8, lineHeight: 13 },
+  announcementAction: { minWidth: 50, height: 27, borderRadius: 14, borderWidth: 1, borderColor: "rgba(165, 191, 230, 0.26)", alignItems: "center", justifyContent: "center" },
+  announcementActionText: { color: "#D7E4F8", fontSize: 8, fontWeight: "700" },
   activityTile: {
     width: 158,
     minHeight: 72,
     borderRadius: 10,
-    backgroundColor: "#F4F5F7",
+    backgroundColor: "rgba(12, 25, 48, 0.84)",
     paddingHorizontal: 12,
     paddingVertical: 10,
     justifyContent: "space-between",
     gap: 6
   },
-  activityTitle: { color: "#3D4550", fontSize: 10, fontWeight: "700" },
-  activityDescription: { color: "#9299A4", fontSize: 8 },
-  activityLink: { color: "#58616D", fontSize: 8, fontWeight: "700" },
+  activityTitle: { color: "#EAF2FF", fontSize: 10, fontWeight: "700" },
+  activityDescription: { color: "#9FB1CD", fontSize: 8 },
+  activityLink: { color: "#BFA0FF", fontSize: 8, fontWeight: "700" },
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.42)", alignItems: "center", justifyContent: "center", padding: 28 },
-  loginDialog: { width: "100%", maxWidth: 320, borderRadius: 12, backgroundColor: "#FFFFFF", padding: 20, alignItems: "center" },
-  dialogTitle: { color: "#303843", fontSize: 15, fontWeight: "700" },
-  dialogCopy: { color: "#78818D", fontSize: 10, lineHeight: 16, textAlign: "center", marginTop: 12 },
+  loginDialog: { width: "100%", maxWidth: 320, borderRadius: 12, backgroundColor: "#111D36", borderWidth: 1, borderColor: "rgba(157, 184, 226, 0.22)", padding: 20, alignItems: "center" },
+  dialogTitle: { color: "#EDF4FF", fontSize: 15, fontWeight: "700" },
+  dialogCopy: { color: "#AABBD6", fontSize: 10, lineHeight: 16, textAlign: "center", marginTop: 12 },
   dialogActions: { flexDirection: "row", gap: 9, width: "100%", marginTop: 18 },
-  dialogSecondary: { flex: 1, height: 36, borderRadius: 18, borderWidth: 1, borderColor: "#CBD0D7", justifyContent: "center", alignItems: "center" },
-  dialogSecondaryText: { color: "#727985", fontSize: 9 },
-  dialogPrimary: { flex: 1, height: 36, borderRadius: 18, backgroundColor: "#394554", justifyContent: "center", alignItems: "center" },
+  dialogSecondary: { flex: 1, height: 36, borderRadius: 18, borderWidth: 1, borderColor: "rgba(165, 191, 230, 0.30)", justifyContent: "center", alignItems: "center" },
+  dialogSecondaryText: { color: "#B6C7E1", fontSize: 9 },
+  dialogPrimary: { flex: 1, height: 36, borderRadius: 18, backgroundColor: "#7655B6", justifyContent: "center", alignItems: "center" },
   dialogPrimaryText: { color: "#FFFFFF", fontSize: 9, fontWeight: "700" }
 });

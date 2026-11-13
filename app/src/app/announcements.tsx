@@ -30,13 +30,13 @@ export default function AnnouncementsScreen() {
   );
 }
 const styles = StyleSheet.create({
-  header: { height: 36, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "#DDDDDD", marginBottom: 7 },
-  back: { width: 28 }, backGlyph: { color: "#333333", fontSize: 27, lineHeight: 30 },
-  headerTitle: { color: "#333333", fontSize: 13, fontWeight: "600" },
+  header: { height: 36, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "rgba(156, 183, 224, 0.23)", marginBottom: 7 },
+  back: { width: 28 }, backGlyph: { color: "#EAF2FF", fontSize: 27, lineHeight: 30 },
+  headerTitle: { color: "#EAF2FF", fontSize: 13, fontWeight: "600" },
   card: { borderWidth: 1, borderColor: "#DADADA", borderRadius: 7, padding: 12, marginTop: 8, gap: 7 },
-  title: { color: "#333333", fontSize: 10, fontWeight: "700" },
-  body: { color: "#777777", fontSize: 8, lineHeight: 13 },
+  title: { color: "#EAF2FF", fontSize: 10, fontWeight: "700" },
+  body: { color: "#A0B2D0", fontSize: 8, lineHeight: 13 },
   footer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  date: { color: "#999999", fontSize: 7 },
-  more: { color: "#555555", fontSize: 8 }
+  date: { color: "#8A9DBD", fontSize: 7 },
+  more: { color: "#C9D9F2", fontSize: 8 }
 });

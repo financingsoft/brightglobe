@@ -22,15 +22,15 @@ BrightGlobe is a global contribution and rewards platform. Its product foundatio
 - [ ] Live end-to-end authentication on iOS and Android against the deployed API.
 - [ ] Implement server-authoritative reward events, Gold ledger, Gold purchases, and spending.
 - [ ] Implement Better Auth-linked self-custodial embedded Solana wallet (provider spike pending).
-- [ ] Implement Solana Devnet SPL BG test flow; no Mainnet deployment or minting authorized.
+- [ ] Implement off-chain Platform Reward Entitlements, advertiser campaign budgets and Solana Devnet SPL BG claim flow; no Mainnet deployment or minting authorized.
 - [ ] Complete tokenomics, legal, custody, and security reviews before any mainnet issuance.
 
 ## Identity, reward, and asset boundaries
 
 - Better Auth is the single source of truth for authentication identity, phone verification, linked auth accounts, and login sessions.
 - BrightGlobe-owned profile preferences live in `user_profile`, keyed by the Better Auth user ID.
-- Gold is an off-chain platform ledger unit. Earned and purchased Gold are separately attributable; both are intended to be eligible for Gold-to-BG conversion only after the required legal, risk, and release gates.
-- BG is a proposed Solana original SPL Token with target fixed supply 200,000,000; it is not deployed or minted. The Base/EVM design is superseded.
+- Gold is an off-chain platform ledger unit. Earned and purchased Gold are separately attributable; both are intended to be eligible for Gold-to-BG conversion only after the required legal, risk, and release gates. Platform Reward Entitlements are separate off-chain claim records; finalized BG claims are freely transferable.
+- BG is a proposed Solana original SPL Token with target fixed supply 1,000,000,000; it is not deployed or minted. The Base/EVM design is superseded.
 - Contribution Power is a reputation metric, not spendable currency. XP is progression experience and is not automatically convertible to Gold or BG.
 - No user balance, wallet address, token, market price, or transaction may be fabricated in preview mode.
 
@@ -48,5 +48,6 @@ Live UI preview: [https://financingsoft.github.io/brightglobe/](https://financin
 - [User Center Backend Contract](docs/USER_CENTER_BACKEND_CONTRACT.md)
 - [Gold & BG Token Economy Contract](docs/GOLD_BG_TOKEN_ECONOMY_CONTRACT.md)
 - [Solana Embedded Wallet Contract](docs/SOLANA_WALLET_CONTRACT.md)
+- [Advertising & Sustainable Reward Economy Contract](docs/AD_REVENUE_AND_REWARD_ECONOMY_CONTRACT.md)
 - [BG SPL Token Contract](docs/SOLANA_BG_TOKEN_CONTRACT.md)
 - [Solana Distribution & Gas Sponsorship Contract](docs/SOLANA_DISTRIBUTION_AND_SPONSORSHIP_CONTRACT.md)

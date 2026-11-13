@@ -50,6 +50,9 @@ jobs:
 
       - name: Export web bundle
         working-directory: app
+        env:
+          # Explicitly enable the non-authenticated local preview only for CI screenshots.
+          EXPO_PUBLIC_ENABLE_PREVIEW_AUTH: "true"
         run: npm run export:web -- --output-dir /tmp/brightglobe-web-export
 
       - name: Install Playwright for visual regression captures

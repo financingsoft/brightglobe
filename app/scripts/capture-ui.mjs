@@ -156,6 +156,10 @@ try {
   await page.waitForTimeout(150);
   await page.screenshot({ path: resolve(outputRoot, "force-record-inactive-375x667.png") });
 
+  // The local preview shortcut is disabled in all normal builds. Enable it only
+  // in this CI export, then enter it before testing the logged-in settings flow.
+  await page.goto(`http://127.0.0.1:${port}${basePath}/login`, { waitUntil: "networkidle", timeout: 60000 });
+  await page.getByText("进入本地预览账户", { exact: true }).click();
   await page.goto(`http://127.0.0.1:${port}${basePath}/settings`, { waitUntil: "networkidle", timeout: 60000 });
   await page.getByText("退出登录", { exact: true }).click();
   await page.waitForTimeout(150);

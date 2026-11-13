@@ -514,3 +514,44 @@ The V1.6 page families must remain separate in the app router. In particular, th
 - The recommended “follow official account” task opens `/official-follow`, not the generic activity detail route. The local demo code is a preview interaction only and never credits real Contribution Power.
 - Parameterized destinations must be reached through in-app navigation when validating web preview. Direct static URLs with arbitrary query parameters can produce a React hydration mismatch in the Expo static export and are not representative of the native tap flow.
 - `app/scripts/capture-ui.mjs` captures the contracted screen families at a fixed 375 × 667 CSS-pixel viewport, captures a 390 × 844 Home viewport, and exercises the local check-in and category navigation flow. Reference source images are packaged alongside the preview captures for side-by-side inspection.
+
+
+---
+
+## 9. Economy and wallet contract amendment (2026-11-13)
+
+This amendment is authoritative for all BrightGlobe economy and wallet language and supersedes conflicting wording in Sections 2, 4.3, and 4.9. It does not change the V1.6 navigation or page hierarchy.
+
+### 9.1 Updated product mapping
+
+| NetEase Planet concept | BrightGlobe equivalent |
+|---|---|
+| 黑钻 / 黑钻记录 | Gold (off-chain platform currency) / Gold ledger |
+| 原力 | Contribution Power (reputation metric, not spendable) |
+| 原力任务 | Contribution missions that may award Gold |
+| 我的钱包 / 资产入口 | BrightGlobe Wallet: separate Gold account and, when implemented, linked on-chain BG wallet |
+| 黑钻活动 / 权益 | Community activities / member benefits |
+
+Gold has two separately attributable sources: earned Gold and purchased Gold. Both are intended to be eligible for Gold-to-BG conversion, subject to the Gold & BG Token Economy Contract's legal, jurisdiction, risk, and release gates. Gold is not an on-chain token and must not be shown as an external wallet balance.
+
+BG is a separate proposed Base ERC-20 asset. It is not currently deployed. The app must never show a BG balance, token price, chain transaction, or external wallet as real unless it has been read from the implemented and verified chain integration.
+
+### 9.2 Wallet screen behavior
+
+The BrightGlobe Wallet destination may show clearly separated sections:
+- Gold balance, split into earned and purchased available balances where relevant;
+- Gold activity ledger and purchase/spend/conversion records;
+- linked BG wallet address and verified on-chain BG balance only after wallet integration exists;
+- chain/network indicator, transaction status and explorer links for verified transactions.
+
+Gold and BG must never be merged into one total or converted into a fabricated fiat valuation. If a section is not implemented or the chain/indexer is unavailable, show an explicit unavailable/stale state rather than sample balances presented as real.
+
+### 9.3 Conversion and market actions
+
+Gold-to-BG conversion, wallet transfers, DEX swap, and market data are future capabilities governed by [Gold & BG Token Economy Contract](./GOLD_BG_TOKEN_ECONOMY_CONTRACT.md). They remain unavailable until implemented and separately approved for the applicable release and jurisdiction.
+
+The initial direction is Gold → BG only. Do not imply that BG can be redeemed back into Gold, that BG has a fixed value, or that a DEX pool guarantees liquidity or price.
+
+### 9.4 Preview and acceptance
+
+Preview mode must clearly label any Gold balance or reward event as sample data. It must not simulate a successful payment, real conversion, mint, token transfer, or DEX execution as if it had occurred on-chain. Contracted wallet pages must preserve the distinction between internal Gold accounting and external BG ownership.

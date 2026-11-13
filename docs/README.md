@@ -3,11 +3,11 @@
 ## Product UI contract
 
 - [NetEase Planet V1.6.0 UI Reconstruction Contract](./NETEASE_PLANET_V1.6_UI_CONTRACT.md) — binding source hierarchy, page-by-page specification, navigation and interaction contract, rejected UI patterns, and visual acceptance gate.
-- [Superseded UI direction note](./PRODUCT_UI_DIRECTION.md) — retained to point to the binding contract; do not use as implementation guidance.
 
 ## Backend and identity contracts
 
 - [User Center Backend Contract](./USER_CENTER_BACKEND_CONTRACT.md) — Better Auth identity, phone OTP, PostgreSQL schema, profile/session APIs, security boundaries, and Expo client integration boundary.
+- [Gold & BG Token Economy Contract](./GOLD_BG_TOKEN_ECONOMY_CONTRACT.md) — binding design for earned/purchased Gold, reward ledger, Gold spending and conversion, Base token, wallets, DEX, security, compliance gates, and delivery phases. This is a design contract, not authorization to deploy or issue a mainnet token.
 
 ## Other references
 

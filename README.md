@@ -1,12 +1,12 @@
 # BrightGlobe
 
-BrightGlobe is a global contribution and rewards platform. Its product foundation separates user identity, progression experience, platform reward points, contribution reputation, and any future on-chain assets.
+BrightGlobe is a global contribution and rewards platform. Its product foundation separates user identity, progression experience, platform Gold, contribution reputation, and future on-chain BG assets.
 
 ## Repository layout
 
-- \`app/\` — Expo + React Native + TypeScript client for iOS, Android, and web.
-- \`backend/\` — Hono API, Better Auth identity service, PostgreSQL persistence, and Drizzle migrations.
-- \`docs/\` — binding product UI and backend contracts, architecture notes, and delivery references.
+- `app/` — Expo + React Native + TypeScript client for iOS, Android, and web.
+- `backend/` — Hono API, Better Auth identity service, PostgreSQL persistence, and Drizzle migrations.
+- `docs/` — binding product UI and backend contracts, architecture notes, and delivery references.
 
 ## Current implementation status
 
@@ -19,25 +19,30 @@ BrightGlobe is a global contribution and rewards platform. Its product foundatio
 - [x] Backend typecheck, unit tests, and PostgreSQL migration validation workflow.
 - [ ] Provision production PostgreSQL and SMS gateway.
 - [ ] Deploy the backend API behind HTTPS and configure production secrets.
-- [ ] Connect the Expo login/session UI to Better Auth.
-- [ ] Add email/social identity providers after credentials and callback domains are provisioned.
-- [ ] Implement server-authoritative contribution, points, and append-only ledger services.
+- [ ] Live end-to-end authentication on iOS and Android against the deployed API.
+- [ ] Implement server-authoritative reward events, Gold ledger, Gold purchases, and spending.
+- [ ] Implement wallet linking and Base Sepolia BG testnet flow.
+- [ ] Complete tokenomics, legal, custody, and security reviews before any mainnet issuance.
 
-## Identity and account boundary
+## Identity, reward, and asset boundaries
 
-Better Auth is the single source of truth for authentication identity, phone verification, linked authentication accounts, and login sessions. BrightGlobe-owned profile preferences live in a separate \`user_profile\` table keyed by the Better Auth user ID. The mobile app must never create, edit, or trust its own local user identity as a production account.
+- Better Auth is the single source of truth for authentication identity, phone verification, linked auth accounts, and login sessions.
+- BrightGlobe-owned profile preferences live in `user_profile`, keyed by the Better Auth user ID.
+- Gold is an off-chain platform ledger unit. Earned and purchased Gold are separately attributable; both are intended to be eligible for Gold-to-BG conversion only after the required legal, risk, and release gates.
+- BG is a proposed Base ERC-20 token. It is not currently deployed or issued.
+- Contribution Power is a reputation metric, not spendable currency. XP is progression experience and is not automatically convertible to Gold or BG.
+- No user balance, wallet address, token, market price, or transaction may be fabricated in preview mode.
 
-The current mobile UI still contains an explicitly disclosed local preview-account path. It is not connected to this backend yet and does not create real users, sessions, or rewards. See [User Center Backend Contract](docs/USER_CENTER_BACKEND_CONTRACT.md).
+## Product safety and release boundary
 
-## Product safety boundary
-
-XP is non-transferable progression experience. Platform points are internal reward units governed by disclosed redemption rules. Contribution Power is a reputation/weight metric, not spendable value or a promise of yield. Token issuance, custody, staking, and exchange features are out of scope for this initial application scaffold.
+The repository currently contains the Better Auth user-center foundation, not a production reward economy or crypto wallet. The Gold/BG document is a binding design contract only. Production Gold purchase, Gold-to-BG conversion, BG minting, and DEX trading remain disabled until their independent implementation, legal, payment, security, and release gates are approved. Do not deploy a mainnet token as part of ordinary development or CI.
 
 ## Browser preview
 
-Live UI preview: [https://financingsoft.github.io/brightglobe/](https://financingsoft.github.io/brightglobe/). Changes under \`app/**\` automatically rebuild and redeploy the static preview. See [Web Preview Setup](docs/WEB_PREVIEW.md).
+Live UI preview: [https://financingsoft.github.io/brightglobe/](https://financingsoft.github.io/brightglobe/). Changes under `app/**` automatically rebuild and redeploy the static preview. See [Web Preview Setup](docs/WEB_PREVIEW.md).
 
 ## Contracts
 
 - [NetEase Planet V1.6 UI Reconstruction Contract](docs/NETEASE_PLANET_V1.6_UI_CONTRACT.md)
 - [User Center Backend Contract](docs/USER_CENTER_BACKEND_CONTRACT.md)
+- [Gold & BG Token Economy Contract](docs/GOLD_BG_TOKEN_ECONOMY_CONTRACT.md)

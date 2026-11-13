@@ -205,7 +205,7 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const revokeSession = useCallback(async (sessionId: string) => {
-    await apiRequest<void>(\`/api/v1/me/sessions/\${encodeURIComponent(sessionId)}\`, {
+    await apiRequest<void>(`/api/v1/me/sessions/${encodeURIComponent(sessionId)}`, {
       method: "DELETE"
     });
   }, []);

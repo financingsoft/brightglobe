@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import {
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,24 +17,9 @@ type AppScreenProps = {
   showHeader?: boolean;
 };
 
-export function PreviewStatusBar() {
-  if (Platform.OS !== "web") return null;
-  return (
-    <View style={styles.webStatusBar}>
-      <View style={styles.statusSide}><Text style={styles.statusSymbols}>●●●  ◔</Text></View>
-      <Text style={styles.statusTime}>6:00 PM</Text>
-      <View style={[styles.statusSide, styles.statusRight]}>
-        <Text style={styles.statusPercent}>100%</Text>
-        <View style={styles.batteryBody}><View style={styles.batteryFill} /></View>
-      </View>
-    </View>
-  );
-}
-
 export function AppScreen({ children, showHeader = false }: AppScreenProps) {
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <PreviewStatusBar />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
@@ -291,14 +275,6 @@ export function PrimaryButton({
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.canvas },
-  webStatusBar: { width: "100%", maxWidth: 390, height: 24, alignSelf: "center", paddingHorizontal: 8, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#FFFFFF" },
-  statusSide: { width: 70, flexDirection: "row", alignItems: "center" },
-  statusSymbols: { color: "#111111", fontSize: 8, fontWeight: "800", letterSpacing: 0.5 },
-  statusTime: { color: "#111111", fontSize: 9, fontWeight: "700" },
-  statusRight: { justifyContent: "flex-end", gap: 3 },
-  statusPercent: { color: "#111111", fontSize: 8, fontWeight: "600" },
-  batteryBody: { width: 15, height: 7, borderWidth: 1, borderColor: "#111111", padding: 1, justifyContent: "center" },
-  batteryFill: { width: "100%", height: "100%", backgroundColor: "#111111" },
   // Keep the app at a phone-sized reference width on tablet and desktop previews.
   scroll: { flex: 1, width: "100%", maxWidth: 390, alignSelf: "center" },
   content: {

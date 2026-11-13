@@ -209,7 +209,7 @@ function LoadingEarth() {
   );
 }
 
-function EarthScene() {
+function EarthScene({ active }: { active: boolean }) {
   const [dayMap, nightMap, cloudMap, normalMap, specularMap] = useLoader(
     THREE.TextureLoader,
     TEXTURES
@@ -218,6 +218,8 @@ function EarthScene() {
   const renderer = useThree((state) => state.gl);
   const globeRef = useRef<THREE.Group | null>(null);
   const cloudRef = useRef<THREE.Mesh | null>(null);
+  const invalidate = useThree((state) => state.invalidate);
+  const frameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const earthMaterial = useMemo(() => {
     dayMap.colorSpace = THREE.SRGBColorSpace;
@@ -292,10 +294,31 @@ function EarthScene() {
     [earthMaterial, cloudMaterial, atmosphereMaterial]
   );
 
+  useEffect(() => {
+    if (active) invalidate();
+    return () => {
+      if (frameTimer.current !== null) {
+        clearTimeout(frameTimer.current);
+        frameTimer.current = null;
+      }
+    };
+  }, [active, invalidate]);
+
+  // Demand rendering caps browser work at 30 FPS instead of rendering an
+  // always-on 60 FPS canvas for a decorative background.
   useFrame((_state, delta) => {
+    if (!active) return;
+
     const frameDelta = Math.min(delta, 0.05);
     if (globeRef.current) globeRef.current.rotation.y += frameDelta * 0.028;
     if (cloudRef.current) cloudRef.current.rotation.y += frameDelta * 0.034;
+
+    if (frameTimer.current === null) {
+      frameTimer.current = setTimeout(() => {
+        frameTimer.current = null;
+        if (active) invalidate();
+      }, 1000 / 30);
+    }
   });
 
   return (
@@ -350,14 +373,14 @@ export function EarthBackground({ active = true }: { active?: boolean }) {
         <Canvas
           style={styles.canvas}
           camera={{ position: [0, 0, 4.1], fov: 43 }}
-          frameloop={active ? "always" : "never"}
+          frameloop={active ? "demand" : "never"}
           dpr={[1, 1.5]}
           gl={{ alpha: false, antialias: true, powerPreference: "high-performance" }}
         >
           <color attach="background" args={["#030C1A"]} />
           <Starfield />
           <Suspense fallback={<LoadingEarth />}>
-            <EarthScene />
+            <EarthScene active={active} />
           </Suspense>
         </Canvas>
       </WebEarthErrorBoundary>

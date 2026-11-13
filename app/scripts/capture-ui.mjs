@@ -167,19 +167,20 @@ try {
     (url) => url.pathname.endsWith("/category") && url.searchParams.get("category") === categoryId,
     { timeout: 15000 }
   );
+  const visibleText = (value) => page.getByText(value, { exact: true }).filter({ visible: true });
   const waitForTasks = async () => {
     await waitForPath("/tasks");
-    await page.getByText("发现原力", { exact: true }).last().waitFor({ state: "visible", timeout: 10000 });
+    await visibleText("发现原力").last().waitFor({ state: "visible", timeout: 10000 });
   };
 
   const tapInAppBack = async () => {
-    await page.getByText("‹", { exact: true }).last().click();
+    await visibleText("‹").last().click();
   };
 
   await page.goto(`http://127.0.0.1:${port}${basePath}/login`, { waitUntil: "networkidle", timeout: 60000 });
   await page.getByText("进入本地预览账户", { exact: true }).click();
-  await page.getByText("发现原力", { exact: true }).last().waitFor({ state: "visible", timeout: 10000 });
-  await page.getByText("发现原力", { exact: true }).last().click();
+  await visibleText("发现原力").last().waitFor({ state: "visible", timeout: 10000 });
+  await visibleText("发现原力").last().click();
   await waitForTasks();
   await page.getByText("签到", { exact: true }).click();
   await page.getByText("签到成功", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
@@ -188,10 +189,9 @@ try {
   await waitForTasks();
 
   const captureCategoryFromForce = async (label, categoryId, fileName, expectedHeading = label) => {
-    await page.getByText(label, { exact: true }).last().click();
+    await visibleText(label).last().click();
     await waitForCategory(categoryId);
-    await page.getByText(expectedHeading, { exact: true }).filter({ visible: true }).first()
-      .waitFor({ state: "visible", timeout: 10000 });
+    await visibleText(expectedHeading).first().waitFor({ state: "visible", timeout: 10000 });
     await page.screenshot({ path: resolve(outputRoot, fileName) });
     await tapInAppBack();
     await waitForTasks();
@@ -200,22 +200,22 @@ try {
   await captureCategoryFromForce("购物", "shopping", "shopping-from-force-375x667.png");
   await captureCategoryFromForce("游戏", "games", "games-from-force-375x667.png", "游戏中心");
 
-  await page.getByText("娱乐", { exact: true }).last().click();
+  await visibleText("娱乐").last().click();
   await waitForCategory("entertainment");
-  await page.getByText("小说", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
+  await visibleText("小说").first().waitFor({ state: "visible", timeout: 10000 });
   await page.screenshot({ path: resolve(outputRoot, "entertainment-375x667.png") });
 
   const entertainmentDestinations = [
-    ["小说", "reading", "reading-375x667.png"],
-    ["漫画", "comics", "comics-375x667.png"],
-    ["新闻", "news", "news-375x667.png"],
-    ["音乐", "music", "music-375x667.png"]
+    ["小说", "reading", "reading-375x667.png", "小说"],
+    ["漫画", "comics", "comics-375x667.png", "漫画"],
+    ["新闻", "news", "news-375x667.png", "资讯"],
+    ["音乐", "music", "music-375x667.png", "网易云音乐"]
   ];
   for (let index = 0; index < entertainmentDestinations.length; index += 1) {
-    const [label, categoryId, fileName] = entertainmentDestinations[index];
-    await page.getByText(label, { exact: true }).click();
+    const [label, categoryId, fileName, expectedHeading] = entertainmentDestinations[index];
+    await visibleText(label).last().click();
     await waitForCategory(categoryId);
-    await page.getByText(label, { exact: true }).last().waitFor({ state: "visible", timeout: 10000 });
+    await visibleText(expectedHeading).first().waitFor({ state: "visible", timeout: 10000 });
     await page.screenshot({ path: resolve(outputRoot, fileName) });
     if (index < entertainmentDestinations.length - 1) {
       await tapInAppBack();
@@ -239,7 +239,7 @@ try {
 
   await page.getByText("关注微信公众号", { exact: true }).click();
   await waitForPath("/official-follow");
-  await page.getByText("关注微信公众号", { exact: true }).last().waitFor({ state: "visible", timeout: 10000 });
+  await visibleText("关注微信公众号").last().waitFor({ state: "visible", timeout: 10000 });
   await page.screenshot({ path: resolve(outputRoot, "official-follow-375x667.png") });
   await page.getByPlaceholder("请输入公众号提供的验证码").fill("BG2026");
   await page.getByText("提交验证", { exact: true }).click();

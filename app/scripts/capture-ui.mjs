@@ -187,17 +187,18 @@ try {
   await page.getByText("不用了", { exact: true }).click();
   await waitForTasks();
 
-  const captureCategoryFromForce = async (label, categoryId, fileName) => {
+  const captureCategoryFromForce = async (label, categoryId, fileName, expectedHeading = label) => {
     await page.getByText(label, { exact: true }).last().click();
     await waitForCategory(categoryId);
-    await page.getByText(label, { exact: true }).last().waitFor({ state: "visible", timeout: 10000 });
+    await page.getByText(expectedHeading, { exact: true }).filter({ visible: true }).first()
+      .waitFor({ state: "visible", timeout: 10000 });
     await page.screenshot({ path: resolve(outputRoot, fileName) });
     await tapInAppBack();
     await waitForTasks();
   };
 
   await captureCategoryFromForce("购物", "shopping", "shopping-from-force-375x667.png");
-  await captureCategoryFromForce("游戏", "games", "games-from-force-375x667.png");
+  await captureCategoryFromForce("游戏", "games", "games-from-force-375x667.png", "游戏中心");
 
   await page.getByText("娱乐", { exact: true }).last().click();
   await waitForCategory("entertainment");

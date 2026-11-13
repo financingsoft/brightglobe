@@ -57,6 +57,8 @@ The starfield is decorative only. It must never receive touches, intercept gestu
 - 375 × 667 — standard phone.
 - 390 × 844 — tall phone.
 - 430 × 932 — large phone.
+- At 320 × 568 and 430 × 932, Home, Login, Discover and Profile are additionally checked for horizontal overflow and captured as visual baselines.
+- The Login route uses a scrollable content surface so the form, account notice and preview controls remain reachable on short screens.
 
 These are baseline regression sizes, not an exhaustive list of device models. The layout must remain fluid between them.
 

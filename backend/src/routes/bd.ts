@@ -48,7 +48,7 @@ async function getAccountSnapshot(userId: string, now: Date) {
   const [rule] = await db.select().from(bdRewardRules)
     .where(and(
       eq(bdRewardRules.ruleKey, DAILY_RULE_KEY),
-      eq(bdRewardRules.enabled, true),
+      eq(bdRewardRules.enabled, true)
     ))
     .orderBy(desc(bdRewardRules.version))
     .limit(1);
@@ -134,7 +134,6 @@ routes.post("/daily-collection", async (context) => {
         .where(and(
           eq(bdRewardRules.ruleKey, DAILY_RULE_KEY),
           eq(bdRewardRules.enabled, true),
-          lte(bdRewardRules.startsAt, now)
         ))
         .orderBy(desc(bdRewardRules.version))
         .limit(1)

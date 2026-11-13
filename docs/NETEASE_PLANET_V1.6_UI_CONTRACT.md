@@ -555,3 +555,21 @@ The initial direction is Gold → BG only. Do not imply that BG can be redeemed 
 ### 9.4 Preview and acceptance
 
 Preview mode must clearly label any Gold balance or reward event as sample data. It must not simulate a successful payment, real conversion, mint, token transfer, or DEX execution as if it had occurred on-chain. Contracted wallet pages must preserve the distinction between internal Gold accounting and external BG ownership.
+
+
+---
+
+## 10. Solana wallet architecture amendment (2026-11-13)
+
+This section supersedes conflicting Base/ERC-20 wallet wording in earlier UI economy amendments. It does not alter the V1.6 page hierarchy.
+
+- Gold remains the off-chain BrightGlobe ledger, with earned and purchased provenance shown separately where relevant. Both sources remain eligible for Gold → BG only under the economy contract's legal and release gates.
+- BG is planned as a Solana original SPL Token with a target fixed supply of 200,000,000; it is not deployed or minted.
+- The Wallet screen may show a user-controlled embedded Solana wallet only after verified provisioning and Better Auth account binding. Better Auth remains the sole login identity.
+- The app must show the network/cluster, verified BG balance, transaction status and explorer link only from verified Solana integration data. No fabricated wallet, balance, price, transaction or fiat value.
+- The embedded wallet is self-custodial. Do not expose seed phrases/private keys in the UI or ordinary support flows.
+- BrightGlobe may sponsor explicitly approved reward/claim/Gold-conversion transactions and first-time BG ATA creation; sponsorship does not replace the user's signature for user-authorized actions.
+- Routine rewards use a controlled pre-funded Rewards Treasury. Large campaigns may use audited Merkle claims. Both remain disabled until implementation and release approval.
+- Mainnet token issuance, Gold conversion, sponsored production transfers and DEX activity remain unavailable pending legal, security, payment and explicit release approvals.
+
+See [Gold & BG Token Economy Contract](./GOLD_BG_TOKEN_ECONOMY_CONTRACT.md), [Solana Embedded Wallet Contract](./SOLANA_WALLET_CONTRACT.md), [BG SPL Token Contract](./SOLANA_BG_TOKEN_CONTRACT.md), and [Solana Distribution & Gas Sponsorship Contract](./SOLANA_DISTRIBUTION_AND_SPONSORSHIP_CONTRACT.md).

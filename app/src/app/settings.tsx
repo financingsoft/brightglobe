@@ -133,8 +133,8 @@ export default function SettingsScreen() {
       setDeviceSessions(await loadSessions());
       setSessionNotice(
         locale === "zh-CN"
-          ? \`已退出其他 \${count} 台设备。\`
-          : \`Signed out \${count} other device(s).\`
+          ? `已退出其他 ${count} 台设备。`
+          : `Signed out ${count} other device(s).`
       );
     } catch (error) {
       setSessionError(error instanceof Error ? error.message : t("无法退出其他设备。", "Could not sign out other devices."));

@@ -101,6 +101,30 @@ PRE cannot be sold, transferred, pledged, or represented as a token before claim
 - Campaign cancellation, advertiser non-payment, chargeback and invalid-traffic handling must follow disclosed terms; valid accrued user rights cannot be silently erased.
 - Monitor PRE outstanding, claim rate, token distribution, wallet concentration, treasury outflows, campaign ROI, invalid traffic and reward cost per verified action.
 
+## 6A. Emission pacing and daily activity rewards
+
+The community pool is a finite allocation, not an unlimited daily faucet. The following is a proposed planning baseline for simulation, not a final approved vesting schedule:
+
+- Community mining/tasks/contribution pool: maximum 350,000,000 BG over an initial 8-year planning horizon, with a simple average ceiling of 43,750,000 BG per year. This is a cap for planning, not a commitment to distribute the full amount.
+- Unused annual/quarterly budget rolls forward only within the community pool and remains subject to the overall 350,000,000 BG cap. No borrowing from future budgets and no automatic top-up.
+- Advertiser-sponsored reward pool: maximum 200,000,000 BG, released only against approved and pre-funded advertiser campaigns. No time-based release and no rewards based solely on booked or unpaid advertising revenue.
+- Ecosystem grants, team vesting, treasury and liquidity reserves follow their own published schedules and may not be silently redirected to daily rewards.
+- The final annual schedule, launch float and first-year cap must be approved after DAU, verified task completion, advertiser yield, fraud loss, operating runway and market-impact simulations.
+
+For each day, the backend calculates a hard budget before issuing PRE:
+
+**Daily BG budget = minimum of (remaining approved annual budget allocated per remaining day, active campaign remaining BG, global risk cap, treasury available balance).**
+
+For a score-based campaign, an eligible user's share is calculated from verified contribution score divided by total eligible score, subject to a per-user cap and integer rounding. Fixed task awards may be used only where each task has an explicit campaign budget and verified completion evidence. When the budget is exhausted, new PRE issuance stops; the app must not create unfunded entitlements.
+
+“Daily mining” in the app is a gamified activity-reward feature, not proof-of-work mining, validator rewards or a guarantee of fixed daily income. Product copy must not imply otherwise.
+
+## 6B. BG received from advertiser campaigns
+
+BG paid by an advertiser is a token asset received for a service, not fiat revenue. Before launch, BrightGlobe must approve and publish one disposition policy for received BG, for example retaining it in a campaign treasury, allocating a disclosed portion to future campaign rewards, or burning a disclosed portion. The selected percentages, signer controls and accounting method must be fixed before enabling BG payments. Do not make discretionary, undisclosed transfers or imply that advertiser BG payments automatically create a price floor.
+
+If campaign service prices are quoted in USD but payable in BG, the amount calculation must use a reviewed, timestamped reference methodology, bounded slippage and stale-price protections. It is a billing conversion for the campaign invoice only, not a peg, redemption rate or promise that the user can sell BG at that price.
+
 ## 7. Gold-to-BG conversion remains a separate rail
 
 Existing Gold economic rules are preserved:

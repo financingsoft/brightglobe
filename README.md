@@ -61,6 +61,7 @@ Live UI preview: [https://financingsoft.github.io/brightglobe/](https://financin
 ## Binding contracts
 
 ### V1.0 source of truth
+- [Starfield Background and Responsive Layout Contract](docs/STARFIELD_BACKGROUND_AND_RESPONSIVE_LAYOUT_CONTRACT.md) — full-screen starfield, dark surfaces and responsive phone breakpoints.
 - [BrightGlobe 1.0 App Core Contract](docs/BRIGHTGLOBE_V1_APP_CORE_CONTRACT.md) — Earth interaction, daily collection, V1.0 boundaries and acceptance.
 - [BrightGlobe 1.0 BD Internal Ledger Contract](docs/BRIGHTGLOBE_V1_BD_LEDGER_CONTRACT.md) — tables, signed double-entry postings, idempotency, budget controls and API contract.
 - [BrightGlobe 1.0 Compliance and Release Gates](docs/BRIGHTGLOBE_V1_RELEASE_GATES.md) — jurisdiction, store policy and production activation gates.

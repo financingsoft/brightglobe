@@ -1,9 +1,9 @@
 import { Tabs } from "expo-router";
-import { View } from "react-native";
+import { useWindowDimensions, View } from "react-native";
 import { useI18n } from "@/i18n/locale";
 
 function TabGlyph({ type, focused }: { type: "home" | "tasks" | "me"; focused: boolean }) {
-  const color = focused ? "#555555" : "#C4C4C4";
+  const color = focused ? "#EADFFF" : "#7F91B1";
   if (type === "home") {
     return (
       <View style={styles.iconBox}>
@@ -17,7 +17,7 @@ function TabGlyph({ type, focused }: { type: "home" | "tasks" | "me"; focused: b
   }
   if (type === "tasks") {
     return (
-      <View style={[styles.taskIcon, { borderColor: color, backgroundColor: focused ? color : "#FFFFFF" }]}>
+      <View style={[styles.taskIcon, { borderColor: color, backgroundColor: focused ? "#7754B8" : "rgba(9, 19, 38, 0.88)" }]}>
         {[0, 1, 2].map((i) => (
           <View key={i} style={styles.taskLineRow}>
             <View style={[styles.taskBullet, { backgroundColor: focused ? "#FFFFFF" : color }]} />
@@ -37,23 +37,25 @@ function TabGlyph({ type, focused }: { type: "home" | "tasks" | "me"; focused: b
 
 export default function TabLayout() {
   const { t } = useI18n();
+  const { width, height } = useWindowDimensions();
+  const compact = width < 350 || height < 680;
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#555555",
-        tabBarInactiveTintColor: "#C4C4C4",
+        tabBarActiveTintColor: "#EADFFF",
+        tabBarInactiveTintColor: "#8091AE",
         tabBarLabelStyle: { fontSize: 11, fontWeight: "500", marginTop: 0, marginBottom: 1 },
         tabBarStyle: {
-          height: 80,
+          height: compact ? 68 : 76,
           width: "100%",
-          maxWidth: 390,
+          maxWidth: 460,
           alignSelf: "center",
-          paddingTop: 5,
-          paddingBottom: 5,
+          paddingTop: compact ? 3 : 5,
+          paddingBottom: compact ? 3 : 5,
           borderTopWidth: 1,
-          borderTopColor: "#D5D5D5",
-          backgroundColor: "#FFFFFF",
+          borderTopColor: "rgba(157, 184, 226, 0.20)",
+          backgroundColor: "rgba(4, 11, 27, 0.96)",
           elevation: 0
         }
       }}

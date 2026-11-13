@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import {
   Pressable,
   ScrollView,
+  useWindowDimensions,
   StyleSheet,
   Text,
   View,
@@ -18,11 +19,13 @@ type AppScreenProps = {
 };
 
 export function AppScreen({ children, showHeader = false }: AppScreenProps) {
+  const { width } = useWindowDimensions();
+  const horizontalPadding = width < 350 ? 12 : width < 410 ? 16 : 20;
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingHorizontal: horizontalPadding }]}
         showsVerticalScrollIndicator={false}
       >
         {showHeader ? <BrandHeader /> : null}
@@ -274,11 +277,10 @@ export function PrimaryButton({
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.canvas },
+  safeArea: { flex: 1, backgroundColor: "transparent" },
   // Keep the app at a phone-sized reference width on tablet and desktop previews.
-  scroll: { flex: 1, width: "100%", maxWidth: 390, alignSelf: "center" },
+  scroll: { flex: 1, width: "100%", maxWidth: 460, alignSelf: "center", backgroundColor: "transparent" },
   content: {
-    paddingHorizontal: 12,
     paddingTop: 5,
     paddingBottom: 16,
     gap: 0

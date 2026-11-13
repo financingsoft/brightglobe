@@ -5,6 +5,7 @@ import { phoneNumber } from "better-auth/plugins";
 import { env } from "./config/env.js";
 import { buildTrustedOrigins } from "./config/origins.js";
 import { db } from "./db/client.js";
+import { isE164PhoneNumber, phoneToSyntheticEmail } from "./domain/phone.js";
 import { dispatchPhoneOtp } from "./services/sms.js";
 
 export const auth = betterAuth({

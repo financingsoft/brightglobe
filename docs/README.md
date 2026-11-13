@@ -1,21 +1,29 @@
 # BrightGlobe documentation
 
-## Current source of truth
+## V1.0 binding source of truth
 
-- [Black Diamond Single-Asset Economy Contract](./BLACK_DIAMOND_ECONOMY_CONTRACT.md) — authoritative single-asset model: BD only, 10 billion fixed-supply target, 90% platform reserve / 10% initial circulation, daily manual collection, simple Earth-centered UX, one invitation-code type, interest-led clearly labelled advertising, advertiser and merchant utility, open-market policy, transparent reserve releases, accounting, anti-abuse and release gates.
+- [BrightGlobe 1.0 App Core Contract](./BRIGHTGLOBE_V1_APP_CORE_CONTRACT.md) — Earth tap-to-collect interaction, internal BD account, API boundary and V1.0 scope.
+- [BrightGlobe 1.0 BD Internal Ledger Contract](./BRIGHTGLOBE_V1_BD_LEDGER_CONTRACT.md) — PostgreSQL schema, append-only double-entry ledger, daily idempotency, rule budgets and API semantics.
+- [BrightGlobe 1.0 Compliance and Release Gates](./BRIGHTGLOBE_V1_RELEASE_GATES.md) — legal review, store policy, reward activation and production release controls.
+
+These three V1.0 documents override conflicting wallet, transfer, conversion, trading and token-issuance statements in future-economy proposals.
 
 ## Product UI
 
-- [NetEase Planet V1.6.0 UI Reconstruction Contract](./NETEASE_PLANET_V1.6_UI_CONTRACT.md) — binding source hierarchy, page-by-page specification, navigation and interaction contract, rejected UI patterns, and visual acceptance gate.
+- [NetEase Planet V1.6.0 UI Reconstruction Contract](./NETEASE_PLANET_V1.6_UI_CONTRACT.md) — source hierarchy, page-by-page structure, navigation and interaction rules. Its BD wallet amendments are superseded by the BrightGlobe V1.0 App Core Contract.
 
 ## Backend and identity
 
-- [User Center Backend Contract](./USER_CENTER_BACKEND_CONTRACT.md) — Better Auth identity, phone OTP, PostgreSQL schema, profile/session APIs, security boundaries, and Expo client integration boundary.
-- [Solana Embedded Wallet Contract](./SOLANA_WALLET_CONTRACT.md) — Better Auth-linked user-controlled embedded wallet and provider/security requirements.
+- [User Center Backend Contract](./USER_CENTER_BACKEND_CONTRACT.md) — Better Auth identity, phone OTP, PostgreSQL schema, profile/session APIs and Expo client integration.
+- [Solana Embedded Wallet Contract](./SOLANA_WALLET_CONTRACT.md) — future-release proposal only; wallet provisioning is out of scope for V1.0.
+
+## Future economy proposal
+
+- [Black Diamond Single-Asset Economy Contract](./BLACK_DIAMOND_ECONOMY_CONTRACT.md) — long-term BD economy model. Its 10 billion supply target and 90% / 10% reserve structure are planning assumptions only for V1.0. No Mainnet issuance, user wallet, transfers or trading are active in this release.
 
 ## Historical economy and distribution contracts
 
-The following documents preserve earlier Gold/BG/PRE and 1 billion/200 million supply decisions for audit history. They are **superseded wherever they conflict** with the Black Diamond Single-Asset Economy Contract. Do not use them as current tokenomics or implementation instructions until reconciled.
+The following documents preserve earlier Gold/BG/PRE and 1 billion/200 million supply decisions for audit history. They are superseded where they conflict with the newer V1.0 and future BD contracts and must not be used as current V1.0 implementation instructions.
 
 - [Former Gold & BG Token Economy Contract](./GOLD_BG_TOKEN_ECONOMY_CONTRACT.md)
 - [Former Advertising & Sustainable Reward Economy Contract](./AD_REVENUE_AND_REWARD_ECONOMY_CONTRACT.md)

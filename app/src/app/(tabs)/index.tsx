@@ -155,8 +155,8 @@ export default function HomeScreen() {
           <View style={styles.balanceGem} />
           <Text style={styles.balanceLabel}>{t("黑钻账户", "BD ACCOUNT")}</Text>
           <Text style={styles.balanceValue}>
-            {isAuthenticated && !isPreviewAccount
-              ? formatBdBaseUnits(account?.account.availableBaseUnits)
+            {isAuthenticated && !isPreviewAccount && account
+              ? formatBdBaseUnits(account.account.availableBaseUnits)
               : "—"}
           </Text>
           <Text style={styles.balanceArrow}>›</Text>

@@ -39,17 +39,17 @@ export default function AnnouncementDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { minHeight: 36, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "#DDDDDD", marginBottom: 10 },
+  header: { minHeight: 36, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "rgba(156, 183, 224, 0.23)", marginBottom: 10 },
   headerAction: { width: 28, height: 32, justifyContent: "center" },
-  backGlyph: { color: "#333333", fontSize: 27, lineHeight: 30 },
-  closeGlyph: { color: "#555555", fontSize: 24, lineHeight: 27, textAlign: "right" },
-  headerTitle: { flex: 1, color: "#333333", fontSize: 13, fontWeight: "700", textAlign: "center" },
+  backGlyph: { color: "#EAF2FF", fontSize: 27, lineHeight: 30 },
+  closeGlyph: { color: "#C9D9F2", fontSize: 24, lineHeight: 27, textAlign: "right" },
+  headerTitle: { flex: 1, color: "#EAF2FF", fontSize: 13, fontWeight: "700", textAlign: "center" },
   article: { paddingHorizontal: 2, paddingTop: 11, gap: 12 },
-  title: { color: "#333333", fontSize: 16, lineHeight: 23, fontWeight: "700" },
+  title: { color: "#EAF2FF", fontSize: 16, lineHeight: 23, fontWeight: "700" },
   metaRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  brand: { color: "#777777", fontSize: 8 },
-  date: { color: "#999999", fontSize: 8 },
+  brand: { color: "#A0B2D0", fontSize: 8 },
+  date: { color: "#8A9DBD", fontSize: 8 },
   divider: { height: 1, backgroundColor: "#E5E5E5" },
-  body: { color: "#666666", fontSize: 10, lineHeight: 18 },
-  preview: { color: "#AAAAAA", fontSize: 7, lineHeight: 12, marginTop: 18, textAlign: "center" }
+  body: { color: "#B8C9E4", fontSize: 10, lineHeight: 18 },
+  preview: { color: "#788CAB", fontSize: 7, lineHeight: 12, marginTop: 18, textAlign: "center" }
 });

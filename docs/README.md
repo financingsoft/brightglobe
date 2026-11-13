@@ -10,6 +10,8 @@ These three V1.0 documents override conflicting wallet, transfer, conversion, tr
 
 ## Product UI
 
+- [Starfield Background and Responsive Layout Contract](./STARFIELD_BACKGROUND_AND_RESPONSIVE_LAYOUT_CONTRACT.md) — shared deep-space visual system, Earth transparency, safe areas and phone viewport rules.
+
 - [NetEase Planet V1.6.0 UI Reconstruction Contract](./NETEASE_PLANET_V1.6_UI_CONTRACT.md) — source hierarchy, page-by-page structure, navigation and interaction rules. Its BD wallet amendments are superseded by the BrightGlobe V1.0 App Core Contract.
 
 ## Backend and identity

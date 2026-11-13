@@ -276,7 +276,7 @@ const ATMOSPHERE_FRAGMENT_SHADER = `
 
 // Place the terminator across the visible hemisphere so the first frame shows
 // both sunlit terrain and the night-side city lights.
-const SUN_DIRECTION = new THREE.Vector3(0.88, 0.18, 0.44).normalize();
+const SUN_DIRECTION = new THREE.Vector3(0.98, 0.18, 0.22).normalize();
 const EARTH_RADIUS = 1.18;
 const EARTH_POSITION: [number, number, number] = [0.92, 0.015, 0];
 

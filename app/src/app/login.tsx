@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useI18n } from "@/i18n/locale";
 import { useAuth } from "@/auth/session";
+import { StarfieldBackground } from "@/components/StarfieldBackground";
 
 export default function LoginScreen() {
   const { locale } = useI18n();

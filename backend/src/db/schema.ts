@@ -1,4 +1,4 @@
-import { boolean, index, pgTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
+import { bigint, boolean, index, integer, pgTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -63,4 +63,69 @@ export const userProfile = pgTable("user_profile", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 });
 
-export const schema = { user, session, account, verification, userProfile };
+
+export const bdAccounts = pgTable("bd_accounts", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").references(() => user.id, { onDelete: "restrict" }),
+  accountType: varchar("account_type", { length: 16 }).notNull(),
+  balanceBaseUnits: bigint("balance_base_units", { mode: "bigint" }).notNull().default(0n),
+  lifetimeEarnedBaseUnits: bigint("lifetime_earned_base_units", { mode: "bigint" }).notNull().default(0n),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("bd_accounts_user_id_uidx").on(table.userId),
+  index("bd_accounts_type_idx").on(table.accountType)
+]);
+
+export const bdRewardRules = pgTable("bd_reward_rules", {
+  id: text("id").primaryKey(),
+  ruleKey: varchar("rule_key", { length: 64 }).notNull(),
+  version: integer("version").notNull(),
+  rewardBaseUnits: bigint("reward_base_units", { mode: "bigint" }).notNull(),
+  budgetBaseUnits: bigint("budget_base_units", { mode: "bigint" }).notNull(),
+  consumedBaseUnits: bigint("consumed_base_units", { mode: "bigint" }).notNull().default(0n),
+  enabled: boolean("enabled").notNull().default(false),
+  startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+  endsAt: timestamp("ends_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("bd_reward_rules_key_version_unique").on(table.ruleKey, table.version),
+  index("bd_reward_rules_enabled_key_idx").on(table.ruleKey, table.enabled)
+]);
+
+export const bdRewardEvents = pgTable("bd_reward_events", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
+  eventType: varchar("event_type", { length: 40 }).notNull(),
+  eventKey: varchar("event_key", { length: 240 }).notNull().unique(),
+  ruleKey: varchar("rule_key", { length: 64 }).notNull(),
+  ruleVersion: integer("rule_version").notNull(),
+  status: varchar("status", { length: 24 }).notNull(),
+  amountBaseUnits: bigint("amount_base_units", { mode: "bigint" }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  index("bd_reward_events_user_created_idx").on(table.userId, table.createdAt)
+]);
+
+export const bdLedgerTransactions = pgTable("bd_ledger_transactions", {
+  id: text("id").primaryKey(),
+  transactionType: varchar("transaction_type", { length: 40 }).notNull(),
+  idempotencyKey: varchar("idempotency_key", { length: 240 }).notNull().unique(),
+  referenceType: varchar("reference_type", { length: 64 }).notNull(),
+  referenceId: text("reference_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+});
+
+export const bdLedgerEntries = pgTable("bd_ledger_entries", {
+  id: text("id").primaryKey(),
+  transactionId: text("transaction_id").notNull().references(() => bdLedgerTransactions.id, { onDelete: "restrict" }),
+  accountId: text("account_id").notNull().references(() => bdAccounts.id, { onDelete: "restrict" }),
+  deltaBaseUnits: bigint("delta_base_units", { mode: "bigint" }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  index("bd_ledger_entries_transaction_idx").on(table.transactionId),
+  index("bd_ledger_entries_account_created_idx").on(table.accountId, table.createdAt)
+]);
+
+export const schema = { user, session, account, verification, userProfile, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };

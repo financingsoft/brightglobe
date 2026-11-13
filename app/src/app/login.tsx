@@ -96,6 +96,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <StarfieldBackground />
       <View style={[styles.page, { paddingHorizontal: horizontalPadding }]}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.back}><Text style={styles.backGlyph}>‹</Text></Pressable>
@@ -186,7 +187,7 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "transparent" },
+  safeArea: { flex: 1, backgroundColor: "transparent", position: "relative" },
   page: { flex: 1, width: "100%", maxWidth: 460, alignSelf: "center", position: "relative" },
   header: { height: 42, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   back: { width: 36 }, backGlyph: { color: "#EAF2FF", fontSize: 28, lineHeight: 31 },

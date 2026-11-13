@@ -36,7 +36,17 @@ function ProfileGlyph({ kind }: { kind: ProfileIconKind }) {
 export default function ProfileScreen() {
   const { locale } = useI18n();
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isPreviewAccount, user, profile } = useAuth();
+  const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
+  const displayName = isPreviewAccount
+    ? t("本地预览账户", "Local preview account")
+    : profile?.displayName || user?.name || t("未登录", "Guest");
+  const accountHint = isPreviewAccount
+    ? t("仅本地页面预览", "Local UI preview only")
+    : user?.phoneNumber
+      ? user.phoneNumber
+      : t("登录后同步账户资料", "Sign in to sync your account");
+
   const openProtected = (route: "/settings" | "/wallet" | "/passport" | "/force-record" | "/invite" | "/base") => {
     if (!isAuthenticated) {
       router.push("/login");
@@ -44,16 +54,20 @@ export default function ProfileScreen() {
     }
     router.push(route);
   };
-  const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
 
   return (
     <AppScreen>
       <View style={styles.identityRow}>
         <View style={styles.identityCopy}>
-          <Text style={styles.memberName}>{t("BrightGlobe 用户", "BrightGlobe Member")}</Text>
-          <Text style={styles.residentType}>{t("星球居民", "Community resident")}</Text>
+          <Text style={styles.memberName}>{displayName}</Text>
+          <Text style={styles.residentType}>{accountHint}</Text>
         </View>
-        <Pressable onPress={() => openProtected("/settings")} style={styles.avatarButton}>
+        <Pressable
+          onPress={() => openProtected("/settings")}
+          style={styles.avatarButton}
+          accessibilityRole="button"
+          accessibilityLabel={t("账户设置", "Account settings")}
+        >
           <View style={styles.avatarIcon}>
             <View style={styles.avatarHead} />
             <View style={styles.avatarShoulders} />
@@ -67,12 +81,12 @@ export default function ProfileScreen() {
       <View style={styles.assetRow}>
         <Pressable onPress={() => openProtected("/wallet")} style={styles.assetTile}>
           <Text style={styles.assetLabel}>{t("我的钱包", "My wallet")}</Text>
-          <Text style={styles.assetValue}>122.90001</Text>
-          <Text style={styles.assetHint}>{t("查看记录", "View records")} ›</Text>
+          <Text style={styles.assetValue}>—</Text>
+          <Text style={styles.assetHint}>{t("积分服务待接入", "Points service pending")} ›</Text>
         </Pressable>
         <Pressable onPress={() => openProtected("/passport")} style={styles.assetTile}>
           <Text style={styles.assetLabel}>{t("数据护照", "Data passport")}</Text>
-          <Text style={styles.assetValue}>{t("已建立", "Created")}</Text>
+          <Text style={styles.assetValue}>{t("待建立", "Not created")}</Text>
           <Text style={styles.assetHint}>{t("查看护照", "View passport")} ›</Text>
         </Pressable>
       </View>
@@ -80,13 +94,13 @@ export default function ProfileScreen() {
       <Pressable onPress={() => openProtected("/force-record")} style={styles.menuRow}>
         <ProfileGlyph kind="force" />
         <Text style={styles.menuTitle}>{t("我的原力值", "My Contribution Power")}</Text>
-        <Text style={styles.menuValue}>534</Text>
+        <Text style={styles.menuValue}>—</Text>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
       <Pressable onPress={() => openProtected("/invite")} style={styles.menuRow}>
         <ProfileGlyph kind="invite" />
         <Text style={styles.menuTitle}>{t("我的邀请码", "My invitation code")}</Text>
-        <Text style={styles.menuValue}>{t("邀请好友", "Invite friends")}</Text>
+        <Text style={styles.menuValue}>{t("待接入", "Pending")}</Text>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
       <Pressable onPress={() => openProtected("/base")} style={styles.menuRow}>

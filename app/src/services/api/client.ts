@@ -1,6 +1,13 @@
+import { Platform } from "react-native";
+import { authClient } from "@/auth/client";
+
 type ApiErrorBody = {
   message?: string;
   code?: string;
+  error?: {
+    message?: string;
+    code?: string;
+  };
 };
 
 export class ApiError extends Error {
@@ -15,7 +22,7 @@ export class ApiError extends Error {
   }
 }
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/$/, "");
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/+$/, "");
 
 export async function apiRequest<T>(
   path: string,
@@ -26,13 +33,21 @@ export async function apiRequest<T>(
   }
 
   const normalizedPath = path.startsWith("/") ? path : "/" + path;
+  const headers = new Headers(init.headers);
+  headers.set("Accept", "application/json");
+  if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+
+  // The Expo plugin stores native session cookies in SecureStore. Attach them
+  // to first-party API requests; browsers use credentialed cookie handling.
+  if (Platform.OS !== "web") {
+    const cookie = await authClient.getCookie();
+    if (cookie) headers.set("Cookie", cookie);
+  }
+
   const response = await fetch(API_BASE_URL + normalizedPath, {
     ...init,
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...init.headers
-    }
+    headers,
+    credentials: Platform.OS === "web" ? "include" : "omit"
   });
 
   if (!response.ok) {
@@ -44,9 +59,9 @@ export async function apiRequest<T>(
     }
 
     throw new ApiError(
-      body.message ?? "The request could not be completed.",
+      body.error?.message ?? body.message ?? "The request could not be completed.",
       response.status,
-      body.code
+      body.error?.code ?? body.code
     );
   }
 

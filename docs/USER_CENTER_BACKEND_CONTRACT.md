@@ -1,7 +1,7 @@
 # BrightGlobe User Center Backend Contract
 
-**Status:** Binding backend contract  
-**Revision:** 1.0  
+**Status:** Binding backend and mobile-client identity contract  
+**Revision:** 1.1  
 **Date:** 2026-11-13  
 **Applies to:** backend identity, account profile, sessions, mobile authentication integration, and API security  
 **Implementation:** \`backend/\` — Hono + Better Auth + PostgreSQL + Drizzle
@@ -187,7 +187,7 @@ In development, request an OTP and read the local backend console output. Never 
 
 ---
 
-## 7. Expo client integration boundary
+## 7. Expo client authentication integration
 
 After the backend has a stable HTTPS URL, the Expo client will use the Better Auth React client and Expo plugin:
 
@@ -224,7 +224,7 @@ This is the integration contract, not a claim that the current Expo login screen
 - Admin roles, moderation, organizations, and enterprise SSO.
 - Social providers pending Apple/Google credentials and callback domains.
 - Production SMS vendor provisioning and production API deployment.
-- Expo client authentication wiring.
+- Production Expo client live sign-in until a deployed HTTPS API and SMS provider are configured.
 
 All future modules must reference the canonical Better Auth user ID and must not introduce another login system.
 
@@ -247,6 +247,12 @@ Not yet provisioned or verified:
 - [ ] Production PostgreSQL instance and external migration application.
 - [ ] Real SMS vendor configuration and message delivery.
 - [ ] HTTPS backend deployment and production secrets.
-- [ ] Expo client wiring and iOS/Android end-to-end sign-in.
+- [x] Expo client uses the Better Auth React client, Expo plugin, and SecureStore cookie storage.
+- [x] Login screen sends and verifies phone OTP using the Better Auth phone-number client plugin.
+- [x] The app restores Better Auth session state and reads the current user/profile through the protected API.
+- [x] Native user-center requests attach the SecureStore-backed session cookie; web requests include credentialed cookies.
+- [x] My and Settings screens render the authenticated identity; Settings supports display-name updates and real sign-out.
+- [ ] Live end-to-end sign-in on iOS and Android devices against the deployed API.
+- [ ] Production PostgreSQL instance, real SMS delivery, HTTPS deployment, and production secrets.
 
 Passing repository CI does not certify production SMS, hosting, deployment, or native sign-in.

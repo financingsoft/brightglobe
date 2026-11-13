@@ -23,14 +23,14 @@ export default function ActivityScreen() {
   );
 }
 const styles = StyleSheet.create({
-  header: { height: 36, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "#DDDDDD" },
-  back: { width: 28 }, backGlyph: { color: "#333333", fontSize: 27, lineHeight: 30 }, headerTitle: { color: "#333333", fontSize: 12, fontWeight: "600" },
-  banner: { backgroundColor: "#F1F1F1", alignItems: "center", padding: 18, marginTop: 9, gap: 7 },
-  bannerGlyph: { color: "#555555", fontSize: 28 }, bannerTitle: { color: "#333333", fontSize: 13, fontWeight: "700" }, bannerSub: { color: "#777777", fontSize: 8, textAlign: "center" },
+  header: { height: 36, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "rgba(156, 183, 224, 0.23)" },
+  back: { width: 28 }, backGlyph: { color: "#EAF2FF", fontSize: 27, lineHeight: 30 }, headerTitle: { color: "#EAF2FF", fontSize: 12, fontWeight: "600" },
+  banner: { backgroundColor: "rgba(17, 31, 55, 0.92)", alignItems: "center", padding: 18, marginTop: 9, gap: 7 },
+  bannerGlyph: { color: "#C9D9F2", fontSize: 28 }, bannerTitle: { color: "#EAF2FF", fontSize: 13, fontWeight: "700" }, bannerSub: { color: "#A0B2D0", fontSize: 8, textAlign: "center" },
   section: { borderBottomWidth: 1, borderColor: "#E4E4E4", paddingVertical: 13, gap: 7 },
-  sectionTitle: { color: "#444444", fontSize: 10, fontWeight: "700" }, copy: { color: "#777777", fontSize: 8, lineHeight: 14 },
-  action: { height: 34, borderRadius: 18, backgroundColor: "#555555", alignItems: "center", justifyContent: "center", marginTop: 14, paddingHorizontal: 12 },
+  sectionTitle: { color: "#E1EBFC", fontSize: 10, fontWeight: "700" }, copy: { color: "#A0B2D0", fontSize: 8, lineHeight: 14 },
+  action: { height: 34, borderRadius: 18, backgroundColor: "#7052AD", alignItems: "center", justifyContent: "center", marginTop: 14, paddingHorizontal: 12 },
   actionText: { color: "#FFFFFF", fontSize: 9, fontWeight: "600" },
   scrim: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center", padding: 28 },
-  dialog: { backgroundColor: "#FFFFFF", width: "100%", maxWidth: 300, borderRadius: 8, padding: 19, alignItems: "center" }, dialogTitle: { color: "#333333", fontSize: 12, fontWeight: "700" }
+  dialog: { backgroundColor: "rgba(12, 23, 44, 0.94)", width: "100%", maxWidth: 300, borderRadius: 8, padding: 19, alignItems: "center" }, dialogTitle: { color: "#EAF2FF", fontSize: 12, fontWeight: "700" }
 });

@@ -1,68 +1,75 @@
 # BrightGlobe
 
-BrightGlobe is a global, Earth-centered community and commerce experience built around one simple user-facing digital asset: **Black Diamond (BD)**.
+BrightGlobe is an Earth-centered community app. Its V1.0 core interaction is simple:
 
-The core product idea is: **Explore the Earth. Discover Black Diamonds.** Users voluntarily collect daily BD, discover clearly labelled sponsored content matched to their interests, and use BD for approved merchant goods, discounts and digital benefits. Advertisers and merchants may acquire BD and use it for campaigns and customer rewards. The market is open; BrightGlobe makes no token-price, liquidity, redemption or profit guarantees.
+**Tap the Earth. Collect Black Diamond (BD).**
 
-## Repository layout
+In V1.0, BD is recorded only in a server-authoritative internal platform account. The app does not issue a Mainnet token, provision user blockchain wallets, or support user-to-user transfers, token exchange, redemption or cash-out. Solana is reserved for a possible future audit-anchor milestone, subject to separate approval.
 
-- `app/` — Expo + React Native + TypeScript client for iOS, Android, and web.
-- `backend/` — Hono API, Better Auth identity service, PostgreSQL persistence, and Drizzle migrations.
-- `docs/` — binding product, economy, backend and delivery contracts.
+## Architecture
+
+- `app/` — Expo + React Native + TypeScript client for iOS, Android and web.
+- `backend/` — Hono API, Better Auth identity, PostgreSQL, Drizzle schema and migrations.
+- `docs/` — binding app-core, BD ledger, UI, identity and release contracts.
+
+Better Auth is the single identity authority. PostgreSQL is the source of truth for BD account balances and append-only ledger entries. The client never chooses reward amounts or modifies balances locally.
 
 ## Current implementation status
 
-- [x] Expo SDK 58 app shell and three-tab V1.6 UI navigation.
-- [x] Reference-based UI contract and automated screenshot regression baseline.
-- [x] Web preview deployed to GitHub Pages.
-- [x] Better Auth backend foundation with phone OTP and Expo cookie integration.
-- [x] PostgreSQL identity/session/account/verification schema and BrightGlobe user profile migration.
-- [x] Authenticated user profile and session-management API routes.
-- [x] Backend typecheck, unit tests, and PostgreSQL migration validation workflow.
-- [ ] Provision production PostgreSQL and SMS gateway.
-- [ ] Deploy the backend API behind HTTPS and configure production secrets.
-- [ ] Live end-to-end authentication on iOS and Android against the deployed API.
-- [ ] Implement the server-authoritative BD reward ledger, daily collection, unified invitation code, advertiser campaigns and merchant redemption.
-- [ ] Validate Better Auth-linked self-custodial Solana wallet integration.
-- [ ] Implement and test BD flows on Solana Devnet only after implementation contracts are reconciled with the Black Diamond economy contract.
-- [ ] Complete legal, accounting, token, custody, anti-abuse and security reviews before any production issuance or market activity.
+- [x] Expo SDK 58 app shell and three-tab navigation.
+- [x] Earth background with bundled day/night, cloud and surface textures.
+- [x] Better Auth phone OTP foundation and authenticated user-center APIs.
+- [x] V1.0 BD account, reward-rule, reward-event and double-entry ledger schema.
+- [x] Daily Earth-collection API with server-derived UTC period, active-rule and budget checks, idempotency and atomic posting.
+- [x] Home Earth tap wired to authenticated BD collection API.
+- [x] BD account and history screens now read API data instead of hard-coded preview balances.
+- [x] Unit tests added for UTC period keys, reward event keys and exact base-unit formatting.
+- [ ] Run backend typecheck, full tests and Drizzle migration validation in CI after this change.
+- [ ] Deploy the API and apply database migrations to a production PostgreSQL instance.
+- [ ] Configure an approved daily-collection reward rule and budget. No reward amount is seeded or enabled by this migration.
+- [ ] Complete concurrency, failure, budget exhaustion and ledger-reconciliation tests against PostgreSQL.
+- [ ] Complete iOS / Android device testing and current App Store / Google Play policy review for the exact BD reward interaction.
+- [ ] Complete jurisdiction-specific legal, privacy, tax, consumer-protection and operational reviews before activating real rewards.
 
-## Identity, rewards and asset boundaries
+A missing or disabled reward rule makes daily collection unavailable. No hard-coded client-side reward fallback exists. A successful collection is shown only after the server commits the ledger transaction.
 
-- Better Auth is the single source of truth for authentication identity, phone verification, linked auth accounts and login sessions.
-- BrightGlobe-owned profile preferences live in `user_profile`, keyed by the Better Auth user ID.
-- **Black Diamond (BD) is the only user-facing monetary/reward asset.** The target fixed supply is 10,000,000,000 BD, planned as 90% platform-controlled reserve and 10% initial circulation, subject to all approval gates.
-- Pending reward records are internal processing states, not another currency, token, transferable asset or guaranteed cash value.
-- XP or contribution/reputation measurements, if retained, are non-monetary and are not automatically convertible to BD.
-- User wallet balances and chain transactions must be verified; never fabricate a balance, price, wallet address or transaction in preview mode.
-- Historical Gold/BG/PRE documents are superseded wherever they conflict with [Black Diamond Economy Contract](docs/BLACK_DIAMOND_ECONOMY_CONTRACT.md). Existing Gold records and liabilities must not be silently erased or converted.
+## V1.0 identity and BD boundaries
 
-## Product and market principles
+- Better Auth owns authentication identity, phone verification and sessions.
+- BrightGlobe profile preferences live in `user_profile`, keyed by the canonical Better Auth user ID.
+- Each authenticated user has one internal BD account.
+- BD amounts are stored as integer base units at six decimal places. JSON APIs expose base-unit values as decimal strings.
+- The append-only ledger is the accounting source of truth; the account balance is a query projection.
+- Daily collection is once per UTC calendar day and is fully server-authoritative.
+- Preview and static web modes do not fabricate a real BD balance or a successful reward.
+- The previously discussed 10 billion BD supply target and 90% / 10% reserve model are long-term planning assumptions only. No Mainnet supply or reserve has been issued for V1.0.
 
-- The home screen stays extremely simple and Earth-centered; daily collection is a voluntary manual action.
-- Advertising is interest-led, optional, low-disruption and clearly labelled as sponsored. It must never be disguised as organic content or a system message.
-- There is one invitation-code type only.
-- Users and merchants may independently trade BD through lawful venues or private peer-to-peer arrangements. BrightGlobe does not initially operate an OTC desk, escrow, broker, exchange or matching service.
-- BrightGlobe does not guarantee a BD price, $1 peg, price floor, buyback, redemption, liquidity, yield, profit or appreciation.
-- Platform reserve releases are transparent, budgeted ecosystem operations—not price manipulation and not a promise that private traders will lose money.
-- No Mainnet mint, platform BD sale, production reward, advertiser BD settlement, merchant token redemption, DEX liquidity or in-app trading is authorized without separate legal, accounting, security and written release approval.
+## V1.0 product boundaries
+
+- Home is centered on the Earth; tapping the Earth requests daily BD collection.
+- The server validates the Better Auth session, daily event uniqueness, active reward rule and remaining reward budget.
+- Exactly one invitation-code type remains the product direction, but invite reward issuance is not implemented in this slice.
+- Task, advertising and event rewards require their own eligibility, budgets, policy review and release approval.
+- BD cannot be bought, sold, transferred, withdrawn, exchanged or redeemed in V1.0.
+- No user blockchain wallet, Solana token account, Mainnet SPL Token mint, DEX, CEX, OTC, escrow, matching or merchant token settlement is active.
+- Do not describe internal BD as cash, an investment, an on-chain token balance, a mining yield or guaranteed income.
 
 ## Browser preview
 
-Live UI preview: [https://financingsoft.github.io/brightglobe/](https://financingsoft.github.io/brightglobe/). Changes under `app/**` automatically rebuild and redeploy the static preview. See [Web Preview Setup](docs/WEB_PREVIEW.md).
+Live UI preview: [https://financingsoft.github.io/brightglobe/](https://financingsoft.github.io/brightglobe/). Changes under `app/**` automatically rebuild and redeploy the static preview. The preview is not a live authentication or reward backend. See [Web Preview Setup](docs/WEB_PREVIEW.md).
 
-## Contracts
+## Binding contracts
 
-### Current source of truth
-- [Black Diamond Single-Asset Economy Contract](docs/BLACK_DIAMOND_ECONOMY_CONTRACT.md) — authoritative BD product and economy model, 10 billion supply target, 90/10 reserve structure, user collection, advertising, merchant utility, open-market policy, treasury releases, anti-abuse and launch gates.
-- [User Center Backend Contract](docs/USER_CENTER_BACKEND_CONTRACT.md) — Better Auth identity, phone OTP, PostgreSQL schema, profile/session APIs, security boundaries and Expo client integration.
-- [Solana Embedded Wallet Contract](docs/SOLANA_WALLET_CONTRACT.md) — Better Auth-linked user-controlled embedded wallet and provider/security requirements.
-- [NetEase Planet V1.6 UI Reconstruction Contract](docs/NETEASE_PLANET_V1.6_UI_CONTRACT.md).
+### V1.0 source of truth
+- [BrightGlobe 1.0 App Core Contract](docs/BRIGHTGLOBE_V1_APP_CORE_CONTRACT.md) — Earth interaction, daily collection, V1.0 boundaries and acceptance.
+- [BrightGlobe 1.0 BD Internal Ledger Contract](docs/BRIGHTGLOBE_V1_BD_LEDGER_CONTRACT.md) — tables, signed double-entry postings, idempotency, budget controls and API contract.
+- [BrightGlobe 1.0 Compliance and Release Gates](docs/BRIGHTGLOBE_V1_RELEASE_GATES.md) — jurisdiction, store policy and production activation gates.
+- [NetEase Planet V1.6.0 UI Reconstruction Contract](docs/NETEASE_PLANET_V1.6_UI_CONTRACT.md) — source hierarchy, screen structure and navigation, subject to the V1.0 BD override.
+- [User Center Backend Contract](docs/USER_CENTER_BACKEND_CONTRACT.md) — Better Auth, phone OTP, PostgreSQL and authenticated APIs.
 
-### Historical contracts requiring reconciliation before implementation
-- [Former Gold & BG Token Economy Contract](docs/GOLD_BG_TOKEN_ECONOMY_CONTRACT.md).
-- [Former Advertising & Sustainable Reward Economy Contract](docs/AD_REVENUE_AND_REWARD_ECONOMY_CONTRACT.md).
-- [Former BG SPL Token Contract](docs/SOLANA_BG_TOKEN_CONTRACT.md).
-- [Former Solana Distribution & Gas Sponsorship Contract](docs/SOLANA_DISTRIBUTION_AND_SPONSORSHIP_CONTRACT.md).
+### Future-only / historical contracts
+- [Black Diamond Single-Asset Economy Contract](docs/BLACK_DIAMOND_ECONOMY_CONTRACT.md) — long-term economic proposal; its transferable-token and open-market sections do not apply to V1.0.
+- [Solana Embedded Wallet Contract](docs/SOLANA_WALLET_CONTRACT.md) — future wallet proposal; not an implementation instruction for V1.0.
+- Former Gold/BG/PRE documents are retained for audit traceability and are not current V1.0 implementation instructions.
 
-The historical documents are retained for traceability. They are not current implementation instructions where they conflict with the Black Diamond Economy Contract.
+No Mainnet issuance, exchange, wallet, cash-out or merchant BD settlement is authorized by the V1.0 contracts.

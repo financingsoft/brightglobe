@@ -167,6 +167,9 @@ export default function TasksScreen() {
               <MissionGlyph id={mission.id} />
             </View>
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={mission.title}
+              testID={`mission-${mission.id}`}
               onPress={() => requireLogin(() => {
                 if (mission.id === "invite") {
                   router.push("/invite");

@@ -1,4 +1,5 @@
-import { bigint, boolean, index, integer, pgTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { bigint, boolean, check, index, integer, pgTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -73,8 +74,10 @@ export const bdAccounts = pgTable("bd_accounts", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
-  uniqueIndex("bd_accounts_user_id_uidx").on(table.userId),
-  index("bd_accounts_type_idx").on(table.accountType)
+  uniqueIndex("bd_accounts_user_id_uidx").on(table.userId).where(sql`${table.userId} IS NOT NULL`),
+  index("bd_accounts_type_idx").on(table.accountType),
+  check("bd_accounts_type_user_check", sql`(${table.accountType} = 'user' AND ${table.userId} IS NOT NULL) OR (${table.accountType} = 'system' AND ${table.userId} IS NULL)`),
+  check("bd_accounts_lifetime_nonnegative_check", sql`${table.lifetimeEarnedBaseUnits} >= 0`)
 ]);
 
 export const bdRewardRules = pgTable("bd_reward_rules", {
@@ -91,7 +94,12 @@ export const bdRewardRules = pgTable("bd_reward_rules", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
   uniqueIndex("bd_reward_rules_key_version_unique").on(table.ruleKey, table.version),
-  index("bd_reward_rules_enabled_key_idx").on(table.ruleKey, table.enabled)
+  uniqueIndex("bd_reward_rules_one_enabled_uidx").on(table.ruleKey).where(sql`${table.enabled} = true`),
+  index("bd_reward_rules_enabled_key_idx").on(table.ruleKey, table.enabled),
+  check("bd_reward_rules_amount_check", sql`${table.rewardBaseUnits} > 0`),
+  check("bd_reward_rules_budget_check", sql`${table.budgetBaseUnits} > 0`),
+  check("bd_reward_rules_consumed_check", sql`${table.consumedBaseUnits} >= 0 AND ${table.consumedBaseUnits} <= ${table.budgetBaseUnits}`),
+  check("bd_reward_rules_window_check", sql`${table.endsAt} IS NULL OR ${table.endsAt} > ${table.startsAt}`)
 ]);
 
 export const bdRewardEvents = pgTable("bd_reward_events", {
@@ -105,7 +113,9 @@ export const bdRewardEvents = pgTable("bd_reward_events", {
   amountBaseUnits: bigint("amount_base_units", { mode: "bigint" }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
-  index("bd_reward_events_user_created_idx").on(table.userId, table.createdAt)
+  index("bd_reward_events_user_created_idx").on(table.userId, table.createdAt),
+  check("bd_reward_events_amount_check", sql`${table.amountBaseUnits} > 0`),
+  check("bd_reward_events_status_check", sql`${table.status} = 'credited'`)
 ]);
 
 export const bdLedgerTransactions = pgTable("bd_ledger_transactions", {
@@ -125,7 +135,8 @@ export const bdLedgerEntries = pgTable("bd_ledger_entries", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
   index("bd_ledger_entries_transaction_idx").on(table.transactionId),
-  index("bd_ledger_entries_account_created_idx").on(table.accountId, table.createdAt)
+  index("bd_ledger_entries_account_created_idx").on(table.accountId, table.createdAt),
+  check("bd_ledger_entries_nonzero_check", sql`${table.deltaBaseUnits} <> 0`)
 ]);
 
 export const schema = { user, session, account, verification, userProfile, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };

@@ -1,3 +1,5 @@
+> **HISTORICAL / SUPERSEDED — 2026-11-13.** Historical advertising/reward contract; its dual-layer Gold/PRE/BG model, allocations and supply figures are superseded. The current source of truth is [Black Diamond Single-Asset Economy Contract](./BLACK_DIAMOND_ECONOMY_CONTRACT.md). Do not implement conflicting Gold, PRE or BG rules from this file. This file is retained for audit traceability; wallet/security mechanics may be reused only after explicit reconciliation with the current contract.
+
 # BrightGlobe Advertising & Sustainable Reward Economy Contract
 
 **Status:** Architecture and policy design only; no production rewards, token mint, conversion, advertiser BG settlement, or DEX operation is authorized  

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useI18n } from "@/i18n/locale";
@@ -17,7 +17,8 @@ export default function LoginScreen() {
     enterPreviewAccount
   } = useAuth();
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const compactHeight = height < 640;
   const horizontalPadding = width < 350 ? 18 : width < 410 ? 24 : 30;
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [callingCode, setCallingCode] = useState(locale === "zh-CN" ? "+86" : "+1");
@@ -97,18 +98,23 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StarfieldBackground />
-      <View style={[styles.page, { paddingHorizontal: horizontalPadding }]}>
+      <ScrollView
+        style={styles.pageScroll}
+        contentContainerStyle={[styles.page, { paddingHorizontal: horizontalPadding, paddingBottom: compactHeight ? 24 : 18 }]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.back}><Text style={styles.backGlyph}>‹</Text></Pressable>
           <Text style={styles.headerTitle}>{t("登录注册", "Sign in / Sign up")}</Text>
           <Pressable onPress={() => router.push("/help")}><Text style={styles.help}>{t("帮助", "Help")}</Text></Pressable>
         </View>
 
-        <View style={styles.logo}><Text style={styles.logoGlyph}>◇</Text></View>
+        <View style={[styles.logo, compactHeight && styles.logoCompact]}><Text style={styles.logoGlyph}>◇</Text></View>
         <Text style={styles.brand}>BrightGlobe</Text>
         <Text style={styles.tagline}>{t("让每一份贡献汇聚成改变", "A world of shared progress")}</Text>
 
-        <View style={styles.form}>
+        <View style={[styles.form, compactHeight && styles.formCompact]}>
           <Text style={styles.sectionTitle}>{mode === "login" ? t("手机号登录", "Mobile sign-in") : t("手机号注册", "Create account with phone")}</Text>
           {mode === "signup" ? (
             <TextInput
@@ -168,36 +174,39 @@ export default function LoginScreen() {
         </View>
 
         {backendUnavailable ? (
-          <View style={styles.noticeBox}>
+          <View style={[styles.noticeBox, compactHeight && styles.noticeBoxCompact]}>
             <Text style={styles.noticeTitle}>{t("用户中心尚未部署", "User center is not deployed")}</Text>
             <Text style={styles.noticeDescription}>{t("客户端已接入 Better Auth，但尚未配置后端 API 地址。请配置 EXPO_PUBLIC_API_BASE_URL 并部署 HTTPS API 后，才能发送真实短信和登录。", "The client is wired to Better Auth, but the API base URL is not configured. Configure EXPO_PUBLIC_API_BASE_URL and deploy the HTTPS API before live SMS sign-in can work.")}</Text>
           </View>
         ) : null}
 
         {previewEnabled ? (
-          <View style={styles.previewBox}>
+          <View style={[styles.previewBox, compactHeight && styles.previewBoxCompact]}>
             <Text style={styles.previewTitle}>{t("仅供本地 UI 测试", "Local UI test only")}</Text>
             <Text style={styles.previewDescription}>{t("预览账户不会创建真实身份、会话或积分。该入口只在显式开启预览构建时显示。", "Preview access creates no real identity, session, or points. This control is shown only when the preview build flag is explicitly enabled.")}</Text>
             <Pressable onPress={enterPreview} style={styles.previewButton}><Text style={styles.previewButtonText}>{t("进入本地预览账户", "Enter local preview")}</Text></Pressable>
           </View>
         ) : null}
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "transparent", position: "relative" },
-  page: { flex: 1, width: "100%", maxWidth: 460, alignSelf: "center", position: "relative" },
+  pageScroll: { flex: 1, width: "100%" },
+  page: { flexGrow: 1, width: "100%", maxWidth: 460, alignSelf: "center", position: "relative" },
   header: { height: 42, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   back: { width: 36 }, backGlyph: { color: "#EAF2FF", fontSize: 28, lineHeight: 31 },
   headerTitle: { color: "#EAF2FF", fontSize: 13, fontWeight: "600" },
   help: { color: "#9EAFCC", fontSize: 9 },
   logo: { width: 43, height: 43, borderWidth: 1, borderColor: "rgba(165, 190, 230, 0.36)", borderRadius: 22, alignItems: "center", justifyContent: "center", alignSelf: "center", marginTop: 35 },
+  logoCompact: { marginTop: 18 },
   logoGlyph: { color: "#C5D4EC", fontSize: 24 },
   brand: { color: "#EAF2FF", fontSize: 19, fontWeight: "700", textAlign: "center", marginTop: 9 },
   tagline: { color: "#8799B8", fontSize: 8, textAlign: "center", marginTop: 4 },
   form: { marginTop: 34 },
+  formCompact: { marginTop: 20 },
   sectionTitle: { color: "#DDE8FA", fontSize: 12, fontWeight: "700", marginBottom: 11 },
   fieldRow: { minHeight: 43, borderBottomWidth: 1, borderColor: "rgba(157, 184, 226, 0.24)", flexDirection: "row", alignItems: "center", gap: 10 },
   callingCode: { width: 48, height: 42, color: "#C5D4EC", fontSize: 10, textAlign: "center" },
@@ -211,9 +220,11 @@ const styles = StyleSheet.create({
   switchText: { color: "#9EAFCC", fontSize: 8 },
   message: { color: "#FFAB9A", fontSize: 8, lineHeight: 13, textAlign: "center", marginTop: 5 },
   disabled: { opacity: 0.45 },
+  noticeBoxCompact: { marginTop: 16 },
   noticeBox: { borderWidth: 1, borderColor: "rgba(157, 184, 226, 0.18)", borderRadius: 6, padding: 12, marginTop: 24, gap: 7 },
   noticeTitle: { color: "#B5C5DF", fontSize: 8, fontWeight: "700" },
   noticeDescription: { color: "#91A2C0", fontSize: 7, lineHeight: 12 },
+  previewBoxCompact: { marginTop: 14 },
   previewBox: { borderWidth: 1, borderColor: "rgba(157, 184, 226, 0.18)", borderRadius: 6, padding: 12, marginTop: 20, gap: 7 },
   previewTitle: { color: "#B5C5DF", fontSize: 8, fontWeight: "700" },
   previewDescription: { color: "#91A2C0", fontSize: 7, lineHeight: 12 },

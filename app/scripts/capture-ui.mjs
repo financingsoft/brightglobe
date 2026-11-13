@@ -128,6 +128,46 @@ try {
   await page.waitForTimeout(300);
   await page.screenshot({ path: resolve(outputRoot, "home-430x932.png") });
 
+  // Exercise core screens at compact and large phone sizes and guard against horizontal overflow.
+  const assertNoHorizontalOverflow = async (label) => {
+    const metrics = await page.evaluate(() => ({
+      viewportWidth: window.innerWidth,
+      documentWidth: Math.max(
+        document.documentElement.scrollWidth,
+        document.body.scrollWidth
+      )
+    }));
+    if (metrics.documentWidth > metrics.viewportWidth + 1) {
+      throw new Error(
+        `Horizontal overflow on ${label}: document=${metrics.documentWidth}px viewport=${metrics.viewportWidth}px`
+      );
+    }
+  };
+
+  const responsiveCoreRoutes = [
+    ["home", "/"],
+    ["login", "/login"],
+    ["discover", "/tasks"],
+    ["profile", "/profile"]
+  ];
+  for (const viewport of [
+    { width: 320, height: 568, suffix: "320x568" },
+    { width: 430, height: 932, suffix: "430x932" }
+  ]) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    for (const [name, route] of responsiveCoreRoutes) {
+      await page.goto(`http://127.0.0.1:${port}${basePath}${route}`, {
+        waitUntil: "networkidle",
+        timeout: 60000
+      });
+      await page.waitForTimeout(250);
+      await assertNoHorizontalOverflow(`${name}-${viewport.suffix}`);
+      await page.screenshot({
+        path: resolve(outputRoot, `${name}-${viewport.suffix}.png`)
+      });
+    }
+  }
+
   // Capture all routes in the V1.6 acceptance matrix at a fixed phone viewport.
   await page.setViewportSize({ width: 375, height: 667 });
   const routeCaptures = [

@@ -6,6 +6,7 @@ import { env } from "./config/env.js";
 import { isAllowedOrigin } from "./config/origins.js";
 import { db } from "./db/client.js";
 import { meRoutes } from "./routes/me.js";
+import { bdRoutes } from "./routes/bd.js";
 
 const app = new Hono();
 
@@ -37,6 +38,7 @@ app.get("/health/ready", async (context) => {
 
 app.all("/api/auth/*", (context) => auth.handler(context.req.raw));
 app.route("/api/v1/me", meRoutes);
+app.route("/api/v1/me/bd", bdRoutes);
 
 app.notFound((context) => context.json({
   error: { code: "NOT_FOUND", message: "The requested endpoint does not exist." }

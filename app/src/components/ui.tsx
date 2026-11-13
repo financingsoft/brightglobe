@@ -279,7 +279,7 @@ export function PrimaryButton({
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "transparent" },
+  safeArea: { flex: 1, backgroundColor: "transparent", position: "relative" },
   // Keep the app at a phone-sized reference width on tablet and desktop previews.
   scroll: { flex: 1, width: "100%", maxWidth: 460, alignSelf: "center", backgroundColor: "transparent" },
   content: {

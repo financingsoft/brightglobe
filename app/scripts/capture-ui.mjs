@@ -122,7 +122,7 @@ try {
   await page.setViewportSize({ width: 375, height: 667 });
   const routeCaptures = [
     ["login-375x667.png", "/login", "登录注册"],
-    ["wallet-375x667.png", "/wallet", "我的钱包"],
+    ["wallet-375x667.png", "/wallet", "黑钻账户"],
     ["points-record-375x667.png", "/points-record", "黑钻记录"],
     ["force-record-375x667.png", "/force-record", "原力记录"],
     ["announcements-375x667.png", "/announcements", "星球公告"],

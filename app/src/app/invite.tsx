@@ -36,21 +36,21 @@ export default function InviteScreen() {
   );
 }
 const styles = StyleSheet.create({
-  header: { height: 36, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "#DDDDDD" },
-  back: { width: 28 }, backGlyph: { color: "#333333", fontSize: 27, lineHeight: 30 },
-  headerTitle: { color: "#333333", fontSize: 13, fontWeight: "600" },
-  pageTitle: { color: "#333333", fontSize: 14, fontWeight: "700", marginTop: 17, textAlign: "center" },
-  subtitle: { color: "#888888", fontSize: 8, lineHeight: 13, textAlign: "center", marginTop: 7, marginHorizontal: 12 },
-  codeCard: { borderWidth: 1, borderColor: "#DDDDDD", borderRadius: 7, padding: 14, alignItems: "center", marginTop: 15 },
-  label: { color: "#777777", fontSize: 8 },
-  code: { color: "#333333", fontSize: 21, fontWeight: "700", letterSpacing: 3, marginTop: 6 },
-  copyButton: { height: 26, minWidth: 88, borderRadius: 14, borderWidth: 1, borderColor: "#AAAAAA", justifyContent: "center", alignItems: "center", marginTop: 8 },
-  copyText: { color: "#555555", fontSize: 8 },
-  qrBox: { width: 90, height: 90, borderWidth: 1, borderColor: "#E0E0E0", justifyContent: "center", alignItems: "center", marginTop: 14 },
-  qrPattern: { gap: 4 }, qrText: { color: "#333333", fontSize: 17, letterSpacing: 3, lineHeight: 19 },
-  qrCaption: { color: "#888888", fontSize: 7, marginTop: 6 },
-  rules: { borderWidth: 1, borderColor: "#DDDDDD", borderRadius: 7, padding: 12, marginTop: 12, gap: 7 },
-  rulesTitle: { color: "#444444", fontSize: 9, fontWeight: "700" },
-  ruleText: { color: "#777777", fontSize: 8, lineHeight: 13 },
-  preview: { color: "#AAAAAA", fontSize: 7, textAlign: "center", marginTop: 12 }
+  header: { height: 36, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "rgba(156, 183, 224, 0.23)" },
+  back: { width: 28 }, backGlyph: { color: "#EAF2FF", fontSize: 27, lineHeight: 30 },
+  headerTitle: { color: "#EAF2FF", fontSize: 13, fontWeight: "600" },
+  pageTitle: { color: "#EAF2FF", fontSize: 14, fontWeight: "700", marginTop: 17, textAlign: "center" },
+  subtitle: { color: "#96A9C8", fontSize: 8, lineHeight: 13, textAlign: "center", marginTop: 7, marginHorizontal: 12 },
+  codeCard: { borderWidth: 1, borderColor: "rgba(156, 183, 224, 0.23)", borderRadius: 7, padding: 14, alignItems: "center", marginTop: 15 },
+  label: { color: "#A0B2D0", fontSize: 8 },
+  code: { color: "#EAF2FF", fontSize: 21, fontWeight: "700", letterSpacing: 3, marginTop: 6 },
+  copyButton: { height: 26, minWidth: 88, borderRadius: 14, borderWidth: 1, borderColor: "rgba(165, 192, 233, 0.32)", justifyContent: "center", alignItems: "center", marginTop: 8 },
+  copyText: { color: "#C9D9F2", fontSize: 8 },
+  qrBox: { width: 90, height: 90, borderWidth: 1, borderColor: "rgba(156, 183, 224, 0.18)", justifyContent: "center", alignItems: "center", marginTop: 14 },
+  qrPattern: { gap: 4 }, qrText: { color: "#EAF2FF", fontSize: 17, letterSpacing: 3, lineHeight: 19 },
+  qrCaption: { color: "#96A9C8", fontSize: 7, marginTop: 6 },
+  rules: { borderWidth: 1, borderColor: "rgba(156, 183, 224, 0.23)", borderRadius: 7, padding: 12, marginTop: 12, gap: 7 },
+  rulesTitle: { color: "#E1EBFC", fontSize: 9, fontWeight: "700" },
+  ruleText: { color: "#A0B2D0", fontSize: 8, lineHeight: 13 },
+  preview: { color: "#788CAB", fontSize: 7, textAlign: "center", marginTop: 12 }
 });

@@ -5,6 +5,23 @@
 **Supersedes:** Conflicting Gold/BG/PRE dual-layer tokenomics, token allocation and reward-distribution decisions in earlier economy documents. Historical documents remain for traceability only.  
 **Applies to:** Black Diamond asset, user rewards, advertiser and merchant activity, marketplace utility, platform reserve, token release, open-market policy, accounting, risk controls and release gates.
 
+
+
+## V1.0 release-scope amendment — 2026-11-13
+
+**Authority:** This amendment is binding for BrightGlobe 1.0 and supersedes conflicting implementation directions in this long-term economy proposal. Read [BrightGlobe 1.0 App Core Contract](./BRIGHTGLOBE_V1_APP_CORE_CONTRACT.md), [BD Internal Ledger Contract](./BRIGHTGLOBE_V1_BD_LEDGER_CONTRACT.md) and [Compliance and Release Gates](./BRIGHTGLOBE_V1_RELEASE_GATES.md) first.
+
+For V1.0:
+- BD is an internal platform reward-accounting unit held in a PostgreSQL account ledger, not a user-held SPL token.
+- Users tap the Earth to request one daily collection. The server validates the Better Auth session, active reward rule, UTC daily uniqueness and remaining approved budget before crediting the account.
+- No active approved rule means no credit. The client cannot invent or increment a reward.
+- The 10,000,000,000 BD total-supply target and 90% / 10% reserve model in this proposal are long-term planning assumptions only. No Mainnet mint, reserve or circulation exists by virtue of this document.
+- V1.0 does not create Solana user wallets or token accounts and does not offer BD transfer, purchase, sale, exchange, redemption, withdrawal, DEX/CEX, OTC, escrow, matching or merchant BD settlement.
+- Any mention elsewhere in this proposal of users holding/transferring/trading BD, token accounts, market circulation, advertiser acquisition, merchant settlement, Mainnet issuance or token reserves applies only to a separately approved future release.
+- The NetEase Planet “wallet” route in V1.0 is an internal BD account/history screen, not a blockchain wallet.
+
+A future release may propose a transferable token economy, but it requires a new product/economy contract, legal and accounting review, threat model, audit, store-policy review and explicit release approval. Do not implement future-release capabilities as V1.0 scope.
+
 ## 1. Executive decision
 
 BrightGlobe adopts **one user-facing and tradable economic asset: Black Diamond (BD)**.

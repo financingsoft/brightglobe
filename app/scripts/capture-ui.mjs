@@ -251,7 +251,7 @@ try {
   // Follow the Home announcement entry to its list and detail screens.
   await page.getByText("首页", { exact: true }).last().click();
   await page.getByText("星球秉持共建精神中，欢迎试用并留下宝贵建议", { exact: false }).waitFor({ state: "visible", timeout: 10000 });
-  await page.getByText("更多", { exact: true }).click();
+  await page.getByRole("button", { name: "查看公告列表", exact: true }).click();
   await waitForPath("/announcements");
   await page.getByText("星球公告", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
   await page.screenshot({ path: resolve(outputRoot, "announcements-from-home-375x667.png") });

@@ -53,7 +53,7 @@ export default function HomeScreen() {
         </Pressable>
       </View>
 
-      <Pressable accessibilityRole="button" onPress={() => requireHomeLogin(() => router.push("/announcements"))} style={styles.noticeBar}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t("查看公告列表", "View announcements")} onPress={() => requireHomeLogin(() => router.push("/announcements"))} style={styles.noticeBar}>
         <Text style={styles.noticeIcon}>◖</Text>
         <Text numberOfLines={1} style={styles.noticeText}>
           {t("星球秉持共建精神中，欢迎试用并留下宝贵建议", "BrightGlobe community announcement — share your feedback")}

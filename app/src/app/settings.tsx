@@ -1,14 +1,42 @@
 import { useEffect, useState } from "react";
-import { Alert, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View
+} from "react-native";
 import { useRouter } from "expo-router";
 import { AppScreen } from "@/components/ui";
 import { useI18n, type Locale } from "@/i18n/locale";
-import { useAuth } from "@/auth/session";
+import { useAuth, type AuthSession } from "@/auth/session";
 
 function maskPhone(phoneNumber: string | null | undefined) {
   if (!phoneNumber) return "—";
   if (phoneNumber.length < 8) return phoneNumber;
   return phoneNumber.slice(0, 3) + "••••" + phoneNumber.slice(-4);
+}
+
+function getDeviceLabel(userAgent: string | null, locale: Locale) {
+  const value = (userAgent ?? "").toLowerCase();
+  const zh = locale === "zh-CN";
+  if (/ipad|iphone|ipod/.test(value)) return zh ? "Apple 设备" : "Apple device";
+  if (value.includes("android")) return zh ? "Android 设备" : "Android device";
+  if (value.includes("windows")) return zh ? "Windows 电脑" : "Windows computer";
+  if (/macintosh|mac os/.test(value)) return zh ? "Mac 电脑" : "Mac computer";
+  if (value.includes("linux")) return zh ? "Linux 设备" : "Linux device";
+  if (/chrome|safari|firefox|edge/.test(value)) return zh ? "浏览器会话" : "Browser session";
+  return zh ? "未知设备" : "Unknown device";
+}
+
+function formatSessionDate(value: string, locale: Locale) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString(locale === "zh-CN" ? "zh-CN" : "en-US");
 }
 
 export default function SettingsScreen() {
@@ -21,12 +49,24 @@ export default function SettingsScreen() {
     user,
     profile,
     signOut,
-    updateProfile
+    updateProfile,
+    loadSessions,
+    revokeSession,
+    revokeOtherSessions
   } = useAuth();
+
   const [showLogout, setShowLogout] = useState(false);
   const [showEditName, setShowEditName] = useState(false);
+  const [showSessions, setShowSessions] = useState(false);
   const [draftName, setDraftName] = useState("");
   const [savingName, setSavingName] = useState(false);
+  const [deviceSessions, setDeviceSessions] = useState<AuthSession[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+  const [sessionActionId, setSessionActionId] = useState<string | null>(null);
+  const [revokingOthers, setRevokingOthers] = useState(false);
+  const [sessionError, setSessionError] = useState("");
+  const [sessionNotice, setSessionNotice] = useState("");
+
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
   const changeLocale = (value: Locale) => setLocale(value);
 
@@ -51,6 +91,58 @@ export default function SettingsScreen() {
     }
   };
 
+  const refreshSessions = async () => {
+    setLoadingSessions(true);
+    setSessionError("");
+    setSessionNotice("");
+    try {
+      setDeviceSessions(await loadSessions());
+    } catch (error) {
+      setSessionError(error instanceof Error ? error.message : t("无法读取设备会话。", "Unable to load device sessions."));
+    } finally {
+      setLoadingSessions(false);
+    }
+  };
+
+  const openSessions = async () => {
+    setShowSessions(true);
+    await refreshSessions();
+  };
+
+  const handleRevokeSession = async (sessionId: string) => {
+    setSessionActionId(sessionId);
+    setSessionError("");
+    setSessionNotice("");
+    try {
+      await revokeSession(sessionId);
+      setDeviceSessions(await loadSessions());
+      setSessionNotice(t("已退出所选设备。", "The selected device has been signed out."));
+    } catch (error) {
+      setSessionError(error instanceof Error ? error.message : t("撤销设备会话失败。", "Could not revoke this session."));
+    } finally {
+      setSessionActionId(null);
+    }
+  };
+
+  const handleRevokeOthers = async () => {
+    setRevokingOthers(true);
+    setSessionError("");
+    setSessionNotice("");
+    try {
+      const count = await revokeOtherSessions();
+      setDeviceSessions(await loadSessions());
+      setSessionNotice(
+        locale === "zh-CN"
+          ? \`已退出其他 \${count} 台设备。\`
+          : \`Signed out \${count} other device(s).\`
+      );
+    } catch (error) {
+      setSessionError(error instanceof Error ? error.message : t("无法退出其他设备。", "Could not sign out other devices."));
+    } finally {
+      setRevokingOthers(false);
+    }
+  };
+
   const confirmLogout = async () => {
     try {
       await signOut();
@@ -60,6 +152,8 @@ export default function SettingsScreen() {
       Alert.alert(t("退出失败", "Sign out failed"), error instanceof Error ? error.message : t("请稍后重试。", "Please try again."));
     }
   };
+
+  const otherSessionCount = deviceSessions.filter((item) => !item.isCurrent).length;
 
   return (
     <AppScreen>
@@ -91,7 +185,14 @@ export default function SettingsScreen() {
                 : t("未验证 / 未登录", "Unverified / signed out")}
           </Text>
         </View>
+        {isAuthenticated && !isPreviewAccount ? (
+          <Pressable style={styles.row} onPress={openSessions}>
+            <Text style={styles.label}>{t("登录设备", "Signed-in devices")}</Text>
+            <Text style={styles.value}>{t("管理设备与会话", "Manage devices and sessions")} ›</Text>
+          </Pressable>
+        ) : null}
       </View>
+
       <View style={styles.group}>
         <Text style={styles.groupTitle}>{t("偏好设置", "Preferences")}</Text>
         <View style={styles.row}><Text style={styles.label}>{t("语言", "Language")}</Text><View style={styles.languageOptions}>
@@ -103,6 +204,7 @@ export default function SettingsScreen() {
         <Pressable style={styles.row} onPress={() => router.push("/help")}><Text style={styles.label}>{t("意见反馈", "Feedback")}</Text><Text style={styles.chevron}>›</Text></Pressable>
         <Pressable style={styles.row} onPress={() => router.push("/help")}><Text style={styles.label}>{t("隐私说明", "Privacy")}</Text><Text style={styles.chevron}>›</Text></Pressable>
       </View>
+
       {isAuthenticated ? (
         <Pressable onPress={() => setShowLogout(true)} style={styles.logout}><Text style={styles.logoutText}>{t("退出登录", "Log out")}</Text></Pressable>
       ) : (
@@ -115,6 +217,63 @@ export default function SettingsScreen() {
             ? t("登录后将显示真实账户信息。", "Sign in to view your account information.")
             : t("账户身份与会话由 Better Auth 管理。", "Identity and sessions are managed by Better Auth.")}
       </Text>
+
+      <Modal visible={showSessions} transparent animationType="fade" onRequestClose={() => setShowSessions(false)}>
+        <View style={styles.scrim}>
+          <View style={[styles.dialog, styles.sessionsDialog]}>
+            <View style={styles.sessionsHeader}>
+              <Text style={styles.dialogTitle}>{t("登录设备", "Signed-in devices")}</Text>
+              <Pressable onPress={() => setShowSessions(false)} accessibilityRole="button" accessibilityLabel={t("关闭", "Close")}>
+                <Text style={styles.closeGlyph}>×</Text>
+              </Pressable>
+            </View>
+            <Text style={styles.dialogCopy}>{t("这里只显示当前账户的设备会话。撤销其他设备不会影响当前设备。", "Only sessions for this account are shown. Revoking another device will not affect this device.")}</Text>
+            {loadingSessions ? (
+              <View style={styles.loadingState}><ActivityIndicator color="#555555" /><Text style={styles.sessionMeta}>{t("正在读取设备…", "Loading devices…")}</Text></View>
+            ) : (
+              <ScrollView style={styles.sessionList} contentContainerStyle={styles.sessionListContent}>
+                {deviceSessions.length === 0 ? (
+                  <Text style={styles.sessionMeta}>{t("暂无可显示的设备会话。", "No device sessions to display.")}</Text>
+                ) : deviceSessions.map((item) => (
+                  <View key={item.id} style={styles.sessionRow}>
+                    <View style={styles.sessionCopy}>
+                      <Text style={styles.sessionTitle}>{getDeviceLabel(item.userAgent, locale)}</Text>
+                      <Text style={styles.sessionMeta}>{t("登录时间", "Signed in")}: {formatSessionDate(item.createdAt, locale)}</Text>
+                      <Text style={styles.sessionMeta}>{t("IP 地址", "IP address")}: {item.ipAddress || "—"}</Text>
+                    </View>
+                    {item.isCurrent ? (
+                      <Text style={styles.currentSession}>{t("当前设备", "This device")}</Text>
+                    ) : (
+                      <Pressable
+                        onPress={() => handleRevokeSession(item.id)}
+                        disabled={sessionActionId === item.id || revokingOthers}
+                        style={styles.revokeButton}
+                      >
+                        <Text style={styles.revokeText}>
+                          {sessionActionId === item.id ? t("处理中", "Working") : t("退出", "Sign out")}
+                        </Text>
+                      </Pressable>
+                    )}
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+            {sessionError ? <Text style={styles.sessionError}>{sessionError}</Text> : null}
+            {sessionNotice ? <Text style={styles.sessionNotice}>{sessionNotice}</Text> : null}
+            {otherSessionCount > 0 ? (
+              <Pressable
+                onPress={handleRevokeOthers}
+                disabled={revokingOthers || Boolean(sessionActionId)}
+                style={[styles.revokeOthersButton, (revokingOthers || Boolean(sessionActionId)) && styles.disabled]}
+              >
+                <Text style={styles.revokeOthersText}>
+                  {revokingOthers ? t("处理中…", "Working…") : t("退出其他所有设备", "Sign out all other devices")}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={showEditName} transparent animationType="fade" onRequestClose={() => setShowEditName(false)}>
         <View style={styles.scrim}>
@@ -181,5 +340,23 @@ const styles = StyleSheet.create({
   actions: { flexDirection: "row", gap: 10, marginTop: 15 },
   dialogButton: { minWidth: 78, height: 28, borderRadius: 16, borderWidth: 1, borderColor: "#AAAAAA", alignItems: "center", justifyContent: "center" },
   dialogPrimary: { backgroundColor: "#555555", borderColor: "#555555" },
-  dialogButtonText: { color: "#555555", fontSize: 8 }, dialogPrimaryText: { color: "#FFFFFF" }
+  dialogButtonText: { color: "#555555", fontSize: 8 }, dialogPrimaryText: { color: "#FFFFFF" },
+  sessionsDialog: { width: "100%", maxWidth: 340, maxHeight: "82%", alignItems: "stretch", paddingBottom: 16 },
+  sessionsHeader: { width: "100%", flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  closeGlyph: { color: "#666666", fontSize: 24, lineHeight: 24 },
+  loadingState: { alignItems: "center", justifyContent: "center", paddingVertical: 26, gap: 8 },
+  sessionList: { width: "100%", flexGrow: 0, marginTop: 12 },
+  sessionListContent: { gap: 0 },
+  sessionRow: { width: "100%", flexDirection: "row", alignItems: "center", gap: 10, borderTopWidth: 1, borderColor: "#EEEEEE", paddingVertical: 11 },
+  sessionCopy: { flex: 1, gap: 4 },
+  sessionTitle: { color: "#444444", fontSize: 10, fontWeight: "700" },
+  sessionMeta: { color: "#999999", fontSize: 7, lineHeight: 11 },
+  currentSession: { color: "#4D7A58", fontSize: 8, fontWeight: "600" },
+  revokeButton: { borderWidth: 1, borderColor: "#C9C9C9", borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5 },
+  revokeText: { color: "#777777", fontSize: 8 },
+  revokeOthersButton: { minHeight: 32, marginTop: 12, borderRadius: 17, backgroundColor: "#555555", alignItems: "center", justifyContent: "center" },
+  revokeOthersText: { color: "#FFFFFF", fontSize: 8, fontWeight: "600" },
+  sessionError: { color: "#A34B42", fontSize: 8, marginTop: 8, textAlign: "center" },
+  sessionNotice: { color: "#4D7A58", fontSize: 8, marginTop: 8, textAlign: "center" },
+  disabled: { opacity: 0.45 }
 });

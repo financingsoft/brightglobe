@@ -29,6 +29,15 @@ export type UserIdentity = {
   phoneNumberVerified: boolean;
 };
 
+export type AuthSession = {
+  id: string;
+  createdAt: string;
+  expiresAt: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  isCurrent: boolean;
+};
+
 export type ProfileUpdateInput = Partial<Pick<
   UserProfile,
   "displayName" | "locale" | "timeZone" | "countryCode" | "avatarUrl" | "bio"
@@ -59,6 +68,9 @@ type AuthContextValue = {
   verifyPhoneOtp: (phoneNumber: string, code: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
   updateProfile: (input: ProfileUpdateInput) => Promise<void>;
+  loadSessions: () => Promise<AuthSession[]>;
+  revokeSession: (sessionId: string) => Promise<void>;
+  revokeOtherSessions: () => Promise<number>;
   signOut: () => Promise<void>;
   enterPreviewAccount: () => void;
 };
@@ -95,6 +107,11 @@ function UnconfiguredAuthProvider({ children }: { children: ReactNode }) {
     updateProfile: async () => {
       throw new Error("The BrightGlobe API is not configured.");
     },
+    loadSessions: async () => [],
+    revokeSession: async () => {
+      throw new Error("Device sessions require a live account.");
+    },
+    revokeOtherSessions: async () => 0,
     signOut: async () => setPreview(false),
     enterPreviewAccount: () => {
       if (previewEnabled) setPreview(true);
@@ -182,6 +199,24 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
     } : current);
   }, []);
 
+  const loadSessions = useCallback(async () => {
+    const response = await apiRequest<{ sessions: AuthSession[] }>("/api/v1/me/sessions");
+    return response.sessions;
+  }, []);
+
+  const revokeSession = useCallback(async (sessionId: string) => {
+    await apiRequest<void>(\`/api/v1/me/sessions/\${encodeURIComponent(sessionId)}\`, {
+      method: "DELETE"
+    });
+  }, []);
+
+  const revokeOtherSessions = useCallback(async () => {
+    const response = await apiRequest<{ revokedCount: number }>("/api/v1/me/sessions/revoke-others", {
+      method: "POST"
+    });
+    return response.revokedCount;
+  }, []);
+
   const signOut = useCallback(async () => {
     const result = await authClient.signOut();
     if (result.error) throw new Error(result.error.message || "Unable to sign out.");
@@ -216,11 +251,15 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
     verifyPhoneOtp,
     refreshProfile,
     updateProfile,
+    loadSessions,
+    revokeSession,
+    revokeOtherSessions,
     signOut,
     enterPreviewAccount: () => undefined
   }), [
     status, user, account, profileLoading, profileError,
-    sendPhoneOtp, verifyPhoneOtp, refreshProfile, updateProfile, signOut
+    sendPhoneOtp, verifyPhoneOtp, refreshProfile, updateProfile,
+    loadSessions, revokeSession, revokeOtherSessions, signOut
   ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,20 +1,71 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { AppScreen } from "@/components/ui";
 import { useI18n } from "@/i18n/locale";
+import { useAuth } from "@/auth/session";
+import {
+  formatBdBaseUnits,
+  getBdAccount,
+  getBdHistory,
+  type BdAccountSnapshot,
+  type BdHistoryItem
+} from "@/services/bd";
+
+function historyTitle(type: string, locale: string): string {
+  if (type === "daily_collection") return locale === "zh-CN" ? "点击地球 · 每日收集" : "Earth tap · Daily collection";
+  return locale === "zh-CN" ? "黑钻账户变动" : "BD account activity";
+}
+
+function formatTime(value: string, locale: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString(locale === "zh-CN" ? "zh-CN" : "en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
 
 export default function WalletScreen() {
   const { locale } = useI18n();
   const router = useRouter();
+  const { isAuthenticated, isPreviewAccount } = useAuth();
   const [showAccountInfo, setShowAccountInfo] = useState(false);
+  const [account, setAccount] = useState<BdAccountSnapshot | null>(null);
+  const [items, setItems] = useState<BdHistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
-  const records = [
-    { title: t("每日签到", "Daily check-in"), time: t("今天 09:12", "Today 09:12"), value: "+3" },
-    { title: t("阅读精选内容", "Read selected content"), time: t("昨天 18:40", "Yesterday 18:40"), value: "+1.2" },
-    { title: t("社区活动参与", "Community activity"), time: t("11月08日 15:20", "Nov 08 15:20"), value: "+5" },
-    { title: t("邀请新成员", "Invite a member"), time: t("11月06日 12:05", "Nov 06 12:05"), value: "+2" }
-  ];
+
+  useEffect(() => {
+    let active = true;
+    if (!isAuthenticated || isPreviewAccount) {
+      setAccount(null);
+      setItems([]);
+      setLoading(false);
+      setError(t("登录真实账户后查看黑钻账户。", "Sign in to view your BD account."));
+      return () => { active = false; };
+    }
+
+    setLoading(true);
+    setError(null);
+    Promise.all([getBdAccount(), getBdHistory()])
+      .then(([snapshot, history]) => {
+        if (!active) return;
+        setAccount(snapshot);
+        setItems(history);
+      })
+      .catch((reason: unknown) => {
+        if (active) setError(reason instanceof Error ? reason.message : t("暂时无法读取账户。", "Unable to load the account."));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [isAuthenticated, isPreviewAccount, locale]);
 
   return (
     <AppScreen>
@@ -22,26 +73,31 @@ export default function WalletScreen() {
         <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.headerAction}>
           <Text style={styles.backGlyph}>‹</Text>
         </Pressable>
-        <Text style={styles.headerTitle}>{t("我的钱包", "My wallet")}</Text>
+        <Text style={styles.headerTitle}>{t("黑钻账户", "BD account")}</Text>
         <Pressable accessibilityRole="button" onPress={() => router.replace("/(tabs)")} style={styles.headerAction}>
           <Text style={styles.closeGlyph}>×</Text>
         </Pressable>
       </View>
 
       <View style={styles.balanceCard}>
-        <Text style={styles.balanceLabel}>{t("黑钻总数", "Total points")}</Text>
-        <Text style={styles.balanceValue}>122.90001</Text>
+        <Text style={styles.balanceLabel}>{t("可用黑钻", "Available BD")}</Text>
+        <Text style={styles.balanceValue}>
+          {account ? formatBdBaseUnits(account.account.availableBaseUnits) : "—"}
+        </Text>
         <View style={styles.balanceFooter}>
-          <Text style={styles.balanceFootnote}>{t("冻结黑钻数  0", "Frozen points  0")}</Text>
-          <Text style={styles.previewBadge}>{t("预览账户", "Preview account")}</Text>
+          <Text style={styles.balanceFootnote}>
+            {t("累计获得 ", "Lifetime earned ")}
+            {account ? formatBdBaseUnits(account.account.lifetimeEarnedBaseUnits) : "—"} BD
+          </Text>
+          <Text style={styles.accountBadge}>{t("平台内部账户", "Internal account")}</Text>
         </View>
       </View>
 
       <Pressable accessibilityRole="button" onPress={() => setShowAccountInfo(true)} style={styles.manageRow}>
-        <View style={styles.manageIcon}><Text style={styles.manageGlyph}>◎</Text></View>
+        <View style={styles.manageIcon}><Text style={styles.manageGlyph}>◇</Text></View>
         <View style={styles.manageCopy}>
-          <Text style={styles.manageTitle}>{t("账户管理", "Account management")}</Text>
-          <Text style={styles.manageHint}>{t("查看积分账户规则与使用说明", "View points account rules and details")}</Text>
+          <Text style={styles.manageTitle}>{t("账户规则", "Account rules")}</Text>
+          <Text style={styles.manageHint}>{t("了解黑钻记录、领取和使用边界", "Understand BD records and collection rules")}</Text>
         </View>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
@@ -49,37 +105,59 @@ export default function WalletScreen() {
       <View style={styles.shortcutRow}>
         <Pressable onPress={() => setShowAccountInfo(true)} style={styles.shortcut}>
           <Text style={styles.shortcutGlyph}>◇</Text>
-          <Text style={styles.shortcutTitle}>{t("积分规则", "Points rules")}</Text>
+          <Text style={styles.shortcutTitle}>{t("账户说明", "Account details")}</Text>
         </Pressable>
         <Pressable onPress={() => router.push("/points-record")} style={styles.shortcut}>
           <Text style={styles.shortcutGlyph}>▤</Text>
-          <Text style={styles.shortcutTitle}>{t("黑钻明细", "Points history")}</Text>
+          <Text style={styles.shortcutTitle}>{t("黑钻记录", "BD history")}</Text>
         </Pressable>
       </View>
 
       <View style={styles.recordsHeader}>
-        <Text style={styles.sectionTitle}>{t("最近交易记录", "Recent transactions")}</Text>
+        <Text style={styles.sectionTitle}>{t("最近入账", "Recent credits")}</Text>
         <Pressable onPress={() => router.push("/points-record")}><Text style={styles.viewAll}>{t("全部", "All")} ›</Text></Pressable>
       </View>
-      <View style={styles.recordList}>
-        {records.map((record, index) => (
-          <View key={record.title + record.time} style={[styles.recordRow, index !== records.length - 1 && styles.recordDivider]}>
-            <View style={styles.recordCopy}>
-              <Text style={styles.recordTitle}>{record.title}</Text>
-              <Text style={styles.recordTime}>{record.time}</Text>
-            </View>
-            <Text style={styles.recordValue}>{record.value}</Text>
-          </View>
-        ))}
-      </View>
 
-      <Text style={styles.previewNote}>{t("此页面展示 BrightGlobe 内部社区积分，不提供区块链地址、私钥、转账或现金兑换。以上为本地预览数据。", "This page shows internal BrightGlobe community points. Blockchain addresses, private keys, transfers, and cash redemption are not provided. All data is local preview content.")}</Text>
+      {loading ? (
+        <Text style={styles.emptyText}>{t("正在读取记录…", "Loading history…")}</Text>
+      ) : items.length > 0 ? (
+        <View style={styles.recordList}>
+          {items.slice(0, 5).map((record, index) => (
+            <View key={record.id} style={[styles.recordRow, index !== Math.min(items.length, 5) - 1 && styles.recordDivider]}>
+              <View style={styles.recordCopy}>
+                <Text style={styles.recordTitle}>{historyTitle(record.type, locale)}</Text>
+                <Text style={styles.recordTime}>{formatTime(record.createdAt, locale)}</Text>
+              </View>
+              <Text style={styles.recordValue}>
+                {record.deltaBaseUnits.startsWith("-") ? "" : "+"}{formatBdBaseUnits(record.deltaBaseUnits)} BD
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <Text style={styles.emptyText}>{t("暂无入账记录。可在首页点击地球参与每日收集。", "No credits yet. Tap the Earth on Home when daily collection is available.")}</Text>
+      )}
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {(!isAuthenticated || isPreviewAccount) ? (
+        <Pressable accessibilityRole="button" onPress={() => router.push("/login")} style={styles.signInButton}>
+          <Text style={styles.signInText}>{t("登录账户", "Sign in")}</Text>
+        </Pressable>
+      ) : null}
+
+      <Text style={styles.previewNote}>
+        {t("1.0 版本不提供链上钱包、用户间转账、代币兑换或现金提现。此处显示的是服务端内部账本余额。", "V1.0 does not provide an on-chain wallet, peer transfers, token exchange or cash withdrawal. This is the server-side internal ledger balance.")}
+      </Text>
 
       <Modal visible={showAccountInfo} transparent animationType="fade" onRequestClose={() => setShowAccountInfo(false)}>
         <View style={styles.scrim}>
           <View style={styles.manageDialog}>
-            <Text style={styles.manageDialogTitle}>{t("BrightGlobe 积分账户", "BrightGlobe points account")}</Text>
-            <Text style={styles.manageDialogCopy}>{t("社区积分是平台内部的活动记录单位，不是加密货币或现金。积分余额和记录仅用于展示，不代表存款、投资或保证收益。", "Community points are internal activity units, not cryptocurrency or cash. Balances and records are for display only and do not represent deposits, investments, or guaranteed returns.")}</Text>
+            <Text style={styles.manageDialogTitle}>{t("BrightGlobe 黑钻账户", "BrightGlobe BD account")}</Text>
+            <Text style={styles.manageDialogCopy}>
+              {t(
+                "黑钻是 BrightGlobe 1.0 的内部奖励记账单位。所有余额和记录由服务端账本管理；当前版本不开放购买、转账、兑换、提现或链上钱包功能。",
+                "BD is BrightGlobe V1.0's internal reward-accounting unit. Balances and history are managed by the server ledger. Purchase, transfer, exchange, cash-out and blockchain wallet features are not available in this release."
+              )}
+            </Text>
             <Pressable onPress={() => setShowAccountInfo(false)} style={styles.dismissButton}><Text style={styles.dismissText}>{t("知道了", "Got it")}</Text></Pressable>
           </View>
         </View>
@@ -96,10 +174,10 @@ const styles = StyleSheet.create({
   headerTitle: { color: "#333333", fontSize: 13, fontWeight: "700" },
   balanceCard: { paddingTop: 17, paddingBottom: 14, borderBottomWidth: 1, borderColor: "#E0E0E0", gap: 6 },
   balanceLabel: { color: "#777777", fontSize: 9 },
-  balanceValue: { color: "#333333", fontSize: 25, fontWeight: "700" },
+  balanceValue: { color: "#333333", fontSize: 28, fontWeight: "800" },
   balanceFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 2 },
   balanceFootnote: { color: "#888888", fontSize: 8 },
-  previewBadge: { color: "#999999", fontSize: 7, borderWidth: 1, borderColor: "#DDDDDD", paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8 },
+  accountBadge: { color: "#6B7582", fontSize: 7, borderWidth: 1, borderColor: "#DDE1E6", paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8 },
   manageRow: { minHeight: 61, flexDirection: "row", alignItems: "center", borderBottomWidth: 1, borderColor: "#E6E6E6", gap: 9 },
   manageIcon: { width: 31, height: 31, borderRadius: 16, backgroundColor: "#F1F1F1", alignItems: "center", justifyContent: "center" },
   manageGlyph: { color: "#666666", fontSize: 19 },
@@ -115,13 +193,17 @@ const styles = StyleSheet.create({
   sectionTitle: { color: "#444444", fontSize: 10, fontWeight: "700" },
   viewAll: { color: "#888888", fontSize: 8 },
   recordList: { borderTopWidth: 1, borderColor: "#E5E5E5" },
-  recordRow: { minHeight: 49, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  recordRow: { minHeight: 49, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
   recordDivider: { borderBottomWidth: 1, borderColor: "#EAEAEA" },
-  recordCopy: { gap: 4 },
+  recordCopy: { flex: 1, gap: 4 },
   recordTitle: { color: "#444444", fontSize: 9, fontWeight: "600" },
   recordTime: { color: "#999999", fontSize: 7 },
-  recordValue: { color: "#777777", fontSize: 10, fontWeight: "700" },
-  previewNote: { color: "#AAAAAA", fontSize: 7, lineHeight: 12, marginTop: 12 },
+  recordValue: { color: "#777777", fontSize: 9, fontWeight: "700" },
+  emptyText: { color: "#999999", fontSize: 8, lineHeight: 14, paddingVertical: 14 },
+  errorText: { color: "#A45B5B", fontSize: 8, lineHeight: 13, marginTop: 7 },
+  signInButton: { height: 36, borderRadius: 18, backgroundColor: "#394554", alignItems: "center", justifyContent: "center", marginTop: 16 },
+  signInText: { color: "#FFFFFF", fontSize: 9, fontWeight: "700" },
+  previewNote: { color: "#9299A4", fontSize: 7, lineHeight: 12, marginTop: 12 },
   scrim: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center", padding: 28 },
   manageDialog: { backgroundColor: "#FFFFFF", width: "100%", maxWidth: 310, borderRadius: 8, padding: 18, alignItems: "center", gap: 10 },
   manageDialogTitle: { color: "#333333", fontSize: 12, fontWeight: "700" },

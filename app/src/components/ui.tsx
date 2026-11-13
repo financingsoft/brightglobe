@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, radii, spacing } from "@/constants/theme";
+import { StarfieldBackground } from "@/components/StarfieldBackground";
 import { useI18n } from "@/i18n/locale";
 
 type AppScreenProps = {
@@ -23,6 +24,7 @@ export function AppScreen({ children, showHeader = false }: AppScreenProps) {
   const horizontalPadding = width < 350 ? 12 : width < 410 ? 16 : 20;
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <StarfieldBackground />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.content, { paddingHorizontal: horizontalPadding }]}

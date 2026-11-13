@@ -573,3 +573,30 @@ This section supersedes conflicting Base/ERC-20 wallet wording in earlier UI eco
 - Mainnet token issuance, Gold conversion, sponsored production transfers and DEX activity remain unavailable pending legal, security, payment and explicit release approvals.
 
 See [Gold & BG Token Economy Contract](./GOLD_BG_TOKEN_ECONOMY_CONTRACT.md), [Solana Embedded Wallet Contract](./SOLANA_WALLET_CONTRACT.md), [BG SPL Token Contract](./SOLANA_BG_TOKEN_CONTRACT.md), and [Solana Distribution & Gas Sponsorship Contract](./SOLANA_DISTRIBUTION_AND_SPONSORSHIP_CONTRACT.md).
+
+
+## 11. BrightGlobe 1.0 Earth collection and BD account override (2026-11-13)
+
+This section is binding for V1.0 and supersedes conflicting wallet / token wording in Sections 9 and 10 and any earlier page mappings.
+
+### 11.1 Home Earth interaction
+- The Earth is the primary Home interaction target.
+- A logged-in user taps the visible Earth to request the daily BD collection from the authenticated backend.
+- The client sends no amount, account ID or date. The server derives the Better Auth user and UTC day.
+- A successful collection appears only after the server commits the ledger event and balanced postings.
+- The Home balance is read from the BD account API; local client state must never create a credit.
+- Missing reward configuration, exhausted budget, already-collected state and network errors must be shown honestly.
+
+### 11.2 Account and history
+- “Wallet” / “我的钱包” routes map to the V1.0 internal BD account and history, not a blockchain wallet.
+- Show only service-returned BD account balances and ledger rows. No hard-coded preview balance, fabricated transaction, private key, seed phrase, Solana address, token price or explorer link.
+- Clearly disclose that V1.0 does not support buying, transferring, exchanging, redeeming or withdrawing BD.
+- Better Auth user ID is the only account identity key.
+
+### 11.3 Chain boundary
+- No Mainnet SPL Token mint, user wallet, token account, on-chain claim or user transfer is enabled in V1.0.
+- Solana may be evaluated for future batch audit anchoring only; it must not be represented as proof that internal BD balances are on-chain tokens.
+- Future self-custodial wallet and open-market plans remain out of scope until a separately approved contract and release.
+
+### 11.4 Store-policy gate
+Daily collection and any task/invitation reward involving BD must pass a current platform-policy review for each distribution channel. Do not assume that a non-transferable internal account automatically qualifies for store approval. Disable any reward action not approved for that channel; do not relabel a restricted crypto reward to evade policy.

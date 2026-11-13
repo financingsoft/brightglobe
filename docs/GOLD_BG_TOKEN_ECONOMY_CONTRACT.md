@@ -1,3 +1,100 @@
+
+# Authoritative architecture amendment — Solana (Revision 2.0, 2026-11-13)
+
+**This amendment supersedes all conflicting Base/EVM chain, wallet-custody, and distribution wording in the historical Revision 1.0 text below.** The original text is retained for traceability; it is not a current implementation instruction where it conflicts with this amendment.
+
+## A. Confirmed decisions
+
+| Concern | Binding decision |
+|---|---|
+| Initial chain | Solana only; no Base deployment or multi-chain launch |
+| BG standard | Original SPL Token Program, not Token-2022 |
+| Supply | Target fixed supply 200,000,000 BG; mint once and revoke Mint Authority after allocation reconciliation |
+| Wallet | User-controlled/self-custodial embedded Solana wallet created after Better Auth registration |
+| Wallet provider | Privy is preferred candidate, subject to Expo/React Native technical validation and provider review |
+| Authentication | Better Auth remains sole login identity and canonical user ID |
+| Gas | BrightGlobe sponsors approved routine rewards, Merkle claims, Gold-to-BG distributions, and first-time BG ATA creation |
+| Small rewards | Controlled Rewards Treasury transfers pre-funded BG; no routine minting |
+| Large campaigns | Merkle-root distribution with on-chain proof verification, expiry, nullifier/replay protection, and pre-funded campaign vault |
+| Database | PostgreSQL + Drizzle remains authoritative for Gold, reward eligibility, conversion orders, budgets and audit |
+| Market | Solana DEX path considered only after legal, security, allocation and liquidity approvals |
+
+The 200,000,000 BG amount is a design target, not authorization to mint. Decimals, token metadata, final allocations, and authorities must be frozen before deployment. Six decimals is only a proposed default, not an approved final parameter.
+
+## B. Gold rules remain unchanged
+
+1. Gold remains an off-chain PostgreSQL ledger unit, not a token or wallet asset.
+2. EARNED and PURCHASED Gold remain separately attributable.
+3. Both sources remain eligible for Gold → BG conversion only when jurisdiction, legal, payment, sanctions/AML, fraud, and release gates permit.
+4. Gold remains non-transferable between users. Conversion remains one-way Gold → BG; no BG → Gold redemption.
+5. Gold purchase, spending, refunds, chargebacks, atomic reservations, append-only entries, idempotency and provenance rules from Revision 1.0 remain binding.
+6. No numeric Gold/BG ratio, price, fee, minimum, maximum, reward emission schedule, or final supply allocation is approved.
+7. Contribution Power and XP remain separate from Gold and BG.
+
+## C. Wallet and identity
+
+- One primary embedded Solana wallet per Better Auth user in the initial release.
+- Wallet creation follows successful Better Auth authentication. The backend binds provider subject and public address to canonical Better Auth user.id using server-verified provider proof; never trust a client-supplied user ID.
+- The wallet is user-controlled. BrightGlobe must not possess/export user private keys or seed phrases.
+- The wallet address is not a login credential. Better Auth owns login and session revocation.
+- Persist provider, provider subject/reference, public address, chain/cluster, verification status and lifecycle metadata only. Never persist private keys, seed phrases, recovery codes or signing shares in BrightGlobe tables/logs.
+- Require authenticated session, provider-side proof, replay protection, uniqueness constraints and a reviewed recovery/unlink policy.
+- Provider outage must not block Better Auth login; wallet provisioning status is separate.
+
+## D. SPL token and authority
+
+- Use the original SPL Token Program for a conventional fungible token. No Token-2022 extensions, transfer fees, hooks, permanent delegate or freeze controls in the initial design.
+- Devnet first. Mainnet deployment is prohibited until separate written release approval.
+- Mint the approved supply once, distribute to approved vaults, reconcile the full 200,000,000 BG target, then revoke Mint Authority.
+- Prefer no Freeze Authority. Any later restriction capability requires a new revision, legal review, disclosure and threat model.
+- Use integer base units only. Decimals must be frozen before minting.
+- Separate token issuance, treasury, Sponsor Fee Payer and operational authorities. Use least privilege, managed/hardware-backed signing, multisig where supported, limits, monitoring and incident procedures.
+
+## E. Distribution
+
+### E1. Routine/small rewards — Rewards Treasury
+
+Reward Engine validates event evidence, eligibility, anti-abuse signals, user limits, campaign budget and idempotency. It creates an immutable reward order and reserves the BG allocation. A narrowly scoped treasury signer transfers existing BG to the verified user ATA; it does not mint. Sponsor may be transaction Fee Payer, but treasury authority and fee payer are separate roles. Verify mint, source, destination owner/ATA, exact amount, signature and finalized status before marking paid. Retries cannot transfer twice.
+
+### E2. Large campaigns — Merkle claims
+
+- Freeze campaign allocation before constructing a deterministic Merkle tree.
+- Each leaf binds campaign_id, leaf_index, recipient Solana public key, integer BG amount, campaign version and expiry. Never put phone, email, Better Auth user ID or personal data on-chain.
+- Publish immutable root, campaign ID, mint, total allocation, leaf count, deadline, proof encoding and terms. Root publication requires authorized multisig/controlled publisher and audit record.
+- An audited Solana claim program verifies proof, campaign state, recipient signer, expiry, leaf nullifier and remaining budget, then transfers pre-funded BG from campaign vault. It must not mint.
+- Use bitmap or equivalent on-chain nullifier; each leaf can be claimed once. Root replacement is disabled after activation by default.
+- Sponsor may pay claim transaction fees while recipient signs the claim. Enforce per-wallet, per-campaign, daily and global SOL budgets.
+- Mark claims complete only after finality and independent verification of claimed state and token transfer.
+- Unclaimed balances follow published expiry/return terms.
+
+## F. Gas sponsorship and ATA
+
+- Sponsor pays only for allow-listed routine reward transfers, Merkle claims, approved Gold → BG distributions and first-time BG ATA creation.
+- Sponsor is fee payer, not asset owner or authorization substitute. User-initiated actions still require user wallet signature.
+- Do not sponsor arbitrary swaps, bridges, unknown programs or unrestricted transfers.
+- Create BG ATA lazily on first eligible receipt, not at registration. Use idempotent creation and verify owner, mint and token program.
+- ATA rent-exempt reserve is a recoverable account deposit, not transaction fee. Query current rent requirement at runtime; do not hard-code a permanent amount.
+- Apply simulation, program allow-lists, per-user/device/campaign limits, daily/global SOL budget, rate limits, anomaly detection, balance alerts and emergency pause.
+
+## G. Backend records and state
+
+Logical modules: wallet, rewards, gold, conversion, campaigns, solana, sponsorship, indexer and risk.
+
+Minimum logical records: wallets; reward_events/reward_orders; append-only gold_ledger_entries; gold_conversion_orders; bg_campaigns; bg_claims with unique campaign_id + leaf_index; chain_transactions; sponsor_ledger. Store chain signature, expected accounts/amount, cluster, operation, finality state, fees and reconciliation status. Use outbox/reconciliation patterns: PostgreSQL commit and chain finality are not one atomic transaction.
+
+## H. Release boundary
+
+This amendment authorizes documentation only. It does not authorize code implementation, Devnet deployment, Mainnet deployment, minting, token sale, Gold purchase/conversion activation, Sponsor funding or DEX liquidity. Mainnet requires legal/compliance review, approved allocations, independent security audit, treasury controls, monitoring and explicit written release approval.
+
+## I. Superseded historical wording
+
+All Revision 1.0 references to Base, Base Sepolia, Ethereum chain IDs, ERC-20, Solidity, OpenZeppelin, Foundry, viem, EIP-712, Base finality, Uniswap as initial DEX, and an unselected generic custody model are historical and superseded. Revision 1.0 product/economic rules remain binding wherever not changed above.
+
+
+---
+
+## Historical Revision 1.0 text (retained for traceability; read Revision 2.0 above first)
+
 # BrightGlobe Gold & BG Token Economy Contract
 
 **Status:** Binding product and architecture design contract; implementation and issuance are not yet authorized  

@@ -21,8 +21,8 @@ export default function HelpScreen() {
   );
 }
 const styles = StyleSheet.create({
-  header: { height: 36, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "#DDDDDD", marginBottom: 7 },
-  back: { width: 28 }, backGlyph: { color: "#333333", fontSize: 27, lineHeight: 30 }, headerTitle: { color: "#333333", fontSize: 13, fontWeight: "600" },
-  card: { borderWidth: 1, borderColor: "#DDDDDD", borderRadius: 7, padding: 11, marginTop: 8, gap: 7 },
-  question: { color: "#444444", fontSize: 9, fontWeight: "700" }, answer: { color: "#777777", fontSize: 8, lineHeight: 14 }
+  header: { height: 36, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "rgba(156, 183, 224, 0.23)", marginBottom: 7 },
+  back: { width: 28 }, backGlyph: { color: "#EAF2FF", fontSize: 27, lineHeight: 30 }, headerTitle: { color: "#EAF2FF", fontSize: 13, fontWeight: "600" },
+  card: { borderWidth: 1, borderColor: "rgba(156, 183, 224, 0.23)", borderRadius: 7, padding: 11, marginTop: 8, gap: 7 },
+  question: { color: "#E1EBFC", fontSize: 9, fontWeight: "700" }, answer: { color: "#A0B2D0", fontSize: 8, lineHeight: 14 }
 });

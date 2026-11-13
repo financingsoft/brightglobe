@@ -377,9 +377,8 @@ export function EarthBackground({ active = true }: { active?: boolean }) {
           camera={{ position: [0, 0, 4.1], fov: 43 }}
           frameloop={active ? "demand" : "never"}
           dpr={[1, 1.5]}
-          gl={{ alpha: false, antialias: true, powerPreference: "high-performance" }}
+          gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
         >
-          <color attach="background" args={["#030C1A"]} />
           <Starfield />
           <Suspense fallback={<LoadingEarth />}>
             <EarthScene active={active} />

@@ -47,7 +47,7 @@ export async function getBdHistory(): Promise<BdHistoryItem[]> {
 }
 
 export function formatBdBaseUnits(value: string | null | undefined): string {
-  if (!value || !/^-?\\d+$/.test(value)) return "0";
+  if (!value || !/^-?\d+$/.test(value)) return "0";
   const amount = BigInt(value);
   const negative = amount < 0n;
   const absolute = negative ? -amount : amount;

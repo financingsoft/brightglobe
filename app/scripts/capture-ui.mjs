@@ -236,7 +236,7 @@ try {
   await captureCategoryFromForce("来钱", "finance", "finance-unavailable-375x667.png");
   await captureCategoryFromForce("健康", "wellness", "wellness-unavailable-375x667.png");
 
-  await page.getByText("邀请好友", { exact: true }).click();
+  await page.getByRole("button", { name: /邀请好友/ }).first().click();
   await waitForPath("/invite");
   await page.getByText("邀请码", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
   await page.screenshot({ path: resolve(outputRoot, "invite-from-force-375x667.png") });

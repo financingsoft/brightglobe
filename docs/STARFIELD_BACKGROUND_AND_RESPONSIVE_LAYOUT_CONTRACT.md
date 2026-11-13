@@ -19,7 +19,7 @@ The starfield is decorative only. It must never receive touches, intercept gestu
 
 ## 2. Shared background
 
-- `StarfieldBackground` is mounted inside each page surface (`AppScreen` and the standalone login route), rather than relying only on the root navigator. This prevents Expo Router's native/web scene background from covering the starfield.
+- `StarfieldBackground` is mounted inside each page surface (`AppScreen`, the standalone login route and the not-found route), rather than relying only on the root navigator. This prevents Expo Router's native/web scene background from covering the starfield.
 - The root canvas remains deep navy as a fallback during transitions and around safe-area insets. The active page owns the visible star layer, avoiding duplicate nebula layers.
 - The background fills the available page viewport and leaves safe-area regions on the same deep-space base color.
 - It uses a deterministic, static star distribution and a small number of low-opacity glow layers.

@@ -1,3 +1,5 @@
+> **HISTORICAL / SUPERSEDED — 2026-11-13.** Historical BG token contract; token name, symbol, supply and distribution assumptions are superseded. The current source of truth is [Black Diamond Single-Asset Economy Contract](./BLACK_DIAMOND_ECONOMY_CONTRACT.md). Do not implement conflicting Gold, PRE or BG rules from this file. This file is retained for audit traceability; wallet/security mechanics may be reused only after explicit reconciliation with the current contract.
+
 # BrightGlobe BG SPL Token Contract
 
 **Status:** Design only; no token deployed or minted  

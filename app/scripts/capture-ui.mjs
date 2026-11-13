@@ -259,7 +259,7 @@ try {
   await page.getByText("星球秉持共建精神中，欢迎试用并留下宝贵建议", { exact: false }).waitFor({ state: "visible", timeout: 10000 });
   await page.getByRole("button", { name: "查看公告列表", exact: true }).click();
   await waitForPath("/announcements");
-  await page.getByText("星球公告", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
+  await visibleText("星球公告").last().waitFor({ state: "visible", timeout: 10000 });
   await page.screenshot({ path: resolve(outputRoot, "announcements-from-home-375x667.png") });
   await page.getByRole("button", { name: "查看公告详情", exact: true }).first().click();
   await waitForPath("/announcement-detail");

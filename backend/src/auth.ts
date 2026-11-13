@@ -21,13 +21,13 @@ export const auth = betterAuth({
       expiresIn: 60 * 5,
       allowedAttempts: 3,
       requireVerification: true,
-      phoneNumberValidator: (value) => /^\\+[1-9]\\d{7,14}$/.test(value),
+      phoneNumberValidator: isE164PhoneNumber,
       sendOTP: ({ phoneNumber: destination, code }) => {
         // Keep provider delivery outside the synchronous OTP verification callback.
         dispatchPhoneOtp(destination, code);
       },
       signUpOnVerification: {
-        getTempEmail: (value) => value.replace(/\\D/g, "") + "@phone.brightglobe.invalid",
+        getTempEmail: phoneToSyntheticEmail,
         getTempName: () => "New member"
       }
     })

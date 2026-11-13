@@ -39,17 +39,17 @@ export default function CommunityBaseScreen() {
   );
 }
 const styles = StyleSheet.create({
-  header: { height: 36, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "#DDDDDD" },
-  back: { width: 28 }, backGlyph: { color: "#333333", fontSize: 27, lineHeight: 30 },
-  headerTitle: { color: "#333333", fontSize: 13, fontWeight: "600" },
+  header: { height: 36, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "rgba(156, 183, 224, 0.23)" },
+  back: { width: 28 }, backGlyph: { color: "#EAF2FF", fontSize: 27, lineHeight: 30 },
+  headerTitle: { color: "#EAF2FF", fontSize: 13, fontWeight: "600" },
   hero: { alignItems: "center", paddingVertical: 17, gap: 6 },
-  title: { color: "#333333", fontSize: 19, fontWeight: "700" }, subtitle: { color: "#888888", fontSize: 8, textAlign: "center" },
-  metrics: { flexDirection: "row", borderWidth: 1, borderColor: "#DDDDDD", paddingVertical: 14 },
+  title: { color: "#EAF2FF", fontSize: 19, fontWeight: "700" }, subtitle: { color: "#96A9C8", fontSize: 8, textAlign: "center" },
+  metrics: { flexDirection: "row", borderWidth: 1, borderColor: "rgba(156, 183, 224, 0.23)", paddingVertical: 14 },
   metric: { flex: 1, alignItems: "center", gap: 4 },
-  metricValue: { color: "#333333", fontSize: 16, fontWeight: "700" }, metricLabel: { color: "#888888", fontSize: 7 },
-  section: { borderBottomWidth: 1, borderColor: "#E2E2E2", paddingVertical: 12, gap: 8 },
-  sectionTitle: { color: "#444444", fontSize: 10, fontWeight: "700" },
-  copy: { color: "#777777", fontSize: 8, lineHeight: 14 },
-  item: { borderTopWidth: 1, borderColor: "#EEEEEE", paddingTop: 8, gap: 4 },
-  itemTitle: { color: "#555555", fontSize: 8, fontWeight: "600" }, itemCopy: { color: "#888888", fontSize: 7 }
+  metricValue: { color: "#EAF2FF", fontSize: 16, fontWeight: "700" }, metricLabel: { color: "#96A9C8", fontSize: 7 },
+  section: { borderBottomWidth: 1, borderColor: "rgba(156, 183, 224, 0.18)", paddingVertical: 12, gap: 8 },
+  sectionTitle: { color: "#E1EBFC", fontSize: 10, fontWeight: "700" },
+  copy: { color: "#A0B2D0", fontSize: 8, lineHeight: 14 },
+  item: { borderTopWidth: 1, borderColor: "rgba(156, 183, 224, 0.12)", paddingTop: 8, gap: 4 },
+  itemTitle: { color: "#C9D9F2", fontSize: 8, fontWeight: "600" }, itemCopy: { color: "#96A9C8", fontSize: 7 }
 });

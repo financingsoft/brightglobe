@@ -7,7 +7,7 @@
 ## Backend and identity contracts
 
 - [User Center Backend Contract](./USER_CENTER_BACKEND_CONTRACT.md) — Better Auth identity, phone OTP, PostgreSQL schema, profile/session APIs, security boundaries, and Expo client integration boundary.
-- [Gold & BG Token Economy Contract](./GOLD_BG_TOKEN_ECONOMY_CONTRACT.md) — binding design for earned/purchased Gold, reward ledger, Gold spending and conversion, Base token, wallets, DEX, security, compliance gates, and delivery phases. This is a design contract, not authorization to deploy or issue a mainnet token.
+- [Gold & BG Token Economy Contract](./GOLD_BG_TOKEN_ECONOMY_CONTRACT.md) — binding Gold rules and authoritative Solana architecture amendment; both Gold sources remain conversion-eligible subject to legal/release gates. Base/EVM instructions are superseded.\n- [Solana Embedded Wallet Contract](./SOLANA_WALLET_CONTRACT.md) — Better Auth-linked user-controlled embedded wallet and provider/security requirements.\n- [BG SPL Token Contract](./SOLANA_BG_TOKEN_CONTRACT.md) — original SPL Token, target 200 million BG supply, authority separation and Mainnet gates.\n- [Solana Distribution & Gas Sponsorship Contract](./SOLANA_DISTRIBUTION_AND_SPONSORSHIP_CONTRACT.md) — Rewards Treasury, Merkle claims, Fee Payer sponsorship and ATA policy.
 
 ## Other references
 

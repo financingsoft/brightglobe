@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useI18n } from "@/i18n/locale";
@@ -16,6 +16,8 @@ export default function LoginScreen() {
     enterPreviewAccount
   } = useAuth();
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const horizontalPadding = width < 350 ? 18 : width < 410 ? 24 : 30;
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [callingCode, setCallingCode] = useState(locale === "zh-CN" ? "+86" : "+1");
   const [phone, setPhone] = useState("");
@@ -93,7 +95,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.page}>
+      <View style={[styles.page, { paddingHorizontal: horizontalPadding }]}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.back}><Text style={styles.backGlyph}>‹</Text></Pressable>
           <Text style={styles.headerTitle}>{t("登录注册", "Sign in / Sign up")}</Text>
@@ -111,7 +113,7 @@ export default function LoginScreen() {
               value={nickname}
               onChangeText={setNickname}
               placeholder={t("请输入昵称（必填）", "Nickname (required)")}
-              placeholderTextColor="#AAAAAA"
+              placeholderTextColor="#8293B0"
               style={styles.singleInput}
               editable={!busy}
               maxLength={40}
@@ -183,36 +185,36 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#FFFFFF" },
-  page: { flex: 1, width: "100%", maxWidth: 390, alignSelf: "center", paddingHorizontal: 24 },
+  safeArea: { flex: 1, backgroundColor: "transparent" },
+  page: { flex: 1, width: "100%", maxWidth: 460, alignSelf: "center" },
   header: { height: 42, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  back: { width: 36 }, backGlyph: { color: "#333333", fontSize: 28, lineHeight: 31 },
-  headerTitle: { color: "#333333", fontSize: 13, fontWeight: "600" },
-  help: { color: "#777777", fontSize: 9 },
-  logo: { width: 43, height: 43, borderWidth: 1, borderColor: "#BEBEBE", borderRadius: 22, alignItems: "center", justifyContent: "center", alignSelf: "center", marginTop: 35 },
-  logoGlyph: { color: "#555555", fontSize: 24 },
-  brand: { color: "#333333", fontSize: 19, fontWeight: "700", textAlign: "center", marginTop: 9 },
-  tagline: { color: "#999999", fontSize: 8, textAlign: "center", marginTop: 4 },
+  back: { width: 36 }, backGlyph: { color: "#EAF2FF", fontSize: 28, lineHeight: 31 },
+  headerTitle: { color: "#EAF2FF", fontSize: 13, fontWeight: "600" },
+  help: { color: "#9EAFCC", fontSize: 9 },
+  logo: { width: 43, height: 43, borderWidth: 1, borderColor: "rgba(165, 190, 230, 0.36)", borderRadius: 22, alignItems: "center", justifyContent: "center", alignSelf: "center", marginTop: 35 },
+  logoGlyph: { color: "#C5D4EC", fontSize: 24 },
+  brand: { color: "#EAF2FF", fontSize: 19, fontWeight: "700", textAlign: "center", marginTop: 9 },
+  tagline: { color: "#8799B8", fontSize: 8, textAlign: "center", marginTop: 4 },
   form: { marginTop: 34 },
-  sectionTitle: { color: "#444444", fontSize: 12, fontWeight: "700", marginBottom: 11 },
-  fieldRow: { minHeight: 43, borderBottomWidth: 1, borderColor: "#DDDDDD", flexDirection: "row", alignItems: "center", gap: 10 },
-  callingCode: { width: 48, height: 42, color: "#555555", fontSize: 10, textAlign: "center" },
-  input: { flex: 1, height: 42, color: "#333333", fontSize: 10 },
+  sectionTitle: { color: "#DDE8FA", fontSize: 12, fontWeight: "700", marginBottom: 11 },
+  fieldRow: { minHeight: 43, borderBottomWidth: 1, borderColor: "rgba(157, 184, 226, 0.24)", flexDirection: "row", alignItems: "center", gap: 10 },
+  callingCode: { width: 48, height: 42, color: "#C5D4EC", fontSize: 10, textAlign: "center" },
+  input: { flex: 1, height: 42, color: "#EAF2FF", fontSize: 10 },
   codeButton: { minWidth: 73, alignItems: "flex-end", paddingVertical: 10 },
-  codeText: { color: "#555555", fontSize: 8 },
-  singleInput: { height: 43, borderBottomWidth: 1, borderColor: "#DDDDDD", fontSize: 10, color: "#333333", marginBottom: 8 },
-  primary: { height: 39, backgroundColor: "#555555", borderRadius: 20, alignItems: "center", justifyContent: "center", marginTop: 21 },
+  codeText: { color: "#C5D4EC", fontSize: 8 },
+  singleInput: { height: 43, borderBottomWidth: 1, borderColor: "rgba(157, 184, 226, 0.24)", fontSize: 10, color: "#EAF2FF", marginBottom: 8 },
+  primary: { height: 39, backgroundColor: "#7251B2", borderRadius: 20, alignItems: "center", justifyContent: "center", marginTop: 21 },
   primaryText: { color: "#FFFFFF", fontSize: 10, fontWeight: "600" },
   switchMode: { alignItems: "center", paddingVertical: 14 },
-  switchText: { color: "#777777", fontSize: 8 },
+  switchText: { color: "#9EAFCC", fontSize: 8 },
   message: { color: "#8A4B32", fontSize: 8, lineHeight: 13, textAlign: "center", marginTop: 5 },
   disabled: { opacity: 0.45 },
-  noticeBox: { borderWidth: 1, borderColor: "#E0E0E0", borderRadius: 6, padding: 12, marginTop: 24, gap: 7 },
-  noticeTitle: { color: "#666666", fontSize: 8, fontWeight: "700" },
-  noticeDescription: { color: "#888888", fontSize: 7, lineHeight: 12 },
-  previewBox: { borderWidth: 1, borderColor: "#E0E0E0", borderRadius: 6, padding: 12, marginTop: 20, gap: 7 },
-  previewTitle: { color: "#666666", fontSize: 8, fontWeight: "700" },
-  previewDescription: { color: "#888888", fontSize: 7, lineHeight: 12 },
-  previewButton: { height: 30, borderRadius: 16, borderWidth: 1, borderColor: "#AAAAAA", alignItems: "center", justifyContent: "center", marginTop: 3 },
-  previewButtonText: { color: "#555555", fontSize: 8, fontWeight: "600" }
+  noticeBox: { borderWidth: 1, borderColor: "rgba(157, 184, 226, 0.18)", borderRadius: 6, padding: 12, marginTop: 24, gap: 7 },
+  noticeTitle: { color: "#B5C5DF", fontSize: 8, fontWeight: "700" },
+  noticeDescription: { color: "#91A2C0", fontSize: 7, lineHeight: 12 },
+  previewBox: { borderWidth: 1, borderColor: "rgba(157, 184, 226, 0.18)", borderRadius: 6, padding: 12, marginTop: 20, gap: 7 },
+  previewTitle: { color: "#B5C5DF", fontSize: 8, fontWeight: "700" },
+  previewDescription: { color: "#91A2C0", fontSize: 7, lineHeight: 12 },
+  previewButton: { height: 30, borderRadius: 16, borderWidth: 1, borderColor: "#6F82A2", alignItems: "center", justifyContent: "center", marginTop: 3 },
+  previewButtonText: { color: "#C5D4EC", fontSize: 8, fontWeight: "600" }
 });

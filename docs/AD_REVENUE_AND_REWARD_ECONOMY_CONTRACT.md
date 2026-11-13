@@ -215,3 +215,14 @@ Geofencing and feature flags must be based on counsel-approved jurisdiction poli
 - No treating token holdings as fiat revenue or operating cash.
 - No Mainnet deployment, token sale, real advertiser BG settlement or production Gold conversion without separate approval.
 
+
+
+## 15. Primary regulatory references (non-exhaustive; re-check before launch)
+
+These references inform issue spotting only. They do not determine BrightGlobe's legal classification or replace jurisdiction-specific advice.
+
+- **United States — SEC crypto asset transactions:** https://www.sec.gov/resources-small-businesses/capital-raising-building-blocks/transactions-involving-crypto-assets — the SEC's 2026 materials explain that a crypto asset may be offered or sold subject to an investment contract depending on the facts, including promises and expectations around managerial efforts. Token labels or reward distribution alone do not decide the result.
+- **United States — FinCEN virtual currency guidance:** https://www.fincen.gov/resources/statutes-regulations/guidance/application-fincens-regulations-persons-administering — distinguishes users from administrators/exchangers and explains when accepting/transmitting or buying/selling convertible virtual currency may constitute money transmission under the federal BSA framework. State licensing and other laws are separate questions.
+- **United States — OFAC virtual currency guidance:** https://ofac.treasury.gov/system/files/126/virtual_currency_guidance_brochure.pdf and https://ofac.treasury.gov/faqs/topic/1626/print — virtual-currency activity remains subject to applicable sanctions obligations; apply risk-based screening and controls.
+- **United States — FTC endorsements and incentivized reviews:** https://www.ftc.gov/news-events/topics/truth-advertising/advertisement-endorsements and https://www.ftc.gov/news-events/news/press-releases/2023/06/federal-trade-commission-announces-updated-advertising-guides-combat-deceptive-reviews-endorsements — compensated endorsements and incentivized reviews must be truthful and disclose material connections where required; do not reward positive sentiment or fabricate engagement.
+- **European Union — MiCA:** https://finance.ec.europa.eu/digital-finance/crypto-assets_en and https://eur-lex.europa.eu/eli/reg/2023/1114/oj/eng — MiCA covers issuance/offers and crypto-asset services within scope; public offers/admission to trading may trigger white-paper and disclosure requirements subject to applicable exemptions, while service providers may require authorization. Assess EU scope before offering or listing BG.

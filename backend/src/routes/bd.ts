@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, lte } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db/client.js";
 import {
@@ -49,7 +49,6 @@ async function getAccountSnapshot(userId: string, now: Date) {
     .where(and(
       eq(bdRewardRules.ruleKey, DAILY_RULE_KEY),
       eq(bdRewardRules.enabled, true),
-      lte(bdRewardRules.startsAt, now)
     ))
     .orderBy(desc(bdRewardRules.version))
     .limit(1);
@@ -153,13 +152,6 @@ routes.post("/daily-collection", async (context) => {
           "Daily collection is not available at this time."
         );
       }
-      if (!hasBudget(rule)) {
-        throw new DailyCollectionError(
-          "DAILY_BUDGET_EXHAUSTED",
-          "The approved daily collection budget has been used."
-        );
-      }
-
       const [existing] = await transaction.select({ id: bdRewardEvents.id })
         .from(bdRewardEvents)
         .where(eq(bdRewardEvents.eventKey, eventKey))
@@ -168,6 +160,13 @@ routes.post("/daily-collection", async (context) => {
         throw new DailyCollectionError(
           "ALREADY_COLLECTED",
           "Today's Black Diamond has already been collected."
+        );
+      }
+
+      if (!hasBudget(rule)) {
+        throw new DailyCollectionError(
+          "DAILY_BUDGET_EXHAUSTED",
+          "The approved daily collection budget has been used."
         );
       }
 

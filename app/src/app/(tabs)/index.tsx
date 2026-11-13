@@ -203,6 +203,23 @@ export default function HomeScreen() {
         ))}
       </ScrollView>
 
+      <View style={styles.announcementRow}>
+        <View style={styles.announcementCopy}>
+          <Text style={styles.announcementEyebrow}>{t("星球公告", "PLANET NEWS")}</Text>
+          <Text style={styles.announcementTitle}>
+            {t("星球秉持共建精神中，欢迎试用并留下宝贵建议", "BrightGlobe is built together. Try the app and share your feedback.")}
+          </Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("查看公告列表", "View announcements")}
+          onPress={() => router.push("/announcements")}
+          style={styles.announcementAction}
+        >
+          <Text style={styles.announcementActionText}>{t("查看", "View")} ›</Text>
+        </Pressable>
+      </View>
+
       <Modal visible={showLoginPrompt} transparent animationType="fade" onRequestClose={() => setShowLoginPrompt(false)}>
         <View style={styles.modalBackdrop}>
           <View style={styles.loginDialog}>
@@ -306,6 +323,22 @@ const styles = StyleSheet.create({
   earthFootnote: { position: "absolute", bottom: 8, left: 8, right: 8, alignItems: "center", zIndex: 3 },
   earthFootnoteText: { color: "rgba(145, 178, 211, 0.72)", fontSize: 6, textAlign: "center" },
   activityRail: { gap: 10, paddingHorizontal: 2, paddingBottom: 8, alignItems: "flex-start" },
+  announcementRow: {
+    minHeight: 58,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "#E4E7EB",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 3
+  },
+  announcementCopy: { flex: 1, gap: 4 },
+  announcementEyebrow: { color: "#9AA2AC", fontSize: 7, fontWeight: "800", letterSpacing: 1 },
+  announcementTitle: { color: "#66707C", fontSize: 8, lineHeight: 13 },
+  announcementAction: { minWidth: 50, height: 27, borderRadius: 14, borderWidth: 1, borderColor: "#D5DAE1", alignItems: "center", justifyContent: "center" },
+  announcementActionText: { color: "#66707C", fontSize: 8, fontWeight: "700" },
   activityTile: {
     width: 158,
     minHeight: 72,

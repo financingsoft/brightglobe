@@ -1,3 +1,5 @@
+> **HISTORICAL / SUPERSEDED — 2026-11-13.** Historical Gold/BG contract; superseded by Black Diamond single-asset economy contract. The current source of truth is [Black Diamond Single-Asset Economy Contract](./BLACK_DIAMOND_ECONOMY_CONTRACT.md). Do not implement conflicting Gold, PRE or BG rules from this file. This file is retained for audit traceability; wallet/security mechanics may be reused only after explicit reconciliation with the current contract.
+
 # BrightGlobe Gold & BG Token Economy Contract — Current Amendment
 
 **Status:** Binding product/economy design; implementation and issuance are not authorized  

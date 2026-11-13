@@ -183,7 +183,7 @@ export default function HomeScreen() {
           <Text style={styles.earthEyebrowTitle}>{t("BRIGHTGLOBE", "BRIGHTGLOBE")}</Text>
           <Text style={styles.earthEyebrowText}>{t("探索世界 · 收集黑钻", "EXPLORE THE EARTH · COLLECT BD")}</Text>
         </View>
-        <View pointerEvents="none" style={styles.earthInstruction}>
+        <View pointerEvents="none" style={[styles.earthInstruction, compactScreen && styles.earthInstructionCompact]}>
           <View style={styles.tapIndicator}><View style={styles.tapIndicatorDot} /></View>
           <Text style={styles.earthActionLabel}>{earthActionLabel}</Text>
           {claimMessage ? <Text style={styles.claimMessage}>{claimMessage}</Text> : null}
@@ -286,7 +286,6 @@ const styles = StyleSheet.create({
   },
   globeTapTarget: {
     position: "absolute",
-    left: 0,
     alignSelf: "center",
     backgroundColor: "transparent",
     zIndex: 1

@@ -28,7 +28,7 @@ app.get("/health/live", (context) => context.json({ status: "ok" }));
 
 app.get("/health/ready", async (context) => {
   try {
-    await db.execute(sql\`select 1\`);
+    await db.execute(sql`select 1`);
     return context.json({ status: "ready", database: "reachable" });
   } catch {
     return context.json({ status: "not_ready", database: "unavailable" }, 503);

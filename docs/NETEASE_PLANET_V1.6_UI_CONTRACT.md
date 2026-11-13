@@ -2,7 +2,7 @@
 
 **Status:** Binding implementation contract  
 **Target reference:** NetEase Planet PRD V1.6.0, authored 2018-10-05 and published 2018-10-08  
-**Contract revision:** 1.1  
+**Contract revision:** 1.2  
 **Applies to:** React Native app screens, navigation, shared components, interaction states, and browser preview  
 **Revision date:** 2026-11-13  
 **Rule:** Implementation must follow this document. A visually attractive reinterpretation is not acceptance.
@@ -155,7 +155,9 @@ Behavior:
 - New-user flow asks for nickname and optional invitation code, then continues to its next registration step.
 - Help opens the FAQ page.
 
-BrightGlobe implementation constraint: do not collect government identity numbers or sensitive identity information merely to imitate the old flow. Keep identity verification out of the demo unless a separately reviewed legal/product requirement exists. Reproduce the public-facing layout and safe portions of the interaction only.
+BrightGlobe implementation constraint: do not collect government identity numbers or sensitive identity information merely to imitate the old flow. Keep identity verification out of the demo unless a separately reviewed legal/product requirement exists.
+
+Backend identity contract: the UI flow must use the companion [User Center Backend Contract](./USER_CENTER_BACKEND_CONTRACT.md) as the source of truth for identity, sessions, verification and profile data. Phone numbers are submitted in E.164 format; a global release must provide a country/region calling-code selector rather than hard-coding +86. The current local preview shortcut is not a production authentication method. Until the Expo client is connected to Better Auth, all preview-account access must remain visibly identified as local demo state and must never be treated as a real signed-in account. Reproduce the public-facing layout and safe portions of the interaction only.
 
 ### 4.2 Home — 首页
 

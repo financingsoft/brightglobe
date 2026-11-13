@@ -1,0 +1,9 @@
+node_modules/
+**/node_modules/
+.env
+.env.*
+!.env.example
+**/dist/
+app/.expo/
+app/artifacts/ui-baseline/
+coverage/

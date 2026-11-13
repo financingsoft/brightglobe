@@ -1,0 +1,32 @@
+import "dotenv/config";
+import { z } from "zod";
+
+const environmentSchema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  PORT: z.coerce.number().int().min(1).max(65535).default(4000),
+  DATABASE_URL: z.string().min(1, "DATABASE_URL is required."),
+  BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must contain at least 32 characters."),
+  BETTER_AUTH_URL: z.string().url("BETTER_AUTH_URL must be an absolute URL."),
+  APP_ORIGINS: z.string().default("https://financingsoft.github.io,http://localhost:8081,http://127.0.0.1:8081"),
+  SMS_GATEWAY_URL: z.string().url().optional(),
+  SMS_GATEWAY_TOKEN: z.string().min(1).optional()
+}).superRefine((value, context) => {
+  if (value.NODE_ENV === "production") {
+    if (!value.SMS_GATEWAY_URL || !value.SMS_GATEWAY_TOKEN) {
+      context.addIssue({
+        code: "custom",
+        path: ["SMS_GATEWAY_URL"],
+        message: "Production requires SMS_GATEWAY_URL and SMS_GATEWAY_TOKEN."
+      });
+    }
+    if (value.SMS_GATEWAY_URL && !value.SMS_GATEWAY_URL.startsWith("https://")) {
+      context.addIssue({
+        code: "custom",
+        path: ["SMS_GATEWAY_URL"],
+        message: "Production SMS_GATEWAY_URL must use HTTPS."
+      });
+    }
+  }
+});
+
+export const env = environmentSchema.parse(process.env);

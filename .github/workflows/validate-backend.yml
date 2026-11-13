@@ -1,0 +1,75 @@
+name: Validate BrightGlobe backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "docs/USER_CENTER_BACKEND_CONTRACT.md"
+      - "docs/NETEASE_PLANET_V1.6_UI_CONTRACT.md"
+      - "docs/README.md"
+      - "README.md"
+      - ".github/workflows/validate-backend.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - "docs/USER_CENTER_BACKEND_CONTRACT.md"
+      - "docs/NETEASE_PLANET_V1.6_UI_CONTRACT.md"
+      - "docs/README.md"
+      - "README.md"
+      - ".github/workflows/validate-backend.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: brightglobe
+          POSTGRES_USER: brightglobe
+          POSTGRES_PASSWORD: brightglobe_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U brightglobe -d brightglobe"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://brightglobe:brightglobe_test@localhost:5432/brightglobe
+      BETTER_AUTH_URL: http://localhost:4000
+      BETTER_AUTH_SECRET: test-only-secret-that-is-at-least-thirty-two-characters
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm install --no-audit --no-fund
+
+      - name: TypeScript strict typecheck
+        working-directory: backend
+        run: npm run typecheck
+
+      - name: Unit tests
+        working-directory: backend
+        run: npm test
+
+      - name: Apply PostgreSQL migrations
+        working-directory: backend
+        run: npm run db:migrate
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build

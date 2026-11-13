@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { PreviewStatusBar } from "@/components/ui";
 import { useI18n } from "@/i18n/locale";
 import { useAuth } from "@/auth/session";
 
@@ -40,7 +39,6 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <PreviewStatusBar />
       <View style={styles.page}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.back}><Text style={styles.backGlyph}>‹</Text></Pressable>

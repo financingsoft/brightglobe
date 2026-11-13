@@ -519,12 +519,11 @@ export function EarthBackground({ active = true }: { active?: boolean }) {
           camera={{ position: [0, 0, 4.1], fov: 43 }}
           frameloop={shouldAnimate ? "demand" : "never"}
           gl={{
-            alpha: false,
+            alpha: true,
             antialias: QUALITY.antialias,
             powerPreference: "low-power"
           }}
         >
-          <color attach="background" args={["#030C1A"]} />
           <Starfield count={QUALITY.stars} />
           <Suspense fallback={<LoadingEarth />}>
             <EarthScene active={shouldAnimate} />

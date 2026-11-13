@@ -55,7 +55,7 @@ export default function TabLayout() {
           paddingBottom: compact ? 3 : 5,
           borderTopWidth: 1,
           borderTopColor: "rgba(157, 184, 226, 0.20)",
-          backgroundColor: "rgba(4, 11, 27, 0.96)",
+          backgroundColor: "#050D20",
           elevation: 0
         }
       }}

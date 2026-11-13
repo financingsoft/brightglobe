@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   primaryText: { color: "#FFFFFF", fontSize: 10, fontWeight: "600" },
   switchMode: { alignItems: "center", paddingVertical: 14 },
   switchText: { color: "#9EAFCC", fontSize: 8 },
-  message: { color: "#8A4B32", fontSize: 8, lineHeight: 13, textAlign: "center", marginTop: 5 },
+  message: { color: "#FFAB9A", fontSize: 8, lineHeight: 13, textAlign: "center", marginTop: 5 },
   disabled: { opacity: 0.45 },
   noticeBox: { borderWidth: 1, borderColor: "rgba(157, 184, 226, 0.18)", borderRadius: 6, padding: 12, marginTop: 24, gap: 7 },
   noticeTitle: { color: "#B5C5DF", fontSize: 8, fontWeight: "700" },

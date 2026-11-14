@@ -14,7 +14,8 @@
       "workers_dev": true,
       "vars": {
         "NODE_ENV": "production",
-        "SMS_ENABLED": "false"
+        "SMS_ENABLED": "false",
+        "EMAIL_ENABLED": "false"
       }
     }
   },

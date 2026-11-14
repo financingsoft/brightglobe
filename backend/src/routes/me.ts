@@ -1,6 +1,7 @@
 import { and, desc, eq, ne } from "drizzle-orm";
 import { Hono } from "hono";
 import { profileUpdateSchema } from "../domain/profile.js";
+import { canRevokeSession } from "../domain/session-revocation.js";
 import { db } from "../db/client.js";
 import { session as sessions, user, userProfile } from "../db/schema.js";
 import { requireAuth, type AuthVariables } from "../middleware/require-auth.js";
@@ -136,6 +137,14 @@ routes.delete("/sessions/:sessionId", async (context) => {
     return context.json({
       error: { code: "INVALID_SESSION_ID", message: "The session ID is invalid." }
     }, 400);
+  }
+  if (!canRevokeSession(sessionId, current.session.id)) {
+    return context.json({
+      error: {
+        code: "CURRENT_SESSION_CANNOT_BE_REVOKED",
+        message: "Use the sign-out endpoint to end the current session."
+      }
+    }, 409);
   }
 
   const deleted = await db.delete(sessions)

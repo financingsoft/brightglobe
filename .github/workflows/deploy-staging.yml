@@ -1,0 +1,135 @@
+name: Deploy BrightGlobe Staging
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-staging.yml"
+      - ".github/workflows/validate-backend.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: brightglobe-staging-deploy
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate backend before Staging
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: brightglobe
+          POSTGRES_USER: brightglobe
+          POSTGRES_PASSWORD: brightglobe_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U brightglobe -d brightglobe"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://brightglobe:brightglobe_test@localhost:5432/brightglobe
+      BETTER_AUTH_URL: http://localhost:4000
+      BETTER_AUTH_SECRET: test-only-secret-that-is-at-least-thirty-two-characters
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci --no-audit --no-fund
+
+      - name: TypeScript strict typecheck
+        working-directory: backend
+        run: npm run typecheck
+
+      - name: Unit tests
+        working-directory: backend
+        run: npm test
+
+      - name: Validate PostgreSQL migrations on disposable database
+        working-directory: backend
+        run: npm run db:migrate
+
+      - name: Build Cloudflare Worker (dry run)
+        working-directory: backend
+        run: npm run build
+
+  migrate-and-deploy:
+    name: Migrate and deploy isolated Staging environment
+    needs: validate
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci --no-audit --no-fund
+
+      - name: Verify required Staging deployment credentials
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          test -n "$DATABASE_URL" || { echo "::error::Missing staging Environment secret DATABASE_URL"; exit 1; }
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::Missing repository secret CLOUDFLARE_API_TOKEN"; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::Missing repository secret CLOUDFLARE_ACCOUNT_ID"; exit 1; }
+
+      - name: Apply migrations to Neon Staging branch only
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run db:migrate
+
+      - name: Deploy globe-staging Worker
+        working-directory: backend
+        run: npx wrangler deploy --env staging --keep-vars
+
+      - name: Verify deployed Staging endpoints
+        env:
+          STAGING_URL: https://globe-staging.wanghui-79b.workers.dev
+        run: |
+          curl --fail-with-body --silent --show-error "$STAGING_URL/"             | jq -e '.service == "brightglobe-backend" and .status == "ok"' >/dev/null
+          curl --fail-with-body --silent --show-error "$STAGING_URL/health/live"             | jq -e '.status == "ok"' >/dev/null
+
+          ready=0
+          for attempt in $(seq 1 12); do
+            if curl --fail --silent --show-error "$STAGING_URL/health/ready"               | jq -e '.status == "ready" and .database == "reachable"' >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 5
+          done
+
+          if [ "$ready" -ne 1 ]; then
+            echo "::error::Staging readiness check failed; database was not confirmed reachable."
+            exit 1
+          fi
+          echo "Staging root, liveness, and database readiness checks passed."

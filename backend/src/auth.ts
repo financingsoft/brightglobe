@@ -11,15 +11,8 @@ import { dispatchPhoneOtp } from "./services/sms.js";
 export type BackgroundTaskScheduler = (promise: Promise<unknown>) => void;
 
 export function createAuth(db: Database, env: AppEnvironment, scheduleBackgroundTask?: BackgroundTaskScheduler) {
-  return betterAuth({
-    appName: "BrightGlobe",
-    baseURL: env.BETTER_AUTH_URL,
-    secret: env.BETTER_AUTH_SECRET,
-    database: drizzleAdapter(db, { provider: "pg" }),
-    trustedOrigins: buildTrustedOrigins(env.APP_ORIGINS, env.NODE_ENV),
-    plugins: [
-      expo(),
-      phoneNumber({
+  const phoneAuthPlugin = env.SMS_ENABLED
+    ? [phoneNumber({
         otpLength: 6,
         expiresIn: 60 * 5,
         allowedAttempts: 3,
@@ -37,8 +30,16 @@ export function createAuth(db: Database, env: AppEnvironment, scheduleBackground
           getTempEmail: phoneToSyntheticEmail,
           getTempName: () => "New member"
         }
-      })
-    ],
+      })]
+    : [];
+
+  return betterAuth({
+    appName: "BrightGlobe",
+    baseURL: env.BETTER_AUTH_URL,
+    secret: env.BETTER_AUTH_SECRET,
+    database: drizzleAdapter(db, { provider: "pg" }),
+    trustedOrigins: buildTrustedOrigins(env.APP_ORIGINS, env.NODE_ENV),
+    plugins: [expo(), ...phoneAuthPlugin],
     session: {
       expiresIn: 60 * 60 * 24 * 30,
       updateAge: 60 * 60 * 24

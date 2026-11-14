@@ -34,6 +34,8 @@ export default function RootLayout() {
               <Stack.Screen name="settings" />
               <Stack.Screen name="wallet" />
               <Stack.Screen name="login" />
+              <Stack.Screen name="auth/verified" />
+              <Stack.Screen name="auth/reset-password" />
               <Stack.Screen name="+not-found" />
             </Stack>
           </View>

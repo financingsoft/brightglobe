@@ -15,7 +15,7 @@
       "vars": {
         "NODE_ENV": "production",
         "SMS_ENABLED": "false",
-        "EMAIL_ENABLED": "false"
+        "EMAIL_ENABLED": "true"
       }
     }
   },

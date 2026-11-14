@@ -17,7 +17,9 @@ test("Expo development origins are never allowed in production", () => {
 test("production origins are exact and include the native scheme", () => {
   assert.deepEqual(buildTrustedOrigins("https://app.example", "production"), [
     "https://app.example",
-    "brightglobe://"
+    "brightglobe://",
+    "brightglobe://auth"
   ]);
+  assert.equal(isAllowedOrigin("brightglobe://auth", "https://app.example", "production"), true);
   assert.equal(isAllowedOrigin("https://untrusted.example", "https://app.example", "production"), false);
 });

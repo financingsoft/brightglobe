@@ -8,6 +8,15 @@
   "vars": {
     "NODE_ENV": "production"
   },
+  "env": {
+    "staging": {
+      "name": "globe-staging",
+      "workers_dev": true,
+      "vars": {
+        "NODE_ENV": "production"
+      }
+    }
+  },
   "observability": {
     "enabled": true
   }

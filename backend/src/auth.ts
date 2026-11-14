@@ -61,14 +61,14 @@ export function createAuth(db: Database, env: AppEnvironment, scheduleBackground
       sendResetPassword: ({ user, url }) =>
         deliverEmail(user.email, "reset", user.name, url)
     },
-    emailVerification: {
+    emailVerification: env.EMAIL_ENABLED ? {
       sendOnSignUp: true,
       sendOnSignIn: true,
-      autoSignInAfterVerification: true,
+      autoSignInAfterVerification: false,
       expiresIn: 60 * 60,
       sendVerificationEmail: ({ user, url }) =>
         deliverEmail(user.email, "verify", user.name, url)
-    },
+    } : undefined,
     plugins: [expo(), ...phoneAuthPlugin],
     session: {
       expiresIn: 60 * 60 * 24 * 30,

@@ -8,7 +8,7 @@
     "deploy": "wrangler deploy",
     "build": "wrangler deploy --dry-run --outdir=dist/worker",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "tsx --test src/config/origins.test.ts src/config/env.test.ts src/domain/profile.test.ts src/domain/phone.test.ts src/domain/bd.test.ts src/domain/session-revocation.test.ts",
+    "test": "tsx --test src/config/origins.test.ts src/config/env.test.ts src/domain/profile.test.ts src/domain/phone.test.ts src/domain/bd.test.ts src/domain/session-revocation.test.ts src/services/email.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"
   },

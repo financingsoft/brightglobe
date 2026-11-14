@@ -17,7 +17,7 @@ interface AppDependencies {
 export function createApp({ db, auth, env }: AppDependencies) {
   const app = new Hono();
 
-  app.use("/api/*", cors({
+  app.use("*", cors({
     origin: (origin) => isAllowedOrigin(origin, env.APP_ORIGINS, env.NODE_ENV) ? origin : "",
     allowHeaders: ["Content-Type", "Authorization", "Cookie", "X-Requested-With"],
     allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
@@ -44,7 +44,7 @@ export function createApp({ db, auth, env }: AppDependencies) {
     }
   });
 
-  app.all("/api/auth/*", (context) => auth.handler(context.req.raw));
+  app.all("/staging/api/auth/*", (context) => auth.handler(context.req.raw));
   app.route("/api/v1/me", createMeRoutes(db, auth));
   app.route("/api/v1/me/bd", createBdRoutes(db, auth));
 

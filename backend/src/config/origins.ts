@@ -3,7 +3,7 @@ export function parseOrigins(value: string): string[] {
 }
 
 export function buildTrustedOrigins(configuredOrigins: string, nodeEnv: string): string[] {
-  const nativeOrigins = ["brightglobe://"];
+  const nativeOrigins = ["brightglobe://", "brightglobe://auth"];
   const developmentOrigins = nodeEnv === "development"
     ? ["exp://", "exp://**", "exp://192.168.*.*:*/**"]
     : [];
@@ -11,6 +11,6 @@ export function buildTrustedOrigins(configuredOrigins: string, nodeEnv: string):
 }
 
 export function isAllowedOrigin(origin: string, configuredOrigins: string, nodeEnv: string): boolean {
-  if (parseOrigins(configuredOrigins).includes(origin) || origin === "brightglobe://") return true;
+  if (parseOrigins(configuredOrigins).includes(origin) || origin === "brightglobe://" || origin === "brightglobe://auth") return true;
   return nodeEnv === "development" && origin.startsWith("exp://");
 }

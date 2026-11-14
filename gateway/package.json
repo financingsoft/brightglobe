@@ -1,0 +1,15 @@
+{
+  "name": "@brightglobe/api-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20261114.0",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.131.0"
+  }
+}

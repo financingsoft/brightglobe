@@ -194,10 +194,11 @@ npm install
 npm run dev
 ```
 
-Use a local PostgreSQL service or a Neon development branch in .dev.vars. The .env file is separate and is used only by Drizzle Kit's Node.js migration CLI:
+Use a Neon development branch's pooled connection string in .dev.vars. The Worker uses Neon's WebSocket driver and cannot connect directly to a plain localhost PostgreSQL TCP server. The .env file is separate and is used only by Drizzle Kit's Node.js migration CLI; it may point to local PostgreSQL or Neon's unpooled endpoint:
 
 ```bash
 cp .env.example .env
+docker compose up -d postgres
 npm run db:migrate
 ```
 

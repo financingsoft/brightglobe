@@ -64,7 +64,7 @@ jobs:
         run: npm run db:migrate
       - name: Deploy Staging Worker
         working-directory: backend
-        run: npx wrangler deploy --env staging --keep-vars
+        run: npx wrangler deploy --env staging
       - name: Verify Staging endpoints
         env:
           STAGING_URL: https://globe-staging.wanghui-79b.workers.dev

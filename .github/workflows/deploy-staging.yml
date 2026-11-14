@@ -121,9 +121,75 @@ jobs:
             local status
 
             for attempt in $(seq 1 12); do
-              response="$(curl --silent --show-error --max-time 10 --write-out $'\\n%{http_code}' "$STAGING_URL$path" 2>&1 || true)"
+              response="$(curl --silent --show-error --max-time 10 --write-out %{http_code}' "$STAGING_URL$path" 2>&1 || true)"
               status="${response##*$'\\n'}"
               body="${response%$'\\n'*}"
+
+              if [ "$status" = "200" ] && printf '%s' "$body" | jq -e "$filter" >/dev/null 2>&1; then
+                echo "$label passed (HTTP 200, attempt $attempt)."
+                return 0
+              fi
+
+              echo "$label not ready yet (attempt $attempt/12, HTTP $status)."
+              sleep 5
+            done
+
+            echo "::error::$label failed after 12 attempts; last HTTP status: $status"
+            echo "Last response body: $body"
+            return 1
+          }
+
+          check_endpoint "/" "Root endpoint" '.service == "brightglobe-backend" and .status == "ok"'
+          check_endpoint "/health/live" "Liveness endpoint" '.status == "ok"'
+          check_endpoint "/health/ready" "Database readiness endpoint" '.status == "ready" and .database == "reachable"'
+
+          echo "Staging root, liveness, and database readiness checks passed."
+\n%{http_code}' "$STAGING_URL$path" 2>&1 || true)"
+              status="${response##*'}"
+              body="${response%$'\\n'*}"
+
+              if [ "$status" = "200" ] && printf '%s' "$body" | jq -e "$filter" >/dev/null 2>&1; then
+                echo "$label passed (HTTP 200, attempt $attempt)."
+                return 0
+              fi
+
+              echo "$label not ready yet (attempt $attempt/12, HTTP $status)."
+              sleep 5
+            done
+
+            echo "::error::$label failed after 12 attempts; last HTTP status: $status"
+            echo "Last response body: $body"
+            return 1
+          }
+
+          check_endpoint "/" "Root endpoint" '.service == "brightglobe-backend" and .status == "ok"'
+          check_endpoint "/health/live" "Liveness endpoint" '.status == "ok"'
+          check_endpoint "/health/ready" "Database readiness endpoint" '.status == "ready" and .database == "reachable"'
+
+          echo "Staging root, liveness, and database readiness checks passed."
+\n'}"
+              body="${response%'*}"
+
+              if [ "$status" = "200" ] && printf '%s' "$body" | jq -e "$filter" >/dev/null 2>&1; then
+                echo "$label passed (HTTP 200, attempt $attempt)."
+                return 0
+              fi
+
+              echo "$label not ready yet (attempt $attempt/12, HTTP $status)."
+              sleep 5
+            done
+
+            echo "::error::$label failed after 12 attempts; last HTTP status: $status"
+            echo "Last response body: $body"
+            return 1
+          }
+
+          check_endpoint "/" "Root endpoint" '.service == "brightglobe-backend" and .status == "ok"'
+          check_endpoint "/health/live" "Liveness endpoint" '.status == "ok"'
+          check_endpoint "/health/ready" "Database readiness endpoint" '.status == "ready" and .database == "reachable"'
+
+          echo "Staging root, liveness, and database readiness checks passed."
+\n'*}"
 
               if [ "$status" = "200" ] && printf '%s' "$body" | jq -e "$filter" >/dev/null 2>&1; then
                 echo "$label passed (HTTP 200, attempt $attempt)."

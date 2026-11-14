@@ -139,7 +139,7 @@ All routes below require a valid Better Auth session. The user ID is derived fro
 
 The `GET /api/v1/me` response contains a stable user ID, verified contact email only when verified, phone number and verification state, plus profile preferences. Synthetic phone-registration emails are hidden.
 
-Session listing returns ID, created/expiry time, IP address, user agent, and current-session indicator. It never returns session tokens or cookie values. The mobile client marks the current session and does not offer a revoke action for it; signing out the current device uses Better Auth's sign-out endpoint.
+Session listing returns ID, created/expiry time, IP address, user agent, and current-session indicator. It never returns session tokens or cookie values. The mobile client marks the current session and does not offer a revoke action for it; signing out the current device uses Better Auth's sign-out endpoint. The server independently rejects `DELETE /api/v1/me/sessions/:sessionId` when the requested ID is the current authenticated session, returning `CURRENT_SESSION_CANNOT_BE_REVOKED` (HTTP 409). The UI restriction is not treated as a security boundary.
 
 A display-name mutation updates both `user.name` and `user_profile.display_name` inside one database transaction.
 
@@ -153,7 +153,7 @@ A display-name mutation updates both `user.name` and `user_profile.display_name`
 4. Require HTTPS, secure HTTP-only cookies, origin validation, and rate limits in production.
 5. Keep SMS dispatch non-blocking. Production logs must not include OTPs or full phone numbers.
 6. Every `/api/v1/me/*` operation must verify the Better Auth session before accessing rows.
-7. A user can only read or revoke sessions associated with their own user ID.
+7. A user can only read or revoke sessions associated with their own user ID. The current authenticated session cannot be revoked through the per-session endpoint; use Better Auth sign-out instead.
 8. Migrations are reviewed source-controlled changes. Do not alter Better Auth-owned tables manually in production.
 9. Profile APIs cannot modify identity ownership, roles, phone verification, or server-authoritative reward data.
 10. The local preview-account shortcut is enabled only in explicit non-production test builds and is disabled by default.
@@ -235,6 +235,7 @@ Implemented in this repository slice:
 - [x] Native user-center requests attach the SecureStore-backed session cookie; web requests include credentialed cookies.
 - [x] My and Settings screens render the authenticated identity; Settings supports display-name updates and real sign-out.
 - [x] Settings provides device-session listing, per-device revocation, and revoke-other-sessions actions.
+- [x] The session API rejects attempts to revoke the current session; this rule has a backend unit test.
 - [ ] Live end-to-end sign-in on iOS and Android devices against the deployed API.
 - [ ] Production PostgreSQL instance, real SMS delivery, HTTPS deployment, and production secrets.
 

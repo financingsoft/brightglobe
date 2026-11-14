@@ -16,8 +16,9 @@
         "NODE_ENV": "production",
         "SMS_ENABLED": "false",
         "EMAIL_ENABLED": "true",
-        "BETTER_AUTH_URL": "https://test.globeapps.com",
-        "APP_ORIGINS": "https://financingsoft.github.io"
+        "BETTER_AUTH_URL": "https://api.globeapps.com/staging",
+        "APP_ORIGINS": "https://test.globeapps.com",
+        "EMAIL_FROM": "BrightGlobe <noreply@go.globeapps.com>"
       }
     }
   },

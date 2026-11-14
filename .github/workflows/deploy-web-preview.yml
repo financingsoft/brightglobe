@@ -45,7 +45,7 @@ jobs:
       - name: Export static web app
         working-directory: app
         env:
-          EXPO_PUBLIC_API_BASE_URL: https://globe-staging.wanghui-79b.workers.dev
+          EXPO_PUBLIC_API_BASE_URL: https://test.globeapps.com
           EXPO_PUBLIC_ENABLE_PREVIEW_AUTH: "false"
         run: npm run export:web
 

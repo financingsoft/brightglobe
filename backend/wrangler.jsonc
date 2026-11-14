@@ -16,7 +16,7 @@
         "NODE_ENV": "production",
         "SMS_ENABLED": "false",
         "EMAIL_ENABLED": "true",
-        "BETTER_AUTH_URL": "https://api.globeapps.com/staging",
+        "BETTER_AUTH_URL": "https://api.globeapps.com/staging/api/auth",
         "APP_ORIGINS": "https://test.globeapps.com",
         "EMAIL_FROM": "BrightGlobe <noreply@go.globeapps.com>"
       }

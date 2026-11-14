@@ -48,6 +48,9 @@ jobs:
     name: Verify Neon PostgreSQL connection
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Require Neon connection secret
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}

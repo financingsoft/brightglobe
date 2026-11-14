@@ -17,7 +17,7 @@ BrightGlobe uses one independently deployable Cloudflare Workers user-center API
 | Layer | Decision | Responsibility |
 |---|---|---|
 | HTTP API | Hono | Health endpoints, authenticated account APIs, CORS |
-| Authentication | Better Auth | Identity, phone OTP verification, sessions, linked auth accounts |
+| Authentication | Better Auth | Email/password identity, verified email, sessions, linked auth accounts; optional phone OTP |
 | Database adapter | `@better-auth/drizzle-adapter` | Better Auth persistence |
 | ORM | Drizzle ORM | Application-owned profile persistence and typed SQL |
 | Primary database | PostgreSQL | Durable identity, session, verification, and profile storage |
@@ -47,9 +47,17 @@ The GitHub Pages website is a static UI preview, not an authentication server.
 
 ### Authentication methods in this phase
 
-The initial authentication method is phone-number OTP. Better Auth's phone-number plugin verifies the number and creates a session. A first-time verified number creates a user with an internal synthetic email on the reserved `.invalid` domain; it is never presented as a verified contact email.
+The primary V1.0 authentication method is email and password through Better Auth.
 
-Email/password, Apple, Google, passkeys, organizations, and enterprise SSO are later Better Auth extensions. They require provider configuration and reviewed migrations.
+- Registration requires a display name, unique email address, and password of at least 12 characters.
+- Email verification is mandatory before sign-in. Verification links expire after 60 minutes.
+- Password reset links expire after 60 minutes and revoke all existing sessions after a successful reset.
+- Resend is the transactional email transport. The Worker sends through the Resend HTTPS API; it does not maintain SMTP connections.
+- Email auth remains disabled until `EMAIL_ENABLED=true`, `RESEND_API_KEY`, and `EMAIL_FROM` are configured together.
+- The Expo app uses the `brightglobe://auth/verified` and `brightglobe://auth/reset-password` deep links to return from verification and password-reset emails.
+- Phone OTP remains an optional later/secondary method. Staging keeps `SMS_ENABLED=false`; no SMS gateway is required for email registration.
+
+Apple, Google, passkeys, organizations, and enterprise SSO remain later extensions requiring provider credentials and separate review.
 
 ---
 
@@ -71,7 +79,7 @@ The profile API accepts only `displayName`, `locale`, `timeZone`, `countryCode`,
 
 ## 3. Authentication and session contract
 
-### Phone format and OTP
+### Optional phone format and OTP
 
 Phone numbers use E.164 format, including the leading plus sign and country calling code. A global release must provide a calling-code selector; hard-coded `+86` is not acceptable.
 
@@ -131,10 +139,16 @@ Better Auth handles `/api/auth/*`; BrightGlobe APIs use `/api/v1`.
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/api/auth/phone-number/send-otp` | Request an OTP |
-| POST | `/api/auth/phone-number/verify` | Verify OTP and create session |
+| POST | `/api/auth/sign-up/email` | Create an account and send email verification |
+| POST | `/api/auth/sign-in/email` | Sign in with a verified email and password |
+| POST | `/api/auth/send-verification-email` | Resend email verification |
+| GET | `/api/auth/verify-email` | Verify the email token and redirect to the app |
+| POST | `/api/auth/request-password-reset` | Request a password reset email |
+| POST | `/api/auth/reset-password` | Set a new password using a valid reset token |
 | GET | `/api/auth/get-session` | Read current session |
 | POST | `/api/auth/sign-out` | Sign out current session |
+| POST | `/api/auth/phone-number/send-otp` | Optional phone OTP; disabled in Staging |
+| POST | `/api/auth/phone-number/verify` | Optional phone verification; disabled in Staging |
 
 ### BrightGlobe user-center routes
 
@@ -180,8 +194,11 @@ A display-name mutation updates both `user.name` and `user_profile.display_name`
 | BETTER_AUTH_URL | Yes | Public absolute Worker API URL |
 | APP_ORIGINS | No | Comma-separated exact web origins |
 | NODE_ENV | No | development, test, or production; Worker deployment defaults to production |
-| SMS_GATEWAY_URL | Production | SMS adapter HTTPS endpoint |
-| SMS_GATEWAY_TOKEN | Production | Server-only SMS adapter credential |
+| EMAIL_ENABLED | Yes for email auth | Explicitly enables email/password authentication |
+| RESEND_API_KEY | Yes when email auth is enabled | Server-only Resend API credential |
+| EMAIL_FROM | Yes when email auth is enabled | Verified sender identity, e.g. `BrightGlobe <auth@your-domain>` |
+| SMS_GATEWAY_URL | Optional phone auth | SMS adapter HTTPS endpoint |
+| SMS_GATEWAY_TOKEN | Optional phone auth | Server-only SMS adapter credential |
 
 The Worker runtime reads Cloudflare Worker variables and secrets from its request environment. It does not read process.env or load .env at runtime.
 
@@ -253,14 +270,17 @@ All future modules must reference the canonical Better Auth user ID and must not
 Implemented in this repository slice:
 
 - [x] Better Auth configured with PostgreSQL Drizzle adapter and request-scoped Worker dependencies.
-- [x] Phone OTP plugin and Expo server integration mounted.
+- [x] Phone OTP plugin remains optional and can be disabled per environment.
+- [x] Email/password authentication, mandatory email verification, and password-reset callbacks configured in Better Auth.
+- [x] Resend transactional email adapter implemented with server-only credentials and HTML escaping.
 - [x] Auth core and user-profile schema/migration committed.
 - [x] Protected current-user profile and session-management endpoints created.
 - [x] Production environment validation requires an SMS gateway.
 - [x] Development-only OTP logging is separated from production delivery.
 - [x] Backend typecheck, unit tests, E.164 tests, and PostgreSQL migration validation pass in CI.
 - [x] Expo client uses the Better Auth React client, Expo plugin, and SecureStore cookie storage.
-- [x] Login screen sends and verifies phone OTP using the Better Auth phone-number client plugin.
+- [x] Login screen supports email registration and sign-in through Better Auth.
+- [x] App includes email verification return and password-reset deep-link screens.
 - [x] The app restores Better Auth session state and reads the current user/profile through the protected API.
 - [x] Native user-center requests attach the SecureStore-backed session cookie; web requests include credentialed cookies.
 - [x] My and Settings screens render the authenticated identity; Settings supports display-name updates and real sign-out.
@@ -268,8 +288,9 @@ Implemented in this repository slice:
 - [x] The session API rejects attempts to revoke the current session; this rule has a backend unit test.
 - [ ] Cloudflare Worker deployment with production secrets and public API domain.
 - [ ] Globally shared OTP/API rate limiting before public traffic.
-- [ ] Live end-to-end sign-in on iOS and Android devices against the deployed API.
-- [ ] Production PostgreSQL instance, real SMS delivery, HTTPS deployment, and production secrets.
+- [ ] Configure a verified Resend sender domain and Staging Worker secrets, then enable email auth.
+- [ ] Live end-to-end registration, verification, sign-in, password reset, and session revocation on iOS and Android.
+- [ ] Production PostgreSQL instance, production email sender, HTTPS app/API domains, and production secrets.
 
 Passing repository CI does not certify production SMS, hosting, deployment, or native sign-in.
 

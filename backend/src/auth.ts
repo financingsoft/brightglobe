@@ -6,11 +6,22 @@ import type { AppEnvironment } from "./config/env.js";
 import { buildTrustedOrigins } from "./config/origins.js";
 import type { Database } from "./db/client.js";
 import { isE164PhoneNumber, phoneToSyntheticEmail } from "./domain/phone.js";
+import { sendAuthEmail, createAuthEmail } from "./services/email.js";
 import { dispatchPhoneOtp } from "./services/sms.js";
 
 export type BackgroundTaskScheduler = (promise: Promise<unknown>) => void;
 
 export function createAuth(db: Database, env: AppEnvironment, scheduleBackgroundTask?: BackgroundTaskScheduler) {
+  const deliverEmail = (to: string, kind: "verify" | "reset", name: string, url: string) => {
+    const content = createAuthEmail(kind, name, url);
+    const delivery = sendAuthEmail(env, { ...content, to });
+    if (scheduleBackgroundTask) {
+      scheduleBackgroundTask(delivery);
+      return;
+    }
+    return delivery;
+  };
+
   const phoneAuthPlugin = env.SMS_ENABLED
     ? [phoneNumber({
         otpLength: 6,
@@ -39,6 +50,25 @@ export function createAuth(db: Database, env: AppEnvironment, scheduleBackground
     secret: env.BETTER_AUTH_SECRET,
     database: drizzleAdapter(db, { provider: "pg" }),
     trustedOrigins: buildTrustedOrigins(env.APP_ORIGINS, env.NODE_ENV),
+    emailAndPassword: {
+      enabled: env.EMAIL_ENABLED,
+      requireEmailVerification: true,
+      minPasswordLength: 12,
+      maxPasswordLength: 128,
+      autoSignIn: false,
+      revokeSessionsOnPasswordReset: true,
+      resetPasswordTokenExpiresIn: 60 * 60,
+      sendResetPassword: ({ user, url }) =>
+        deliverEmail(user.email, "reset", user.name, url)
+    },
+    emailVerification: {
+      sendOnSignUp: true,
+      sendOnSignIn: true,
+      autoSignInAfterVerification: true,
+      expiresIn: 60 * 60,
+      sendVerificationEmail: ({ user, url }) =>
+        deliverEmail(user.email, "verify", user.name, url)
+    },
     plugins: [expo(), ...phoneAuthPlugin],
     session: {
       expiresIn: 60 * 60 * 24 * 30,
@@ -50,7 +80,10 @@ export function createAuth(db: Database, env: AppEnvironment, scheduleBackground
       max: 100,
       customRules: {
         "/phone-number/send-otp": { window: 60, max: 3 },
-        "/phone-number/verify": { window: 60, max: 8 }
+        "/phone-number/verify": { window: 60, max: 8 },
+        "/sign-up/email": { window: 60, max: 3 },
+        "/send-verification-email": { window: 60, max: 3 },
+        "/request-password-reset": { window: 60, max: 3 }
       }
     },
     advanced: {

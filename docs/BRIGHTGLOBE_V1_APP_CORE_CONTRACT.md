@@ -97,6 +97,8 @@ Do not use:
 
 A legacy "Wallet" route may remain as a navigation label for compatibility, but its V1.0 meaning is only an internal BD account and ledger view. It must not imply a blockchain wallet.
 
+The Profile asset summary must use the label **BD Account / 黑钻账户** and read its available balance from the authenticated `GET /api/v1/me/bd` endpoint. It must refresh when the Profile screen regains focus. Unauthenticated, preview-account, loading, and request-failure states must never display a fabricated numeric balance.
+
 ## 7. Product scope in V1.0
 
 In scope:
@@ -152,6 +154,7 @@ If a reward path is not approved for a distribution channel, disable that path o
 - [ ] Duplicate and concurrent claim requests never double-credit.
 - [ ] Reward event, budget, ledger transaction, ledger entries and balance projection commit atomically.
 - [ ] Account and history screens read backend data only.
+- [ ] The Profile BD summary reads the authenticated account API and does not display placeholder or fabricated balances.
 - [ ] Mainnet mint, user wallet, transfer, exchange and cash-out are absent from V1.0.
 - [ ] Backend typecheck, unit tests and migration validation pass.
 - [ ] iOS / Android device testing and legal/store release approvals are recorded separately.

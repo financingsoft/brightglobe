@@ -12,7 +12,7 @@
       "distribution": "internal",
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://test.globeapps.com",
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.globeapps.com/staging",
         "EXPO_PUBLIC_ENABLE_PREVIEW_AUTH": "false"
       }
     },

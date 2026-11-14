@@ -7,6 +7,7 @@ interface Env {
 }
 
 const STAGING_PREFIX = "/staging";
+const AUTH_PREFIX = "/staging/api/auth";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -29,7 +30,14 @@ export default {
     upstream.protocol = "https:";
     upstream.hostname = "brightglobe-staging.internal";
     upstream.port = "";
-    upstream.pathname = incoming.pathname.slice(STAGING_PREFIX.length) || "/";
+
+    const isAuthRequest =
+      incoming.pathname === AUTH_PREFIX ||
+      incoming.pathname.startsWith(AUTH_PREFIX + "/");
+
+    upstream.pathname = isAuthRequest
+      ? incoming.pathname
+      : incoming.pathname.slice(STAGING_PREFIX.length) || "/";
 
     const forwarded = new Request(upstream, request);
     return env.STAGING_BACKEND.fetch(forwarded);

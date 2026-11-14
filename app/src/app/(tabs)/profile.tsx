@@ -1,8 +1,10 @@
+import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { AppScreen } from "@/components/ui";
 import { useI18n } from "@/i18n/locale";
 import { useAuth } from "@/auth/session";
+import { formatBdBaseUnits, getBdAccount, type BdAccountSnapshot } from "@/services/bd";
 
 type ProfileIconKind = "force" | "invite" | "base" | "settings";
 
@@ -80,9 +82,9 @@ export default function ProfileScreen() {
       </View>
       <View style={styles.assetRow}>
         <Pressable onPress={() => openProtected("/wallet")} style={styles.assetTile}>
-          <Text style={styles.assetLabel}>{t("我的钱包", "My wallet")}</Text>
-          <Text style={styles.assetValue}>—</Text>
-          <Text style={styles.assetHint}>{t("积分服务待接入", "Points service pending")} ›</Text>
+          <Text style={styles.assetLabel}>{t("黑钻账户", "BD account")}</Text>
+          <Text style={styles.assetValue}>{bdAccountValue}</Text>
+          <Text style={styles.assetHint}>{bdAccountHint} ›</Text>
         </Pressable>
         <Pressable onPress={() => openProtected("/passport")} style={styles.assetTile}>
           <Text style={styles.assetLabel}>{t("数据护照", "Data passport")}</Text>

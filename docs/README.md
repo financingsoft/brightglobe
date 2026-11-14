@@ -16,6 +16,7 @@ These three V1.0 documents override conflicting wallet, transfer, conversion, tr
 
 ## Backend and identity
 
+- [Staging Deployment Contract](./BRIGHTGLOBE_STAGING_DEPLOYMENT_CONTRACT.md) — isolated Cloudflare Worker and Neon staging environment, GitHub Actions deployment flow, migration safety, and production promotion gates.
 - [User Center Backend Contract](./USER_CENTER_BACKEND_CONTRACT.md) — Cloudflare Workers, Better Auth identity, phone OTP, Neon PostgreSQL schema, profile/session APIs and Expo client integration.
 - [Solana Embedded Wallet Contract](./SOLANA_WALLET_CONTRACT.md) — future-release proposal only; wallet provisioning is out of scope for V1.0.
 

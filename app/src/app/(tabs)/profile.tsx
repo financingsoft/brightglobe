@@ -40,6 +40,59 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { isAuthenticated, isPreviewAccount, user, profile } = useAuth();
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
+  const [bdAccount, setBdAccount] = useState<BdAccountSnapshot | null>(null);
+  const [bdLoading, setBdLoading] = useState(false);
+  const [bdUnavailable, setBdUnavailable] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+
+      if (!isAuthenticated || isPreviewAccount) {
+        setBdAccount(null);
+        setBdLoading(false);
+        setBdUnavailable(false);
+        return () => {
+          active = false;
+        };
+      }
+
+      setBdLoading(true);
+      setBdUnavailable(false);
+      getBdAccount()
+        .then((snapshot) => {
+          if (active) setBdAccount(snapshot);
+        })
+        .catch(() => {
+          if (!active) return;
+          setBdAccount(null);
+          setBdUnavailable(true);
+        })
+        .finally(() => {
+          if (active) setBdLoading(false);
+        });
+
+      return () => {
+        active = false;
+      };
+    }, [isAuthenticated, isPreviewAccount])
+  );
+
+  const bdAccountValue = bdLoading
+    ? "…"
+    : bdAccount
+      ? formatBdBaseUnits(bdAccount.account.availableBaseUnits)
+      : "—";
+  const bdAccountHint = isPreviewAccount
+    ? t("预览账户不显示真实余额", "No live balance in preview")
+    : !isAuthenticated
+      ? t("登录后查看账户余额", "Sign in to view your balance")
+      : bdLoading
+        ? t("正在同步账户", "Syncing account")
+        : bdUnavailable
+          ? t("暂时无法读取账户", "Account temporarily unavailable")
+          : t("平台内部记账账户", "Platform internal account");
+
   const displayName = isPreviewAccount
     ? t("本地预览账户", "Local preview account")
     : profile?.displayName || user?.name || t("未登录", "Guest");

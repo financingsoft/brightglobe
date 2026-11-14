@@ -13,7 +13,8 @@
       "name": "globe-staging",
       "workers_dev": true,
       "vars": {
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        "SMS_ENABLED": "false"
       }
     }
   },

@@ -1,6 +1,6 @@
-import { env } from "../config/env.js";
+import type { AppEnvironment } from "../config/env.js";
 
-export function dispatchPhoneOtp(phoneNumber: string, code: string): void {
+export async function dispatchPhoneOtp(env: AppEnvironment, phoneNumber: string, code: string): Promise<void> {
   if (env.NODE_ENV !== "production") {
     console.info("[BrightGlobe development OTP]", { phoneNumber, code });
     return;
@@ -13,23 +13,24 @@ export function dispatchPhoneOtp(phoneNumber: string, code: string): void {
     return;
   }
 
-  void fetch(endpoint, {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + token,
-      "Content-Type": "application/json",
-      Accept: "application/json"
-    },
-    body: JSON.stringify({
-      to: phoneNumber,
-      template: "brightglobe-auth-otp",
-      variables: { code, expiresInMinutes: 5 }
-    }),
-    signal: AbortSignal.timeout(8000)
-  }).then((response) => {
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token,
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      },
+      body: JSON.stringify({
+        to: phoneNumber,
+        template: "brightglobe-auth-otp",
+        variables: { code, expiresInMinutes: 5 }
+      }),
+      signal: AbortSignal.timeout(8000)
+    });
     if (!response.ok) throw new Error("SMS gateway responded with HTTP " + response.status);
-  }).catch((error: unknown) => {
-    const message = error instanceof Error ? error.message : "Unknown SMS gateway error";
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
     console.error("[BrightGlobe SMS] Delivery failed:", message);
-  });
+  }
 }

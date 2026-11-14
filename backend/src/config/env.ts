@@ -1,11 +1,10 @@
-import "dotenv/config";
 import { z } from "zod";
 
-const emptyToUndefined = (value: unknown) => typeof value === "string" && value.trim() === "" ? undefined : value;
+const emptyToUndefined = (value: unknown) =>
+  typeof value === "string" && value.trim() === "" ? undefined : value;
 
 const environmentSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  PORT: z.coerce.number().int().min(1).max(65535).default(4000),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required."),
   BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must contain at least 32 characters."),
   BETTER_AUTH_URL: z.string().url("BETTER_AUTH_URL must be an absolute URL."),
@@ -15,27 +14,29 @@ const environmentSchema = z.object({
 }).superRefine((value, context) => {
   if (value.NODE_ENV === "production") {
     if (value.BETTER_AUTH_SECRET.startsWith("replace-with-")) {
-      context.addIssue({
-        code: "custom",
-        path: ["BETTER_AUTH_SECRET"],
-        message: "Replace the example secret before production deployment."
-      });
+      context.addIssue({ code: "custom", path: ["BETTER_AUTH_SECRET"], message: "Replace the example secret before production deployment." });
     }
     if (!value.SMS_GATEWAY_URL || !value.SMS_GATEWAY_TOKEN) {
-      context.addIssue({
-        code: "custom",
-        path: ["SMS_GATEWAY_URL"],
-        message: "Production requires SMS_GATEWAY_URL and SMS_GATEWAY_TOKEN."
-      });
+      context.addIssue({ code: "custom", path: ["SMS_GATEWAY_URL"], message: "Production requires SMS_GATEWAY_URL and SMS_GATEWAY_TOKEN." });
     }
     if (value.SMS_GATEWAY_URL && !value.SMS_GATEWAY_URL.startsWith("https://")) {
-      context.addIssue({
-        code: "custom",
-        path: ["SMS_GATEWAY_URL"],
-        message: "Production SMS_GATEWAY_URL must use HTTPS."
-      });
+      context.addIssue({ code: "custom", path: ["SMS_GATEWAY_URL"], message: "Production SMS_GATEWAY_URL must use HTTPS." });
     }
   }
 });
 
-export const env = environmentSchema.parse(process.env);
+export type AppEnvironment = z.infer<typeof environmentSchema>;
+
+export interface WorkerBindings {
+  NODE_ENV?: string;
+  DATABASE_URL?: string;
+  BETTER_AUTH_SECRET?: string;
+  BETTER_AUTH_URL?: string;
+  APP_ORIGINS?: string;
+  SMS_GATEWAY_URL?: string;
+  SMS_GATEWAY_TOKEN?: string;
+}
+
+export function parseEnvironment(bindings: WorkerBindings): AppEnvironment {
+  return environmentSchema.parse(bindings);
+}

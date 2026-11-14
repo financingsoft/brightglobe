@@ -1,7 +1,7 @@
-import { randomUUID } from "node:crypto";
 import { and, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
-import { db } from "../db/client.js";
+import type { Database } from "../db/client.js";
+import type { BetterAuthInstance } from "../auth.js";
 import {
   bdAccounts,
   bdLedgerEntries,
@@ -10,11 +10,13 @@ import {
   bdRewardRules
 } from "../db/schema.js";
 import { getDailyCollectionEventKey, getUtcPeriodKey } from "../domain/bd.js";
-import { requireAuth, type AuthVariables } from "../middleware/require-auth.js";
+import { createRequireAuth, type AuthVariables } from "../middleware/require-auth.js";
 
-const routes = new Hono<{ Variables: AuthVariables }>();
 const DAILY_RULE_KEY = "daily-collection";
 const DAILY_EXPENSE_ACCOUNT_ID = "system:daily-collection-expense";
+
+export function createBdRoutes(db: Database, auth: BetterAuthInstance) {
+  const routes = new Hono<{ Variables: AuthVariables }>();
 
 class DailyCollectionError extends Error {
   constructor(
@@ -84,7 +86,7 @@ async function getAccountSnapshot(userId: string, now: Date) {
   };
 }
 
-routes.use("*", requireAuth);
+routes.use("*", createRequireAuth(auth));
 
 routes.get("/", async (context) => {
   const current = context.get("authSession");
@@ -197,10 +199,10 @@ routes.post("/daily-collection", async (context) => {
         .for("update");
       if (!expenseAccount) throw new Error("Unable to initialize the reward expense account.");
 
-      const eventId = randomUUID();
-      const transactionId = randomUUID();
-      const entryUserId = randomUUID();
-      const entryExpenseId = randomUUID();
+      const eventId = crypto.randomUUID();
+      const transactionId = crypto.randomUUID();
+      const entryUserId = crypto.randomUUID();
+      const entryExpenseId = crypto.randomUUID();
       const amount = rule.rewardBaseUnits;
 
       await transaction.insert(bdRewardEvents).values({
@@ -292,4 +294,5 @@ routes.post("/daily-collection", async (context) => {
   }
 });
 
-export const bdRoutes = routes;
+  return routes;
+}

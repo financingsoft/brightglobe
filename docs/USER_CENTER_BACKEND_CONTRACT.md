@@ -1,10 +1,10 @@
 # BrightGlobe User Center Backend Contract
 
 **Status:** Binding backend and mobile-client identity contract  
-**Revision:** 1.2  
-**Date:** 2026-11-13  
+**Revision:** 1.3  
+**Date:** 2026-11-14  
 **Applies to:** backend identity, account profile, sessions, mobile authentication integration, and API security  
-**Implementation:** `backend/` — Hono + Better Auth + PostgreSQL + Drizzle
+**Implementation:** `backend/` — Cloudflare Workers + Hono + Better Auth + Neon PostgreSQL + Drizzle
 
 This contract complements, and does not replace, the [NetEase Planet V1.6 UI Reconstruction Contract](./NETEASE_PLANET_V1.6_UI_CONTRACT.md). The UI contract controls screen structure and interaction. This document controls the user identity and account backend.
 
@@ -12,7 +12,7 @@ This contract complements, and does not replace, the [NetEase Planet V1.6 UI Rec
 
 ## 1. Architectural decision
 
-BrightGlobe uses one independently deployable Node.js user-center API:
+BrightGlobe uses one independently deployable Cloudflare Workers user-center API:
 
 | Layer | Decision | Responsibility |
 |---|---|---|
@@ -22,9 +22,20 @@ BrightGlobe uses one independently deployable Node.js user-center API:
 | ORM | Drizzle ORM | Application-owned profile persistence and typed SQL |
 | Primary database | PostgreSQL | Durable identity, session, verification, and profile storage |
 | Native integration | Better Auth Expo plugin | Expo deep-link origin and secure cookie integration |
-| Runtime | Node.js 22 | Independently deployable API process |
+| Runtime | Cloudflare Workers | Stateless edge request handler; no Node.js HTTP server |
+| Database connectivity | Neon Serverless WebSocket driver | Request-scoped PostgreSQL pool with interactive transaction support |
 
 The GitHub Pages website is a static UI preview, not an authentication server.
+
+### Worker and Neon connection lifecycle
+
+- The Worker creates the Neon Pool, Drizzle database instance, and Better Auth instance inside each request. They are never stored at module scope.
+- The pool is limited to one connection per invocation and is closed in the request's finally block. No scheduled database pings or always-on connection process is permitted.
+- BrightGlobe uses Neon's WebSocket driver (@neondatabase/serverless + drizzle-orm/neon-serverless) because daily BD collection and profile-name updates require interactive PostgreSQL transactions and row locks.
+- The Neon HTTP driver is not interchangeable here: Drizzle's neon-http session does not implement db.transaction(). Switching to HTTP requires a separately reviewed redesign of the critical ledger and profile transaction paths.
+- Hyperdrive is intentionally not enabled in this initial deployment. Its origin connection pool keeps reusable database connections open between Worker requests, which conflicts with the current priority of allowing Neon compute to scale to zero when idle.
+- The Worker uses CF-Connecting-IP as Better Auth's client-IP source. The current in-memory rate limiter is isolate-local, not a globally consistent abuse-control system; centralized rate-limit storage is a production release gate before public OTP traffic.
+
 
 ### Ownership boundary
 
@@ -74,11 +85,11 @@ Phone numbers use E.164 format, including the leading plus sign and country call
 | User creation | Only after successful verification |
 | Session lifetime | 30 days, refreshed after 24 hours |
 
-Better Auth's rate limiter is enabled. This first implementation uses process-local rate-limit storage. Before horizontally scaling production instances, configure shared Redis/secondary storage or an equivalent shared rate-limit layer.
+Better Auth's rate limiter is enabled. This first implementation uses Better Auth's in-memory rate-limit storage. On Workers this is isolate-local and is not globally consistent across the edge. Before public OTP traffic, configure a globally shared rate-limit store (for example, Redis or a purpose-built Durable Object). Do not treat Workers KV as an equivalent atomic secondary store.
 
 ### SMS adapter
 
-Development mode prints the OTP to the local backend console only. Production requires both `SMS_GATEWAY_URL` and `SMS_GATEWAY_TOKEN`; the server refuses to start without them.
+Development mode prints the OTP to the local backend console only. Production requires both `SMS_GATEWAY_URL` and `SMS_GATEWAY_TOKEN`; the Worker rejects requests with a configuration error until they are supplied.
 
 The vendor-neutral adapter sends:
 
@@ -164,28 +175,46 @@ A display-name mutation updates both `user.name` and `user_profile.display_name`
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `DATABASE_URL` | Yes | PostgreSQL connection URL |
-| `BETTER_AUTH_SECRET` | Yes | Auth/session signing secret, minimum 32 characters |
-| `BETTER_AUTH_URL` | Yes | Absolute backend base URL |
-| `APP_ORIGINS` | No | Comma-separated exact web origins |
-| `NODE_ENV` | No | development, test, or production |
-| `PORT` | No | HTTP port, defaults to 4000 |
-| `SMS_GATEWAY_URL` | Production | SMS adapter HTTPS endpoint |
-| `SMS_GATEWAY_TOKEN` | Production | Server-only SMS adapter credential |
+| DATABASE_URL | Yes | Neon PostgreSQL runtime connection string; use the Neon pooled endpoint for the Worker |
+| BETTER_AUTH_SECRET | Yes | Auth/session signing secret, minimum 32 characters |
+| BETTER_AUTH_URL | Yes | Public absolute Worker API URL |
+| APP_ORIGINS | No | Comma-separated exact web origins |
+| NODE_ENV | No | development, test, or production; Worker deployment defaults to production |
+| SMS_GATEWAY_URL | Production | SMS adapter HTTPS endpoint |
+| SMS_GATEWAY_TOKEN | Production | Server-only SMS adapter credential |
 
-From `backend/`:
+The Worker runtime reads Cloudflare Worker variables and secrets from its request environment. It does not read process.env or load .env at runtime.
+
+Local Worker development:
 
 ```bash
-cp .env.example .env
-docker compose up -d postgres
+cd backend
+cp .dev.vars.example .dev.vars
 npm install
-npm run db:migrate
 npm run dev
 ```
 
-In development, request an OTP and read the local backend console output. Never expose this mode to public traffic.
+Use a local PostgreSQL service or a Neon development branch in .dev.vars. The .env file is separate and is used only by Drizzle Kit's Node.js migration CLI:
 
----
+```bash
+cp .env.example .env
+npm run db:migrate
+```
+
+Deploying the Worker after the Cloudflare account token is authorized:
+
+```bash
+cd backend
+npx wrangler secret put DATABASE_URL
+npx wrangler secret put BETTER_AUTH_SECRET
+npx wrangler secret put BETTER_AUTH_URL
+npx wrangler secret put APP_ORIGINS
+npx wrangler secret put SMS_GATEWAY_URL
+npx wrangler secret put SMS_GATEWAY_TOKEN
+npm run deploy
+```
+
+NODE_ENV=production is declared in wrangler.jsonc. Do not commit .dev.vars, .env, or production secrets. The GitHub Actions validation builds the Worker in dry-run mode; it does not publish to Cloudflare.
 
 ## 7. Expo client authentication integration
 
@@ -222,7 +251,7 @@ All future modules must reference the canonical Better Auth user ID and must not
 
 Implemented in this repository slice:
 
-- [x] Better Auth configured with PostgreSQL Drizzle adapter.
+- [x] Better Auth configured with PostgreSQL Drizzle adapter and request-scoped Worker dependencies.
 - [x] Phone OTP plugin and Expo server integration mounted.
 - [x] Auth core and user-profile schema/migration committed.
 - [x] Protected current-user profile and session-management endpoints created.
@@ -236,6 +265,8 @@ Implemented in this repository slice:
 - [x] My and Settings screens render the authenticated identity; Settings supports display-name updates and real sign-out.
 - [x] Settings provides device-session listing, per-device revocation, and revoke-other-sessions actions.
 - [x] The session API rejects attempts to revoke the current session; this rule has a backend unit test.
+- [ ] Cloudflare Worker deployment with production secrets and public API domain.
+- [ ] Globally shared OTP/API rate limiting before public traffic.
 - [ ] Live end-to-end sign-in on iOS and Android devices against the deployed API.
 - [ ] Production PostgreSQL instance, real SMS delivery, HTTPS deployment, and production secrets.
 

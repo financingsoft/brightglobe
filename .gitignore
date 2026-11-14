@@ -7,3 +7,8 @@ node_modules/
 app/.expo/
 app/artifacts/ui-baseline/
 coverage/
+
+# Cloudflare Workers local development bindings
+**/.dev.vars
+**/.dev.vars.*
+!**/.dev.vars.example

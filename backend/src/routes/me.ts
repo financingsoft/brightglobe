@@ -2,11 +2,13 @@ import { and, desc, eq, ne } from "drizzle-orm";
 import { Hono } from "hono";
 import { profileUpdateSchema } from "../domain/profile.js";
 import { canRevokeSession } from "../domain/session-revocation.js";
-import { db } from "../db/client.js";
+import type { Database } from "../db/client.js";
+import type { BetterAuthInstance } from "../auth.js";
 import { session as sessions, user, userProfile } from "../db/schema.js";
-import { requireAuth, type AuthVariables } from "../middleware/require-auth.js";
+import { createRequireAuth, type AuthVariables } from "../middleware/require-auth.js";
 
-const routes = new Hono<{ Variables: AuthVariables }>();
+export function createMeRoutes(db: Database, auth: BetterAuthInstance) {
+  const routes = new Hono<{ Variables: AuthVariables }>();
 
 async function getOrCreateProfile(userId: string, fallbackName: string) {
   await db.insert(userProfile).values({
@@ -36,7 +38,7 @@ function serializeProfile(profile: typeof userProfile.$inferSelect) {
   };
 }
 
-routes.use("*", requireAuth);
+routes.use("*", createRequireAuth(auth));
 
 routes.get("/", async (context) => {
   const current = context.get("authSession");
@@ -166,4 +168,5 @@ routes.post("/sessions/revoke-others", async (context) => {
   return context.json({ revokedCount: deleted.length });
 });
 
-export const meRoutes = routes;
+  return routes;
+}

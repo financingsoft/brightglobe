@@ -9,10 +9,10 @@ In V1.0, BD is recorded only in a server-authoritative internal platform account
 ## Architecture
 
 - `app/` — Expo + React Native + TypeScript client for iOS, Android and web.
-- `backend/` — Hono API, Better Auth identity, PostgreSQL, Drizzle schema and migrations.
+- `backend/` — Cloudflare Workers API, Hono, Better Auth identity, Neon PostgreSQL, Drizzle schema and migrations.
 - `docs/` — binding app-core, BD ledger, UI, identity and release contracts.
 
-Better Auth is the single identity authority. PostgreSQL is the source of truth for BD account balances and append-only ledger entries. The client never chooses reward amounts or modifies balances locally.
+Better Auth is the single identity authority. Neon PostgreSQL is the source of truth for BD account balances and append-only ledger entries. The API runs on Cloudflare Workers with request-scoped Neon connections so idle traffic does not require an always-on application server. The client never chooses reward amounts or modifies balances locally.
 
 ## Current implementation status
 
@@ -66,7 +66,7 @@ Live UI preview: [https://financingsoft.github.io/brightglobe/](https://financin
 - [BrightGlobe 1.0 BD Internal Ledger Contract](docs/BRIGHTGLOBE_V1_BD_LEDGER_CONTRACT.md) — tables, signed double-entry postings, idempotency, budget controls and API contract.
 - [BrightGlobe 1.0 Compliance and Release Gates](docs/BRIGHTGLOBE_V1_RELEASE_GATES.md) — jurisdiction, store policy and production activation gates.
 - [NetEase Planet V1.6.0 UI Reconstruction Contract](docs/NETEASE_PLANET_V1.6_UI_CONTRACT.md) — source hierarchy, screen structure and navigation, subject to the V1.0 BD override.
-- [User Center Backend Contract](docs/USER_CENTER_BACKEND_CONTRACT.md) — Better Auth, phone OTP, PostgreSQL and authenticated APIs.
+- [User Center Backend Contract](docs/USER_CENTER_BACKEND_CONTRACT.md) — Cloudflare Workers, Better Auth, phone OTP, Neon PostgreSQL and authenticated APIs.
 
 ### Future-only / historical contracts
 - [Black Diamond Single-Asset Economy Contract](docs/BLACK_DIAMOND_ECONOMY_CONTRACT.md) — long-term economic proposal; its transferable-token and open-market sections do not apply to V1.0.

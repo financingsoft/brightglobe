@@ -70,6 +70,6 @@ jobs:
         working-directory: backend
         run: npm run db:migrate
 
-      - name: Build backend
+      - name: Build Cloudflare Worker (dry run)
         working-directory: backend
         run: npm run build

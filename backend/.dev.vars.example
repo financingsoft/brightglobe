@@ -1,0 +1,8 @@
+NODE_ENV=development
+DATABASE_URL=postgresql://brightglobe:brightglobe_dev@localhost:5432/brightglobe
+BETTER_AUTH_URL=http://localhost:8787
+BETTER_AUTH_SECRET=replace-with-at-least-32-random-characters
+APP_ORIGINS=https://financingsoft.github.io,http://localhost:8081,http://127.0.0.1:8081
+# Production only:
+# SMS_GATEWAY_URL=https://sms-provider.example.com/send
+# SMS_GATEWAY_TOKEN=replace-with-provider-secret

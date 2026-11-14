@@ -121,9 +121,8 @@ jobs:
             local status
 
             for attempt in $(seq 1 12); do
-              response="$(curl --silent --show-error --max-time 10 --write-out %{http_code}' "$STAGING_URL$path" 2>&1 || true)"
-              status="${response##*$'\\n'}"
-              body="${response%$'\\n'*}"
+              status="$(curl --silent --show-error --max-time 10 --output /tmp/brightglobe-staging-response --write-out '%{http_code}' "$STAGING_URL$path" 2>/dev/null || true)"
+              body="$(cat /tmp/brightglobe-staging-response 2>/dev/null || true)"
 
               if [ "$status" = "200" ] && printf '%s' "$body" | jq -e "$filter" >/dev/null 2>&1; then
                 echo "$label passed (HTTP 200, attempt $attempt)."

@@ -50,7 +50,11 @@ The TypeScript 7.1 compiler is currently a beta. Keep the version explicit until
 
 ## Current scope
 
-This is the client scaffold, not a production-connected application. The five primary tabs (Home, Tasks, Rewards, Wallet, Profile) currently use clearly marked preview data. Authentication, server-authoritative reward accounting, wallet ledger APIs, and persistent preferences are future implementation work.
+The app now includes Better Auth email registration/sign-in, email verification return handling, password-reset deep links, secure native session storage, and protected user-profile/session APIs. The Home screen's BD collection connects to the server-authoritative internal ledger API.
+
+Several secondary tab experiences (Tasks, Rewards, Wallet history, invitation, and other community modules) still contain preview or unavailable states until their domain APIs and business rules are implemented. Do not present preview values as real account balances or completed rewards.
+
+For Staging, set `EXPO_PUBLIC_API_BASE_URL=https://globe-staging.wanghui-79b.workers.dev`. Email authentication remains disabled until a verified Resend sender and the required Cloudflare Worker settings are configured.
 
 ## Project structure
 

@@ -1,90 +1,91 @@
-import { useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useI18n } from "@/i18n/locale";
 import { useAuth } from "@/auth/session";
 import { StarfieldBackground } from "@/components/StarfieldBackground";
 
+type LoginMode = "login" | "signup" | "forgot";
+
 export default function LoginScreen() {
   const { locale } = useI18n();
   const {
     status,
     previewEnabled,
-    sendPhoneOtp,
-    verifyPhoneOtp,
-    updateProfile,
+    signUpEmail,
+    signInEmail,
+    sendVerificationEmail,
+    requestPasswordReset,
     enterPreviewAccount
   } = useAuth();
   const router = useRouter();
   const { width, height } = useWindowDimensions();
   const compactHeight = height < 640;
   const horizontalPadding = width < 350 ? 18 : width < 410 ? 24 : 30;
-  const [mode, setMode] = useState<"login" | "signup">("login");
-  const [callingCode, setCallingCode] = useState(locale === "zh-CN" ? "+86" : "+1");
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
+  const [mode, setMode] = useState<LoginMode>("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [nickname, setNickname] = useState("");
-  const [codeSent, setCodeSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [messageKind, setMessageKind] = useState<"info" | "error">("info");
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
-  const phoneNumber = useMemo(
-    () => callingCode.trim() + phone.replace(/\D/g, ""),
-    [callingCode, phone]
-  );
-  const validPhone = /^\+[1-9]\d{7,14}$/.test(phoneNumber);
   const backendUnavailable = status === "unconfigured";
+  const normalizedEmail = email.trim().toLowerCase();
 
-  const requestCode = async () => {
-    if (!validPhone) {
-      setMessage(t("请填写完整的国际区号和手机号。", "Enter a valid international calling code and phone number."));
+  const showMessage = (value: string, kind: "info" | "error" = "info") => {
+    setMessage(value);
+    setMessageKind(kind);
+  };
+
+  const submit = async () => {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      showMessage(t("请输入有效的邮箱地址。", "Enter a valid email address."), "error");
       return;
     }
+    if (mode !== "forgot" && password.length < 12) {
+      showMessage(t("密码至少需要 12 位。", "Your password must be at least 12 characters."), "error");
+      return;
+    }
+    if (mode === "signup" && !nickname.trim()) {
+      showMessage(t("请输入昵称。", "Enter a display name."), "error");
+      return;
+    }
+
     setBusy(true);
-    setMessage("");
+    showMessage("");
     try {
-      await sendPhoneOtp(phoneNumber);
-      setCodeSent(true);
-      setMessage(t("验证码已发送，请查收短信。", "Verification code sent. Check your messages."));
+      if (mode === "signup") {
+        await signUpEmail(normalizedEmail, password, nickname.trim());
+        setMode("login");
+        showMessage(t("注册信息已提交。请打开邮箱，点击验证链接后再登录。", "Registration submitted. Check your inbox and verify your email before signing in."));
+      } else if (mode === "forgot") {
+        await requestPasswordReset(normalizedEmail);
+        showMessage(t("如果该邮箱已注册，密码重置链接将发送至你的邮箱。", "If an account exists for this email, a password reset link will be sent."));
+      } else {
+        await signInEmail(normalizedEmail, password);
+        router.replace("/(tabs)");
+      }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : t("验证码发送失败。", "Could not send the code."));
+      showMessage(error instanceof Error ? error.message : t("操作失败，请稍后重试。", "The request failed. Please try again."), "error");
     } finally {
       setBusy(false);
     }
   };
 
-  const continueWithCode = async () => {
-    if (!codeSent) {
-      setMessage(t("请先获取验证码。", "Request a verification code first."));
+  const resendVerification = async () => {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      showMessage(t("请先填写有效的邮箱地址。", "Enter a valid email address first."), "error");
       return;
     }
-    if (!/^\d{6}$/.test(code.trim())) {
-      setMessage(t("请输入 6 位验证码。", "Enter the 6-digit verification code."));
-      return;
-    }
-    if (mode === "signup" && !nickname.trim()) {
-      setMessage(t("请输入昵称。", "Enter a nickname."));
-      return;
-    }
-
     setBusy(true);
-    setMessage("");
+    showMessage("");
     try {
-      await verifyPhoneOtp(phoneNumber, code.trim());
-      if (mode === "signup" && nickname.trim()) {
-        try {
-          await updateProfile({ displayName: nickname.trim() });
-        } catch {
-          Alert.alert(
-            t("账户已创建", "Account created"),
-            t("登录成功，但昵称暂未保存。你可以稍后在账户设置中修改。", "You are signed in, but the nickname was not saved. You can update it in account settings.")
-          );
-        }
-      }
-      router.replace("/(tabs)");
+      await sendVerificationEmail(normalizedEmail);
+      showMessage(t("如果账户需要验证，验证邮件已重新发送。", "If the account requires verification, a new email has been sent."));
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : t("登录失败，请重试。", "Sign-in failed. Please try again."));
+      showMessage(error instanceof Error ? error.message : t("发送失败，请稍后重试。", "Could not send the email. Try again."), "error");
     } finally {
       setBusy(false);
     }
@@ -94,6 +95,12 @@ export default function LoginScreen() {
     enterPreviewAccount();
     router.replace("/(tabs)");
   };
+
+  const title = mode === "signup"
+    ? t("创建账户", "Create account")
+    : mode === "forgot"
+      ? t("重置密码", "Reset password")
+      : t("邮箱登录", "Email sign-in");
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -106,7 +113,7 @@ export default function LoginScreen() {
       >
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.back}><Text style={styles.backGlyph}>‹</Text></Pressable>
-          <Text style={styles.headerTitle}>{t("登录注册", "Sign in / Sign up")}</Text>
+          <Text style={styles.headerTitle}>{t("账户中心", "Account")}</Text>
           <Pressable onPress={() => router.push("/help")}><Text style={styles.help}>{t("帮助", "Help")}</Text></Pressable>
         </View>
 
@@ -115,75 +122,85 @@ export default function LoginScreen() {
         <Text style={styles.tagline}>{t("让每一份贡献汇聚成改变", "A world of shared progress")}</Text>
 
         <View style={[styles.form, compactHeight && styles.formCompact]}>
-          <Text style={styles.sectionTitle}>{mode === "login" ? t("手机号登录", "Mobile sign-in") : t("手机号注册", "Create account with phone")}</Text>
+          <Text style={styles.sectionTitle}>{title}</Text>
           {mode === "signup" ? (
             <TextInput
               value={nickname}
               onChangeText={setNickname}
-              placeholder={t("请输入昵称（必填）", "Nickname (required)")}
+              placeholder={t("昵称", "Display name")}
               placeholderTextColor="#8293B0"
               style={styles.singleInput}
               editable={!busy}
-              maxLength={40}
+              maxLength={48}
+              autoCapitalize="words"
             />
           ) : null}
-          <View style={styles.fieldRow}>
+          <TextInput
+            value={email}
+            onChangeText={setEmail}
+            placeholder={t("邮箱地址", "Email address")}
+            placeholderTextColor="#8293B0"
+            style={styles.singleInput}
+            editable={!busy}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            textContentType="emailAddress"
+            autoComplete="email"
+          />
+          {mode !== "forgot" ? (
             <TextInput
-              value={callingCode}
-              onChangeText={setCallingCode}
-              keyboardType="phone-pad"
-              placeholder="+1"
-              placeholderTextColor="#AAAAAA"
-              style={styles.callingCode}
+              value={password}
+              onChangeText={setPassword}
+              placeholder={t("密码（至少 12 位）", "Password (12 characters minimum)")}
+              placeholderTextColor="#8293B0"
+              style={styles.singleInput}
               editable={!busy}
-              accessibilityLabel={t("国际电话区号", "International calling code")}
-              maxLength={5}
+              secureTextEntry
+              textContentType={mode === "signup" ? "newPassword" : "password"}
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              maxLength={128}
             />
-            <TextInput
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              placeholder={t("手机号", "Phone number")}
-              placeholderTextColor="#AAAAAA"
-              style={styles.input}
-              editable={!busy}
-            />
-          </View>
-          <View style={styles.fieldRow}>
-            <TextInput
-              value={code}
-              onChangeText={setCode}
-              keyboardType="number-pad"
-              placeholder={t("请输入 6 位验证码", "6-digit verification code")}
-              placeholderTextColor="#AAAAAA"
-              style={styles.input}
-              editable={!busy && codeSent}
-              maxLength={6}
-            />
-            <Pressable onPress={requestCode} disabled={busy || backendUnavailable} style={[styles.codeButton, (busy || backendUnavailable) && styles.disabled]}>
-              <Text style={styles.codeText}>{codeSent ? t("重新获取", "Resend code") : t("获取验证码", "Get code")}</Text>
+          ) : null}
+          <Pressable onPress={submit} disabled={busy || backendUnavailable} style={[styles.primary, (busy || backendUnavailable) && styles.disabled]}>
+            {busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryText}>
+              {mode === "signup" ? t("注册并发送验证邮件", "Create account")
+                : mode === "forgot" ? t("发送重置链接", "Send reset link")
+                  : t("登录", "Sign in")}
+            </Text>}
+          </Pressable>
+
+          {mode === "login" ? (
+            <>
+              <Pressable onPress={() => { setMode("forgot"); showMessage(""); }} style={styles.secondaryAction}>
+                <Text style={styles.switchText}>{t("忘记密码？", "Forgot password?")}</Text>
+              </Pressable>
+              <Pressable onPress={resendVerification} disabled={busy || backendUnavailable} style={styles.secondaryAction}>
+                <Text style={styles.switchText}>{t("重新发送邮箱验证", "Resend verification email")}</Text>
+              </Pressable>
+              <Pressable onPress={() => { setMode("signup"); showMessage(""); }} style={styles.switchMode}>
+                <Text style={styles.switchText}>{t("首次使用？创建账户", "New here? Create an account")}</Text>
+              </Pressable>
+            </>
+          ) : (
+            <Pressable onPress={() => { setMode("login"); showMessage(""); }} style={styles.switchMode}>
+              <Text style={styles.switchText}>{t("返回登录", "Back to sign in")}</Text>
             </Pressable>
-          </View>
-          <Pressable onPress={continueWithCode} disabled={busy || backendUnavailable} style={[styles.primary, (busy || backendUnavailable) && styles.disabled]}>
-            {busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryText}>{mode === "signup" ? t("完成注册", "Create account") : t("立即登录", "Sign in")}</Text>}
-          </Pressable>
-          <Pressable onPress={() => { setMode(mode === "login" ? "signup" : "login"); setMessage(""); }} style={styles.switchMode}>
-            <Text style={styles.switchText}>{mode === "login" ? t("首次使用？点我注册", "New here? Create an account") : t("已有账户？返回登录", "Already registered? Sign in")}</Text>
-          </Pressable>
-          {message ? <Text accessibilityLiveRegion="polite" style={styles.message}>{message}</Text> : null}
+          )}
+          {message ? <Text accessibilityLiveRegion="polite" style={[styles.message, messageKind === "error" && styles.errorMessage]}>{message}</Text> : null}
         </View>
 
         {backendUnavailable ? (
           <View style={[styles.noticeBox, compactHeight && styles.noticeBoxCompact]}>
-            <Text style={styles.noticeTitle}>{t("用户中心尚未部署", "User center is not deployed")}</Text>
-            <Text style={styles.noticeDescription}>{t("客户端已接入 Better Auth，但尚未配置后端 API 地址。请配置 EXPO_PUBLIC_API_BASE_URL 并部署 HTTPS API 后，才能发送真实短信和登录。", "The client is wired to Better Auth, but the API base URL is not configured. Configure EXPO_PUBLIC_API_BASE_URL and deploy the HTTPS API before live SMS sign-in can work.")}</Text>
+            <Text style={styles.noticeTitle}>{t("用户中心尚未配置", "User center is not configured")}</Text>
+            <Text style={styles.noticeDescription}>{t("需要配置 API 地址，并在 Staging Worker 启用邮件认证及邮件服务凭证后，才能创建真实账户。", "Configure the API URL, enable email authentication, and add the transactional email credentials to the Staging Worker before creating real accounts.")}</Text>
           </View>
         ) : null}
 
         {previewEnabled ? (
           <View style={[styles.previewBox, compactHeight && styles.previewBoxCompact]}>
             <Text style={styles.previewTitle}>{t("仅供本地 UI 测试", "Local UI test only")}</Text>
-            <Text style={styles.previewDescription}>{t("预览账户不会创建真实身份、会话或积分。该入口只在显式开启预览构建时显示。", "Preview access creates no real identity, session, or points. This control is shown only when the preview build flag is explicitly enabled.")}</Text>
+            <Text style={styles.previewDescription}>{t("预览账户不会创建真实身份、会话或积分。", "Preview access creates no real identity, session, or points.")}</Text>
             <Pressable onPress={enterPreview} style={styles.previewButton}><Text style={styles.previewButtonText}>{t("进入本地预览账户", "Enter local preview")}</Text></Pressable>
           </View>
         ) : null}
@@ -208,17 +225,14 @@ const styles = StyleSheet.create({
   form: { marginTop: 34 },
   formCompact: { marginTop: 20 },
   sectionTitle: { color: "#DDE8FA", fontSize: 12, fontWeight: "700", marginBottom: 11 },
-  fieldRow: { minHeight: 43, borderBottomWidth: 1, borderColor: "rgba(157, 184, 226, 0.24)", flexDirection: "row", alignItems: "center", gap: 10 },
-  callingCode: { width: 48, height: 42, color: "#C5D4EC", fontSize: 10, textAlign: "center" },
-  input: { flex: 1, height: 42, color: "#EAF2FF", fontSize: 10 },
-  codeButton: { minWidth: 73, alignItems: "flex-end", paddingVertical: 10 },
-  codeText: { color: "#C5D4EC", fontSize: 8 },
-  singleInput: { height: 43, borderBottomWidth: 1, borderColor: "rgba(157, 184, 226, 0.24)", fontSize: 10, color: "#EAF2FF", marginBottom: 8 },
-  primary: { height: 39, backgroundColor: "#7251B2", borderRadius: 20, alignItems: "center", justifyContent: "center", marginTop: 21 },
+  singleInput: { height: 46, borderBottomWidth: 1, borderColor: "rgba(157, 184, 226, 0.24)", fontSize: 11, color: "#EAF2FF", marginBottom: 8, paddingHorizontal: 2 },
+  primary: { height: 42, backgroundColor: "#7251B2", borderRadius: 22, alignItems: "center", justifyContent: "center", marginTop: 21 },
   primaryText: { color: "#FFFFFF", fontSize: 10, fontWeight: "600" },
-  switchMode: { alignItems: "center", paddingVertical: 14 },
-  switchText: { color: "#9EAFCC", fontSize: 8 },
-  message: { color: "#FFAB9A", fontSize: 8, lineHeight: 13, textAlign: "center", marginTop: 5 },
+  secondaryAction: { alignItems: "center", paddingVertical: 10 },
+  switchMode: { alignItems: "center", paddingVertical: 12 },
+  switchText: { color: "#9EAFCC", fontSize: 9 },
+  message: { color: "#AFC5E8", fontSize: 9, lineHeight: 15, textAlign: "center", marginTop: 7 },
+  errorMessage: { color: "#FFAB9A" },
   disabled: { opacity: 0.45 },
   noticeBoxCompact: { marginTop: 16 },
   noticeBox: { borderWidth: 1, borderColor: "rgba(157, 184, 226, 0.18)", borderRadius: 6, padding: 12, marginTop: 24, gap: 7 },

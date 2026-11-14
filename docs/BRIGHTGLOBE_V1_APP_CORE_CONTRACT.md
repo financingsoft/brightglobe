@@ -45,6 +45,7 @@ The Home screen keeps the Earth as its primary visual and interactive element.
 4. The backend derives the user from the Better Auth session and derives the daily period from server time.
 5. The backend checks the active reward rule, validity window, remaining approved budget and whether the user already collected during the current UTC day.
 6. Only a successful server transaction updates the UI balance.
+8. After a failed or timed-out collection request, Home re-reads the authenticated account snapshot before deciding the visible outcome. If the authoritative status cannot be read, it must clear the potentially stale balance/eligibility snapshot and state that the result is unconfirmed; it must never infer success from the client request alone.
 7. The UI shows a clear state: sign-in required, checking, available, collecting, collected today, temporarily unavailable, not configured or network error.
 
 The Earth tap target must be accessible to assistive technology. Decorative Earth rendering must not block the tap target. The Home UI must not claim that the Earth scene is live satellite imagery.

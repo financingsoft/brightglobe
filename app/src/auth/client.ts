@@ -8,7 +8,7 @@ export const isAuthConfigured = apiBaseUrl.length > 0;
 
 // The native Expo plugin persists Better Auth's session cookie in SecureStore.
 export const authClient = createAuthClient({
-  baseURL: apiBaseUrl || "http://127.0.0.1:4000",
+  baseURL: apiBaseUrl ? `${apiBaseUrl}/api/auth` : "http://127.0.0.1:4000/api/auth",
   plugins: [
     expoClient({
       scheme: "brightglobe",

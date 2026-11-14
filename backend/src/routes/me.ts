@@ -43,13 +43,18 @@ routes.use("*", createRequireAuth(auth));
 routes.get("/", async (context) => {
   const current = context.get("authSession");
   const profile = await getOrCreateProfile(current.user.id, current.user.name);
+  const [accountUser] = await db.select({
+    phoneNumber: user.phoneNumber,
+    phoneNumberVerified: user.phoneNumberVerified
+  }).from(user).where(eq(user.id, current.user.id)).limit(1);
+
   return context.json({
     user: {
       id: current.user.id,
       name: current.user.name,
       email: current.user.emailVerified ? current.user.email : null,
-      phoneNumber: current.user.phoneNumber ?? null,
-      phoneNumberVerified: current.user.phoneNumberVerified ?? false
+      phoneNumber: accountUser?.phoneNumber ?? null,
+      phoneNumberVerified: accountUser?.phoneNumberVerified ?? false
     },
     profile: serializeProfile(profile)
   });

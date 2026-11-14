@@ -1,5 +1,9 @@
+interface ServiceFetcher {
+  fetch(request: Request): Promise<Response>;
+}
+
 interface Env {
-  STAGING_BACKEND: Fetcher;
+  STAGING_BACKEND: ServiceFetcher;
 }
 
 const STAGING_PREFIX = "/staging";
@@ -26,16 +30,8 @@ export default {
     upstream.hostname = "brightglobe-staging.internal";
     upstream.port = "";
     upstream.pathname = incoming.pathname.slice(STAGING_PREFIX.length) || "/";
-    
-    const headers = new Headers(request.headers);
-    headers.delete("host");
-    const forwarded = new Request(upstream, {
-      method: request.method,
-      headers,
-      body: request.method === "GET" || request.method === "HEAD" ? undefined : request.body,
-      redirect: "manual"
-    });
 
+    const forwarded = new Request(upstream, request);
     return env.STAGING_BACKEND.fetch(forwarded);
   }
 };

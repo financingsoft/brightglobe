@@ -13,10 +13,10 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
-    "@better-auth/drizzle-adapter": "^1.7.21",
-    "@better-auth/expo": "^1.7.21",
+    "@better-auth/drizzle-adapter": "1.7.23",
+    "@better-auth/expo": "1.7.23",
     "@neondatabase/serverless": "^1.2.0",
-    "better-auth": "^1.7.21",
+    "better-auth": "1.7.23",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
     "hono": "^4.10.6",

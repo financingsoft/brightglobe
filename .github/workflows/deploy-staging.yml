@@ -112,20 +112,35 @@ jobs:
         env:
           STAGING_URL: https://globe-staging.wanghui-79b.workers.dev
         run: |
-          curl --fail-with-body --silent --show-error "$STAGING_URL/"             | jq -e '.service == "brightglobe-backend" and .status == "ok"' >/dev/null
-          curl --fail-with-body --silent --show-error "$STAGING_URL/health/live"             | jq -e '.status == "ok"' >/dev/null
+          check_endpoint() {
+            local path="$1"
+            local label="$2"
+            local filter="$3"
+            local response
+            local body
+            local status
 
-          ready=0
-          for attempt in $(seq 1 12); do
-            if curl --fail --silent --show-error "$STAGING_URL/health/ready"               | jq -e '.status == "ready" and .database == "reachable"' >/dev/null; then
-              ready=1
-              break
-            fi
-            sleep 5
-          done
+            for attempt in $(seq 1 12); do
+              response="$(curl --silent --show-error --max-time 10 --write-out $'\\n%{http_code}' "$STAGING_URL$path" 2>&1 || true)"
+              status="${response##*$'\\n'}"
+              body="${response%$'\\n'*}"
 
-          if [ "$ready" -ne 1 ]; then
-            echo "::error::Staging readiness check failed; database was not confirmed reachable."
-            exit 1
-          fi
+              if [ "$status" = "200" ] && printf '%s' "$body" | jq -e "$filter" >/dev/null 2>&1; then
+                echo "$label passed (HTTP 200, attempt $attempt)."
+                return 0
+              fi
+
+              echo "$label not ready yet (attempt $attempt/12, HTTP $status)."
+              sleep 5
+            done
+
+            echo "::error::$label failed after 12 attempts; last HTTP status: $status"
+            echo "Last response body: $body"
+            return 1
+          }
+
+          check_endpoint "/" "Root endpoint" '.service == "brightglobe-backend" and .status == "ok"'
+          check_endpoint "/health/live" "Liveness endpoint" '.status == "ok"'
+          check_endpoint "/health/ready" "Database readiness endpoint" '.status == "ready" and .database == "reachable"'
+
           echo "Staging root, liveness, and database readiness checks passed."

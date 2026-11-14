@@ -66,6 +66,11 @@ type AuthContextValue = {
   profileError: string | null;
   sendPhoneOtp: (phoneNumber: string) => Promise<void>;
   verifyPhoneOtp: (phoneNumber: string, code: string) => Promise<void>;
+  signUpEmail: (email: string, password: string, name: string) => Promise<void>;
+  signInEmail: (email: string, password: string) => Promise<void>;
+  sendVerificationEmail: (email: string) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
+  resetPassword: (token: string, newPassword: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
   updateProfile: (input: ProfileUpdateInput) => Promise<void>;
   loadSessions: () => Promise<AuthSession[]>;
@@ -101,6 +106,21 @@ function UnconfiguredAuthProvider({ children }: { children: ReactNode }) {
       throw new Error("The BrightGlobe API is not configured.");
     },
     verifyPhoneOtp: async () => {
+      throw new Error("The BrightGlobe API is not configured.");
+    },
+    signUpEmail: async () => {
+      throw new Error("The BrightGlobe API is not configured.");
+    },
+    signInEmail: async () => {
+      throw new Error("The BrightGlobe API is not configured.");
+    },
+    sendVerificationEmail: async () => {
+      throw new Error("The BrightGlobe API is not configured.");
+    },
+    requestPasswordReset: async () => {
+      throw new Error("The BrightGlobe API is not configured.");
+    },
+    resetPassword: async () => {
       throw new Error("The BrightGlobe API is not configured.");
     },
     refreshProfile: async () => undefined,
@@ -184,6 +204,43 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
     await refetch();
   }, [refetch]);
 
+  const signUpEmail = useCallback(async (email: string, password: string, name: string) => {
+    const result = await authClient.signUp.email({
+      email,
+      password,
+      name,
+      callbackURL: "brightglobe://auth/verified"
+    });
+    if (result.error) throw new Error(result.error.message || "Unable to create your account.");
+  }, []);
+
+  const signInEmail = useCallback(async (email: string, password: string) => {
+    const result = await authClient.signIn.email({ email, password, rememberMe: true });
+    if (result.error) throw new Error(result.error.message || "Unable to sign in.");
+    await refetch();
+  }, [refetch]);
+
+  const sendVerificationEmail = useCallback(async (email: string) => {
+    const result = await authClient.sendVerificationEmail({
+      email,
+      callbackURL: "brightglobe://auth/verified"
+    });
+    if (result.error) throw new Error(result.error.message || "Unable to send the verification email.");
+  }, []);
+
+  const requestPasswordReset = useCallback(async (email: string) => {
+    const result = await authClient.requestPasswordReset({
+      email,
+      redirectTo: "brightglobe://auth/reset-password"
+    });
+    if (result.error) throw new Error(result.error.message || "Unable to request a password reset.");
+  }, []);
+
+  const resetPassword = useCallback(async (token: string, newPassword: string) => {
+    const result = await authClient.resetPassword({ token, newPassword });
+    if (result.error) throw new Error(result.error.message || "Unable to reset your password.");
+  }, []);
+
   const updateProfile = useCallback(async (input: ProfileUpdateInput) => {
     const response = await apiRequest<{ profile: UserProfile }>("/api/v1/me/profile", {
       method: "PATCH",
@@ -249,6 +306,11 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
     profileError,
     sendPhoneOtp,
     verifyPhoneOtp,
+    signUpEmail,
+    signInEmail,
+    sendVerificationEmail,
+    requestPasswordReset,
+    resetPassword,
     refreshProfile,
     updateProfile,
     loadSessions,
@@ -258,8 +320,10 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
     enterPreviewAccount: () => undefined
   }), [
     status, user, account, profileLoading, profileError,
-    sendPhoneOtp, verifyPhoneOtp, refreshProfile, updateProfile,
-    loadSessions, revokeSession, revokeOtherSessions, signOut
+    sendPhoneOtp, verifyPhoneOtp, signUpEmail, signInEmail,
+    sendVerificationEmail, requestPasswordReset, resetPassword,
+    refreshProfile, updateProfile, loadSessions, revokeSession,
+    revokeOtherSessions, signOut
   ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

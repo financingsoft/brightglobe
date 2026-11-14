@@ -22,7 +22,6 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "baseUrl": "/brightglobe"
     }
   }
 }

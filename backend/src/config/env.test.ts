@@ -12,16 +12,27 @@ test("parses Worker bindings with safe development defaults", () => {
   const env = parseEnvironment(requiredBindings);
   assert.equal(env.NODE_ENV, "development");
   assert.equal(env.DATABASE_URL, requiredBindings.DATABASE_URL);
+  assert.equal(env.SMS_ENABLED, true);
 });
 
-test("rejects production without a configured SMS gateway", () => {
+test("rejects production without a configured SMS gateway when SMS is enabled", () => {
   assert.throws(
     () => parseEnvironment({ ...requiredBindings, NODE_ENV: "production" }),
     /Production requires SMS_GATEWAY_URL and SMS_GATEWAY_TOKEN/
   );
 });
 
-test("requires an HTTPS SMS gateway in production", () => {
+test("allows production-mode staging with SMS explicitly disabled", () => {
+  const env = parseEnvironment({
+    ...requiredBindings,
+    NODE_ENV: "production",
+    SMS_ENABLED: "false"
+  });
+  assert.equal(env.NODE_ENV, "production");
+  assert.equal(env.SMS_ENABLED, false);
+});
+
+test("requires an HTTPS SMS gateway in production when SMS is enabled", () => {
   assert.throws(
     () => parseEnvironment({
       ...requiredBindings,

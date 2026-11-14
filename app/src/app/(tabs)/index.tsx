@@ -105,18 +105,40 @@ export default function HomeScreen() {
         " BD"
       );
     } catch (error) {
-      if (error instanceof ApiError && error.code === "ALREADY_COLLECTED") {
-        const refreshed = await getBdAccount().catch(() => null);
-        if (refreshed) setAccount(refreshed);
-        setClaimMessage(t("今天已经收集过黑钻了。", "Today's Black Diamond has already been collected."));
-      } else if (error instanceof ApiError && error.code === "DAILY_COLLECTION_NOT_CONFIGURED") {
-        setClaimMessage(t("每日收集活动尚未开放。", "Daily collection is not open yet."));
-      } else if (error instanceof ApiError && error.code === "DAILY_BUDGET_EXHAUSTED") {
-        setClaimMessage(t("今日奖励额度已用完。", "Today's reward budget has been used."));
-      } else if (error instanceof ApiError && error.status === 401) {
+      if (error instanceof ApiError && error.status === 401) {
+        setAccount(null);
         setShowLoginPrompt(true);
       } else {
-        setClaimMessage(t("领取失败，请检查网络后重试。", "Collection failed. Check your connection and try again."));
+        // A timed-out POST may have committed on the server even when the
+        // response never reached the client. Reconcile against the ledger API
+        // before telling the user whether the collection succeeded.
+        const refreshed = await getBdAccount().catch(() => null);
+        if (refreshed) {
+          setAccount(refreshed);
+          setAccountError(null);
+        } else {
+          setAccount(null);
+          setAccountError(t(
+            "暂时无法确认账户状态，请重新进入首页同步后查看。",
+            "Unable to confirm the account state. Reopen Home to sync and check again."
+          ));
+        }
+
+        if (error instanceof ApiError && error.code === "ALREADY_COLLECTED") {
+          setClaimMessage(t("今天已经收集过黑钻了。", "Today's Black Diamond has already been collected."));
+        } else if (refreshed?.dailyCollection.status === "claimed") {
+          setClaimMessage(t("今日收集已记入账户。", "Today's collection is recorded in your account."));
+        } else if (error instanceof ApiError && error.code === "DAILY_COLLECTION_NOT_CONFIGURED") {
+          setClaimMessage(t("每日收集活动尚未开放。", "Daily collection is not open yet."));
+        } else if (error instanceof ApiError && error.code === "DAILY_BUDGET_EXHAUSTED") {
+          setClaimMessage(t("今日奖励额度已用完。", "Today's reward budget has been used."));
+        } else if (refreshed?.dailyCollection.status === "unavailable") {
+          setClaimMessage(t("今日收集暂不可用，请稍后再来。", "Collection is currently unavailable. Please try again later."));
+        } else if (!refreshed) {
+          setClaimMessage(t("领取结果暂未确认，请稍后重新打开首页查看账户记录。", "Collection status is not confirmed. Reopen Home later to check your account history."));
+        } else {
+          setClaimMessage(t("领取未完成，请检查网络后重试。", "Collection was not completed. Check your connection and try again."));
+        }
       }
     } finally {
       setClaiming(false);

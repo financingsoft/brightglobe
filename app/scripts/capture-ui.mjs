@@ -171,7 +171,7 @@ try {
   // Capture all routes in the V1.6 acceptance matrix at a fixed phone viewport.
   await page.setViewportSize({ width: 375, height: 667 });
   const routeCaptures = [
-    ["login-375x667.png", "/login", "登录注册"],
+    ["login-375x667.png", "/login", "账户中心"],
     ["wallet-375x667.png", "/wallet", "黑钻账户"],
     ["points-record-375x667.png", "/points-record", "黑钻记录"],
     ["force-record-375x667.png", "/force-record", "原力记录"],

@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "globe-api-gateway",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-11-14",
+  "workers_dev": true,
+  "services": [
+    {
+      "binding": "STAGING_BACKEND",
+      "service": "globe-staging"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

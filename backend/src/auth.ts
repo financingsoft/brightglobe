@@ -17,7 +17,7 @@ export function createAuth(db: Database, env: AppEnvironment, scheduleBackground
     const delivery = sendAuthEmail(env, { ...content, to });
     if (scheduleBackgroundTask) {
       scheduleBackgroundTask(delivery);
-      return;
+      return Promise.resolve();
     }
     return delivery;
   };

@@ -25,6 +25,7 @@ export class SolanaRpcRequestError extends Error {
 export interface SolanaRpcClient {
   request<T>(method: string, params?: readonly unknown[]): Promise<T>;
   getHealth(): Promise<string>;
+  getBlockHeight(commitment?: "processed" | "confirmed" | "finalized"): Promise<number>;
   getLatestBlockhash(commitment?: "processed" | "confirmed" | "finalized"): Promise<{
     context: { slot: number };
     value: { blockhash: string; lastValidBlockHeight: number };
@@ -135,6 +136,8 @@ export function createSolanaRpcClient(
   return {
     request,
     getHealth: () => request<string>("getHealth"),
+    getBlockHeight: (commitment = "confirmed") =>
+      request<number>("getBlockHeight", [{ commitment }]),
     getLatestBlockhash: (commitment = "confirmed") =>
       request<{ context: { slot: number }; value: { blockhash: string; lastValidBlockHeight: number } }>("getLatestBlockhash", [{ commitment }]),
     getSignatureStatuses: (signatures, searchTransactionHistory = false) =>

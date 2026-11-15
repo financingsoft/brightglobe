@@ -6,6 +6,7 @@ import { useI18n } from "@/i18n/locale";
 import { useAuth } from "@/auth/session";
 import { ApiError } from "@/services/api";
 import { formatAssetBaseUnits, getBgAssetAccount, type BgAssetAccount } from "@/services/assets";
+import { BgTransferPanel } from "@/wallet/BgTransferPanel";
 
 export default function BgWalletScreen() {
   const router = useRouter();
@@ -15,6 +16,12 @@ export default function BgWalletScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
+
+  const reloadAccount = async () => {
+    const result = await getBgAssetAccount();
+    setAccount(result);
+    setError(null);
+  };
 
   useEffect(() => {
     let active = true;
@@ -26,8 +33,7 @@ export default function BgWalletScreen() {
     }
     setLoading(true);
     setError(null);
-    getBgAssetAccount()
-      .then((result) => { if (active) setAccount(result); })
+    reloadAccount()
       .catch((reason: unknown) => {
         if (!active) return;
         setError(reason instanceof ApiError
@@ -97,6 +103,10 @@ export default function BgWalletScreen() {
           </Text>
         </View>
       )}
+
+      {!isDraft && !error && account?.decimals !== null ? (
+        <BgTransferPanel decimals={account!.decimals!} onAccountRefresh={reloadAccount} />
+      ) : null}
 
       <View style={styles.infoRow}>
         <Text style={styles.infoLabel}>{t("资产状态", "Asset status")}</Text>

@@ -10,7 +10,7 @@ import { createRequireCanonicalAuth, type CanonicalAuthVariables } from "../midd
 import { assetRegistry, assetTransactionIntents, walletOwnerships } from "../db/schema.js";
 import { isValidSolanaAddress } from "../blockchain/solana/address.js";
 import { getAssetByCode, getOrCreateUserAssetAccount, AssetNotFoundError } from "../assets/asset-service.js";
-import { createAssetTransactionIntent, AssetTransactionConflictError, transitionAssetTransaction } from "../assets/transactions/transaction-service.js";
+import { createAssetTransactionIntent, AssetTransactionConflictError, getActiveTransferReservationBaseUnits, transitionAssetTransaction } from "../assets/transactions/transaction-service.js";
 import { hasBlockhashExpired } from "../assets/transactions/blockhash.js";
 import { decodeBase58 } from "../auth/wallet/base58.js";
 
@@ -66,12 +66,19 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
         canonicalUserId: current.canonicalUserId,
         assetId: asset.id
       });
+      const reservedBaseUnits = await getActiveTransferReservationBaseUnits(db, {
+        canonicalUserId: current.canonicalUserId,
+        assetId: asset.id
+      });
+      const spendableBaseUnits = account.balanceBaseUnits - reservedBaseUnits;
       return context.json({
         assetCode: asset.assetCode,
         network: asset.network,
         status: asset.status,
         decimals: asset.decimals,
-        balanceBaseUnits: account.balanceBaseUnits.toString()
+        balanceBaseUnits: account.balanceBaseUnits.toString(),
+        reservedBaseUnits: reservedBaseUnits.toString(),
+        spendableBaseUnits: (spendableBaseUnits > 0n ? spendableBaseUnits : 0n).toString()
       });
     } catch (error) {
       if (error instanceof AssetNotFoundError) {

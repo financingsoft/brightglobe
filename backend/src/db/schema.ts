@@ -130,7 +130,12 @@ export const canonicalUserProfiles = pgTable("canonical_user_profiles", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
-  check("canonical_user_profiles_country_check", sql.raw("country_code IS NULL OR country_code ~ '^[A-Z]{2} = pgTable("wallet_challenges", {
+  check("canonical_user_profiles_country_check", sql.raw("country_code IS NULL OR country_code ~ '^[A-Z]{2}$'")),
+  check("canonical_user_profiles_locale_check", sql.raw("locale ~ '^[a-z]{2}(-[A-Z]{2})?$'")),
+  check("canonical_user_profiles_avatar_https_check", sql.raw("avatar_url IS NULL OR avatar_url ~ '^https://'"))
+]);
+
+export const walletChallenges = pgTable("wallet_challenges", {
   id: uuid("id").primaryKey(),
   walletAddress: varchar("wallet_address", { length: 44 }).notNull(),
   network: varchar("network", { length: 24 }).notNull(),
@@ -432,36 +437,6 @@ export const bdLedgerEntries = pgTable("bd_ledger_entries", {
   check("bd_ledger_entries_nonzero_check", sql`${table.deltaBaseUnits} <> 0`)
 ]);
 
-export const schema = { user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };
-"))
-]);
-
-export const walletChallenges = pgTable("wallet_challenges", {
-  id: uuid("id").primaryKey(),
-  walletAddress: varchar("wallet_address", { length: 44 }).notNull(),
-  network: varchar("network", { length: 24 }).notNull(),
-  purpose: varchar("purpose", { length: 16 }).notNull().default("sign_in"),
-  canonicalUserId: uuid("canonical_user_id").references(() => canonicalUsers.id, { onDelete: "restrict" }),
-  requestIp: varchar("request_ip", { length: 64 }),
-  verificationAttempts: integer("verification_attempts").notNull().default(0),
-  origin: text("origin").notNull(),
-  uri: text("uri").notNull(),
-  nonceHash: varchar("nonce_hash", { length: 64 }).notNull(),
-  message: text("message").notNull(),
-  issuedAt: timestamp("issued_at", { withTimezone: true }).notNull(),
-  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-  consumedAt: timestamp("consumed_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
-}, (table) => [
-  index("wallet_challenges_expiry_idx").on(table.expiresAt),
-  index("wallet_challenges_wallet_created_idx").on(table.network, table.walletAddress, table.createdAt),
-  check("wallet_challenges_network_check", sql`${table.network} IN ('devnet', 'mainnet-beta')`),
-  check("wallet_challenges_purpose_check", sql.raw("purpose IN ('sign_in', 'link')")),
-  check("wallet_challenges_link_target_check", sql.raw("(purpose = 'sign_in' AND canonical_user_id IS NULL) OR (purpose = 'link' AND canonical_user_id IS NOT NULL)")),
-  index("wallet_challenges_ip_created_idx").on(table.requestIp, table.createdAt),
-  check("wallet_challenges_attempts_check", sql.raw("verification_attempts >= 0 AND verification_attempts <= 8"))
-]);
-
 export const walletSessions = pgTable("wallet_sessions", {
   id: uuid("id").primaryKey(),
   canonicalUserId: uuid("canonical_user_id").notNull().references(() => canonicalUsers.id, { onDelete: "cascade" }),
@@ -715,3 +690,5 @@ export const bdLedgerEntries = pgTable("bd_ledger_entries", {
 ]);
 
 export const schema = { user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };
+
+export const schema = { user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };

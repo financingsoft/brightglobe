@@ -37,6 +37,10 @@ The app is configured for iOS/iPadOS and Android. iOS builds can be produced by 
 - Reown connection persistence uses AsyncStorage and does not contain wallet private keys.
 - BD remains the legacy internal ledger and is not converted into BG or assigned to a new wallet-only identity.
 
+## Reown license and commercial threshold
+
+The current Reown Terms of Service (effective 27 July 2026) state royalty-free usage thresholds of 500 monthly active users or 2,500,000 monthly RPCs. Exceeding either threshold requires a commercial license under the SDK License. Reown also requires use of its proprietary gateway infrastructure and attribution/license notices in distributed applications. Re-check the current terms before public distribution and before scaling beyond these thresholds.
+
 ## Build profiles
 
 From the `app/` directory, use the configured EAS profiles:

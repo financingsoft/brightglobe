@@ -228,6 +228,11 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
           error: { code: "SOLANA_NETWORK_DISABLED", message: "Only Solana Devnet wallet balance queries are enabled." }
         }, 503);
       }
+      if (asset.tokenProgram !== CLASSIC_SPL_TOKEN_PROGRAM_ID) {
+        return context.json({
+          error: { code: "UNSUPPORTED_TOKEN_PROGRAM", message: "Only the classic SPL Token program is supported." }
+        }, 409);
+      }
 
       const gateway = createSolanaGateway(env.SOLANA_RPC_URL);
       const cluster = await gateway.getDevnetStatus();
@@ -235,6 +240,28 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
         return context.json({
           error: { code: "SOLANA_RPC_UNAVAILABLE", message: "The Devnet RPC endpoint is not healthy." }
         }, 503);
+      }
+      const mintAccount = await gateway.getAccountInfo(asset.mintAddress, "finalized");
+      if (!mintAccount.account) {
+        return context.json({
+          error: { code: "ASSET_MINT_NOT_FOUND", message: "The configured BG mint account was not found on Devnet." }
+        }, 409);
+      }
+      let parsedMint: ParsedSplMint;
+      try {
+        parsedMint = parseClassicSplMint({
+          owner: mintAccount.account.owner,
+          dataBase64: mintAccount.account.data[0]
+        });
+      } catch {
+        return context.json({
+          error: { code: "ASSET_MINT_INVALID", message: "The configured mint is not a valid classic SPL Token mint." }
+        }, 409);
+      }
+      if (parsedMint.decimals !== asset.decimals) {
+        return context.json({
+          error: { code: "ASSET_DECIMALS_MISMATCH", message: "The configured asset decimals do not match the on-chain mint." }
+        }, 409);
       }
 
       const tokenAccountAddress = await deriveClassicSplAssociatedTokenAddress({

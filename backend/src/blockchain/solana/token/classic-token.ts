@@ -1,44 +1,18 @@
-import { encodeBase58 } from "./base58.js";
+import {
+  AccountState,
+  getMintDecoder,
+  getTokenDecoder
+} from "@solana-program/token";
 
 export const CLASSIC_SPL_TOKEN_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 
-export class SplTokenAccountError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "SplTokenAccountError";
-  }
-}
-
-function decodeBase64(value: string): Uint8Array {
-  try {
-    const binary = atob(value);
-    const bytes = new Uint8Array(binary.length);
-    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
-    return bytes;
-  } catch {
-    throw new SplTokenAccountError("SPL Token account data is not valid base64.");
-  }
-}
-
-function readU64(bytes: Uint8Array, offset: number): bigint {
-  if (offset < 0 || offset + 8 > bytes.length) throw new SplTokenAccountError("SPL Token account data is truncated.");
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  return view.getBigUint64(offset, true);
-}
-
-function readU32(bytes: Uint8Array, offset: number): number {
-  if (offset < 0 || offset + 4 > bytes.length) throw new SplTokenAccountError("SPL Token account data is truncated.");
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  return view.getUint32(offset, true);
-}
-
-function readPublicKey(bytes: Uint8Array, offset: number): string {
-  return encodeBase58(bytes.slice(offset, offset + 32));
-}
+const MINT_ACCOUNT_SIZE = 82;
+const TOKEN_ACCOUNT_SIZE = 165;
+const U64_MAX = 18446744073709551615n;
 
 export interface ParsedSplMint {
   mintAuthority: string | null;
-  supplyBaseUnits: bigint;
+  supply: bigint;
   decimals: number;
   initialized: boolean;
   freezeAuthority: string | null;
@@ -47,87 +21,125 @@ export interface ParsedSplMint {
 export interface ParsedSplTokenAccount {
   mint: string;
   owner: string;
-  amountBaseUnits: bigint;
+  amount: bigint;
   state: "uninitialized" | "initialized" | "frozen";
   delegatedAmount: bigint;
 }
 
-export function parseClassicSplMint(account: {
+function decodeBase64(value: string): Uint8Array {
+  if (typeof value !== "string" || value.length === 0) {
+    throw new TypeError("SPL Token account data is empty.");
+  }
+  let binary: string;
+  try {
+    binary = atob(value);
+  } catch {
+    throw new TypeError("SPL Token account data is not valid base64.");
+  }
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
+}
+
+function readOptionalAddress(value: unknown): string | null {
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "__option" in value &&
+    (value as { __option?: unknown }).__option === "Some" &&
+    "value" in value &&
+    typeof (value as { value?: unknown }).value === "string"
+  ) {
+    return (value as { value: string }).value;
+  }
+  return null;
+}
+
+/**
+ * Decode a classic SPL Mint using the official generated Token Program client.
+ * The explicit owner/size checks remain as BrightGlobe's input boundary.
+ */
+export function parseClassicSplMint(input: {
   owner: string;
   dataBase64: string;
 }): ParsedSplMint {
-  if (account.owner !== CLASSIC_SPL_TOKEN_PROGRAM_ID) {
-    throw new SplTokenAccountError("The mint account is not owned by the classic SPL Token program.");
+  if (input.owner !== CLASSIC_SPL_TOKEN_PROGRAM_ID) {
+    throw new TypeError("Mint account is not owned by the classic SPL Token program.");
   }
-  const bytes = decodeBase64(account.dataBase64);
-  if (bytes.length !== 82) throw new SplTokenAccountError("Classic SPL Token mint data must be exactly 82 bytes.");
-
-  const mintAuthorityOption = readU32(bytes, 0);
-  const freezeAuthorityOption = readU32(bytes, 46);
-  if (![0, 1].includes(mintAuthorityOption) || ![0, 1].includes(freezeAuthorityOption)) {
-    throw new SplTokenAccountError("The mint authority option is invalid.");
+  const bytes = decodeBase64(input.dataBase64);
+  if (bytes.byteLength !== MINT_ACCOUNT_SIZE) {
+    throw new TypeError("Classic SPL Mint account has an unexpected byte length.");
   }
-  if (bytes[45] !== 1) throw new SplTokenAccountError("The SPL Token mint is not initialized.");
 
+  const mint = getMintDecoder().decode(bytes);
   return {
-    mintAuthority: mintAuthorityOption === 1 ? readPublicKey(bytes, 4) : null,
-    supplyBaseUnits: readU64(bytes, 36),
-    decimals: bytes[44]!,
-    initialized: true,
-    freezeAuthority: freezeAuthorityOption === 1 ? readPublicKey(bytes, 50) : null
+    mintAuthority: readOptionalAddress(mint.mintAuthority),
+    supply: mint.supply,
+    decimals: mint.decimals,
+    initialized: mint.isInitialized,
+    freezeAuthority: readOptionalAddress(mint.freezeAuthority)
   };
 }
 
-export function parseClassicSplTokenAccount(account: {
+/**
+ * Decode a classic SPL token account using the official generated Token
+ * Program client. Amounts remain bigint base units; no floating point is used.
+ */
+export function parseClassicSplTokenAccount(input: {
   owner: string;
   dataBase64: string;
 }): ParsedSplTokenAccount {
-  if (account.owner !== CLASSIC_SPL_TOKEN_PROGRAM_ID) {
-    throw new SplTokenAccountError("The token account is not owned by the classic SPL Token program.");
+  if (input.owner !== CLASSIC_SPL_TOKEN_PROGRAM_ID) {
+    throw new TypeError("Token account is not owned by the classic SPL Token program.");
   }
-  const bytes = decodeBase64(account.dataBase64);
-  if (bytes.length !== 165) throw new SplTokenAccountError("Classic SPL Token account data must be exactly 165 bytes.");
+  const bytes = decodeBase64(input.dataBase64);
+  if (bytes.byteLength !== TOKEN_ACCOUNT_SIZE) {
+    throw new TypeError("Classic SPL Token account has an unexpected byte length.");
+  }
 
-  const stateByte = bytes[108];
-  if (stateByte !== 0 && stateByte !== 1 && stateByte !== 2) {
-    throw new SplTokenAccountError("The token account state is invalid.");
-  }
-  const delegateOption = readU32(bytes, 72);
-  if (delegateOption !== 0 && delegateOption !== 1) {
-    throw new SplTokenAccountError("The token account delegate option is invalid.");
-  }
+  const tokenAccount = getTokenDecoder().decode(bytes);
+  const state = tokenAccount.state === AccountState.Initialized
+    ? "initialized"
+    : tokenAccount.state === AccountState.Frozen
+      ? "frozen"
+      : "uninitialized";
 
   return {
-    mint: readPublicKey(bytes, 0),
-    owner: readPublicKey(bytes, 32),
-    amountBaseUnits: readU64(bytes, 64),
-    state: stateByte === 0 ? "uninitialized" : stateByte === 1 ? "initialized" : "frozen",
-    delegatedAmount: readU64(bytes, 121)
+    mint: tokenAccount.mint,
+    owner: tokenAccount.owner,
+    amount: tokenAccount.amount,
+    state,
+    delegatedAmount: tokenAccount.delegatedAmount
   };
 }
 
 export function baseUnitsToDecimalString(amount: bigint, decimals: number): string {
-  if (amount < 0n) throw new RangeError("Token amounts cannot be negative.");
-  if (!Number.isInteger(decimals) || decimals < 0 || decimals > 255) {
-    throw new RangeError("Token decimals must be an integer from 0 to 255.");
+  if (amount < 0n || amount > U64_MAX) throw new RangeError("Token amount is outside the u64 range.");
+  if (!Number.isInteger(decimals) || decimals < 0 || decimals > 18) {
+    throw new RangeError("Token decimals must be an integer between 0 and 18.");
   }
-  if (decimals === 0) return amount.toString();
   const scale = 10n ** BigInt(decimals);
   const whole = amount / scale;
   const fraction = (amount % scale).toString().padStart(decimals, "0").replace(/0+$/, "");
-  return fraction ? `${whole}.${fraction}` : whole.toString();
+  return fraction ? `${whole.toString()}.${fraction}` : whole.toString();
 }
 
 export function decimalStringToBaseUnits(value: string, decimals: number): bigint {
-  if (!Number.isInteger(decimals) || decimals < 0 || decimals > 255) {
-    throw new RangeError("Token decimals must be an integer from 0 to 255.");
+  if (!Number.isInteger(decimals) || decimals < 0 || decimals > 18) {
+    throw new RangeError("Token decimals must be an integer between 0 and 18.");
   }
-  if (!/^(0|[1-9][0-9]*)(\.[0-9]+)?$/.test(value)) {
-    throw new TypeError("Token amount must be a plain non-negative decimal string.");
+  const normalized = value.trim();
+  if (!/^(0|[1-9][0-9]*)(?:\\.[0-9]+)?$/.test(normalized)) {
+    throw new TypeError("Token amount must be a non-negative decimal string.");
   }
-  const [whole = "0", fraction = ""] = value.split(".");
+  const [whole, fraction = ""] = normalized.split(".");
   if (fraction.length > decimals) {
-    throw new RangeError("Token amount has more fractional digits than the mint supports.");
+    throw new RangeError("Token amount has more decimal places than the mint supports.");
   }
-  return BigInt(whole) * (10n ** BigInt(decimals)) + BigInt((fraction + "0".repeat(decimals)).slice(0, decimals) || "0");
+  const amount = BigInt(whole!) * (10n ** BigInt(decimals)) +
+    BigInt((fraction + "0".repeat(decimals)).slice(0, decimals) || "0");
+  if (amount > U64_MAX) throw new RangeError("Token amount exceeds the classic SPL Token u64 limit.");
+  return amount;
 }

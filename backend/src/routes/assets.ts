@@ -4,7 +4,7 @@ import type { Database } from "../db/client.js";
 import type { BetterAuthInstance } from "../auth.js";
 import type { AppEnvironment } from "../config/env.js";
 import { createSolanaGateway } from "../blockchain/solana/gateway.js";
-import { CLASSIC_SPL_TOKEN_PROGRAM_ID, parseClassicSplMint } from "../blockchain/solana/token/classic-token.js";
+import { CLASSIC_SPL_TOKEN_PROGRAM_ID, parseClassicSplMint, type ParsedSplMint } from "../blockchain/solana/token/classic-token.js";
 import { createRequireCanonicalAuth, type CanonicalAuthVariables } from "../middleware/require-canonical-auth.js";
 import { assetRegistry, assetTransactionIntents, walletOwnerships } from "../db/schema.js";
 import { isValidSolanaAddress } from "../blockchain/solana/address.js";
@@ -136,7 +136,7 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
       if (!mintAccount.account) {
         return context.json({ error: { code: "ASSET_MINT_NOT_FOUND", message: "The configured BG mint account was not found on Devnet." } }, 409);
       }
-      let parsedMint;
+      let parsedMint: ParsedSplMint;
       try {
         parsedMint = parseClassicSplMint({
           owner: mintAccount.account.owner,

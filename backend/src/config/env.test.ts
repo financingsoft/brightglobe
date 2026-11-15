@@ -31,7 +31,7 @@ test("enables only Solana Devnet when explicitly configured", () => {
 test("rejects unsupported Solana networks", () => {
   assert.throws(
     () => parseEnvironment({ ...requiredBindings, SOLANA_NETWORK: "mainnet-beta" }),
-    /Invalid enum value/
+    /SOLANA_NETWORK/
   );
 });
 

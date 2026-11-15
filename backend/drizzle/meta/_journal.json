@@ -127,6 +127,13 @@
       "when": 1794701700000,
       "tag": "0018_transaction_blockhash_expiry",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794787200000,
+      "tag": "0019_chain_indexer_opening_balances",
+      "breakpoints": true
     }
   ]
 }

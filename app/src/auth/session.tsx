@@ -209,7 +209,7 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
       name,
-      callbackURL: "brightglobe://auth/verified"
+      callbackURL: "https://test.globeapps.com/auth/verified"
     });
     if (result.error) throw new Error(result.error.message || "Unable to create your account.");
   }, []);
@@ -223,7 +223,7 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
   const sendVerificationEmail = useCallback(async (email: string) => {
     const result = await authClient.sendVerificationEmail({
       email,
-      callbackURL: "brightglobe://auth/verified"
+      callbackURL: "https://test.globeapps.com/auth/verified"
     });
     if (result.error) throw new Error(result.error.message || "Unable to send the verification email.");
   }, []);

@@ -179,6 +179,9 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
     if (intent.recentBlockhash === null || intent.lastValidBlockHeight === null) {
       return context.json({ error: { code: "TRANSACTION_BLOCKHASH_MISSING", message: "The transaction intent has no valid recent blockhash window." } }, 409);
     }
+    if (env.SOLANA_NETWORK !== "devnet") {
+      return context.json({ error: { code: "SOLANA_NETWORK_DISABLED", message: "Devnet transaction submission verification is disabled." } }, 503);
+    }
     const gateway = createSolanaGateway(env.SOLANA_RPC_URL);
     const cluster = await gateway.getDevnetStatus();
     if (!cluster.healthy) {

@@ -104,8 +104,8 @@ try {
   await page.screenshot({ path: resolve(outputRoot, "home-375x667.png") });
 
   await page.goto(`http://127.0.0.1:${port}${basePath}/tasks`, { waitUntil: "networkidle", timeout: 60000 });
-  await page.getByText("发现原力", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
-  await page.waitForTimeout(350);
+  await page.locator("body").waitFor({ state: "visible", timeout: 10000 });
+  await page.waitForTimeout(500);
   await page.screenshot({ path: resolve(outputRoot, "discover-force-375x667.png") });
 
   await page.goto(`http://127.0.0.1:${port}${basePath}/profile`, { waitUntil: "networkidle", timeout: 60000 });

@@ -15,6 +15,7 @@ import type { SolanaGateway } from "../blockchain/solana/gateway.js";
 import { decodeFinalizedClassicTokenEvents } from "../blockchain/solana/transaction-decoder.js";
 import { expireStaleAssetTransactionIntents, transitionAssetTransaction } from "../assets/transactions/transaction-service.js";
 import { settleFinalizedAssetTransaction } from "../assets/ledger/ledger-service.js";
+import { hasBlockhashExpired } from "../assets/transactions/blockhash.js";
 import { findMatchingFinalizedTransferEvent } from "./transaction-verifier.js";
 
 
@@ -129,7 +130,7 @@ export async function syncPendingTransactionIntents(
           intent.status === "submitted" &&
           intent.lastValidBlockHeight !== null &&
           currentBlockHeight !== null &&
-          currentBlockHeight > intent.lastValidBlockHeight
+          hasBlockhashExpired(currentBlockHeight, intent.lastValidBlockHeight)
         ) {
           await transitionAssetTransaction(db, {
             intentId: intent.id,

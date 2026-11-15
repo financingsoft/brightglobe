@@ -117,15 +117,17 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
       await reportBgTransferSubmitted(current.intentId, current.signature);
       const snapshot = await getBgAssetTransaction(current.intentId);
       setNotice(
-        snapshot.status === "finalized"
-          ? t("交易已最终确认，账本正在同步。", "Transaction finalized. The account is synchronizing.")
-          : snapshot.status === "failed"
-            ? t("链上交易失败。", "The on-chain transaction failed.")
-            : snapshot.status === "expired"
-              ? t("交易已过期，请重新发起。", "The transaction expired. Start a new transfer.")
-              : t("交易已提交，等待 Solana finalized 最终确认。", "Transaction submitted. Waiting for Solana finalized confirmation.")
+        snapshot.status === "finalized" && snapshot.ledgerSettled
+          ? t("链上交易已最终确认，BrightGlobe 账本也已完成结算。", "The transaction is finalized and the BrightGlobe ledger has settled.")
+          : snapshot.status === "finalized"
+            ? t("链上交易已最终确认，正在等待内部账本完成结算。", "The chain transaction is finalized. Waiting for internal ledger settlement.")
+            : snapshot.status === "failed"
+              ? t("链上交易失败。", "The on-chain transaction failed.")
+              : snapshot.status === "expired"
+                ? t("交易已过期，请重新发起。", "The transaction expired. Start a new transfer.")
+                : t("交易已提交，等待 Solana finalized 最终确认。", "Transaction submitted. Waiting for Solana finalized confirmation.")
       );
-      if (snapshot.status === "finalized") {
+      if (snapshot.status === "finalized" && snapshot.ledgerSettled) {
         await onAccountRefresh();
         setPending(null);
       } else if (snapshot.status === "failed" || snapshot.status === "expired") {
@@ -205,10 +207,12 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
       setNotice(t("钱包已广播交易，正在登记并等待最终确认。", "The wallet broadcast the transaction. Registering it and waiting for finality."));
       await reportBgTransferSubmitted(intent.intentId, signature);
       const snapshot = await getBgAssetTransaction(intent.intentId);
-      if (snapshot.status === "finalized") {
+      if (snapshot.status === "finalized" && snapshot.ledgerSettled) {
         await onAccountRefresh();
         setPending(null);
-        setNotice(t("交易已最终确认，账户余额已同步。", "Transaction finalized and account balance synchronized."));
+        setNotice(t("交易已最终确认，账本结算和余额同步均已完成。", "Transaction finalized, ledger settlement completed and balance synchronized."));
+      } else if (snapshot.status === "finalized") {
+        setNotice(t("链上交易已最终确认，账本仍在结算中。请稍后同步状态，不要重复发送。", "The chain transaction is finalized but ledger settlement is pending. Synchronize later; do not send it again."));
       } else {
         setNotice(t("交易已提交，尚未最终确认。不要重复发送。", "Transaction submitted but not finalized. Do not send it again."));
       }

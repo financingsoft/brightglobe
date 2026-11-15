@@ -63,6 +63,8 @@ export type BgAssetTransactionSnapshot = {
   lastValidBlockHeight: string | null;
   chainSlot: string | null;
   chainCommitment: "processed" | "confirmed" | "finalized" | null;
+  ledgerSettled: boolean;
+  ledgerPostedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };

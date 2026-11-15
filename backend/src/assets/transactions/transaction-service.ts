@@ -93,7 +93,7 @@ export async function createAssetTransactionIntent(
     if (existing[0].requestHash !== requestHash) {
       throw new AssetTransactionConflictError("The idempotency key was reused with a different request.");
     }
-    return { intentId: existing[0].id, replayed: true };
+    return { intentId: existing[0].id, replayed: true, recentBlockhash: existing[0].recentBlockhash, lastValidBlockHeight: existing[0].lastValidBlockHeight?.toString() ?? null };
   }
 
   const now = new Date();

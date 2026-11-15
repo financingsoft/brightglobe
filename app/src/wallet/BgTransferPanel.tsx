@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import QRCode from "react-native-qrcode-svg";
+import * as Clipboard from "expo-clipboard";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useAccount, useAppKit, useProvider } from "@reown/appkit-react-native";
@@ -99,6 +101,17 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
       });
     return () => { active = false; };
   }, [isAuthenticated, isPreviewAccount, providerReady, address, linkedWallet]);
+
+  const copyWalletAddress = async () => {
+    if (!address) return;
+    try {
+      await Clipboard.setStringAsync(address);
+      setNotice(t("Devnet 收款地址已复制。", "Devnet receiving address copied."));
+      setError("");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : t("复制钱包地址失败。", "Unable to copy the wallet address."));
+    }
+  };
 
   const connectWallet = async () => {
     setError("");
@@ -258,6 +271,16 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
             )}
           </View>
           {onChainBalanceError ? <Text style={styles.copy}>{onChainBalanceError}</Text> : null}
+          <View style={styles.receiveCard}>
+            <Text style={styles.receiveTitle}>{t("Devnet 收款二维码", "Devnet receive QR")}</Text>
+            <View style={styles.qrSurface}>
+              <QRCode value={address!} size={148} color="#101828" backgroundColor="#FFFFFF" quietZone={8} />
+            </View>
+            <Text selectable style={styles.receiveAddress}>{address}</Text>
+            <Pressable accessibilityRole="button" onPress={copyWalletAddress} style={styles.copyAddressButton}>
+              <Text style={styles.copyAddressText}>{t("复制收款地址", "Copy receive address")}</Text>
+            </Pressable>
+          </View>
           <TextInput
             value={recipient}
             onChangeText={setRecipient}
@@ -307,6 +330,12 @@ const styles = StyleSheet.create({
   chainBalanceRow: { minHeight: 30, flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const, borderBottomWidth: 1, borderColor: "rgba(156,183,224,0.16)" },
   chainBalanceLabel: { color: "#91A5C5", fontSize: 8 },
   chainBalanceValue: { color: "#EAF2FF", fontSize: 10, fontWeight: "700" },
+  receiveCard: { alignItems: "center" as const, gap: 7, padding: 10, borderRadius: 8, backgroundColor: "rgba(5,13,32,0.55)" },
+  receiveTitle: { color: "#D4C6F0", fontSize: 8, fontWeight: "700" },
+  qrSurface: { padding: 5, backgroundColor: "#FFFFFF", borderRadius: 4 },
+  receiveAddress: { color: "#A0B2D0", fontSize: 7, textAlign: "center" as const, lineHeight: 12 },
+  copyAddressButton: { minHeight: 30, paddingHorizontal: 14, borderRadius: 15, borderWidth: 1, borderColor: "rgba(174,194,230,0.35)", justifyContent: "center" as const, alignItems: "center" as const },
+  copyAddressText: { color: "#D4C6F0", fontSize: 8, fontWeight: "600" },
   input: { minHeight: 38, borderWidth: 1, borderColor: "rgba(156,183,224,0.25)", borderRadius: 7, color: "#EAF2FF", paddingHorizontal: 10, fontSize: 10 },
   action: { minHeight: 36, borderRadius: 18, backgroundColor: "#7052AD", alignItems: "center", justifyContent: "center", paddingHorizontal: 12 },
   actionText: { color: "#FFFFFF", fontSize: 9, fontWeight: "600" },

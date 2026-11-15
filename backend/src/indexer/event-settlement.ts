@@ -211,6 +211,13 @@ export async function processObservedBgAssetEvents(
 
       const source = sourceByTokenAccount.get(sourceAddress);
       const destination = sourceByTokenAccount.get(destinationAddress);
+      // A newly discovered source is not eligible for ledger projection until
+      // its opening balance is captured; leave the event pending for the next
+      // indexed run instead of risking a snapshot/event double count.
+      if (
+        (source && source.openingBalanceSlot === null) ||
+        (destination && destination.openingBalanceSlot === null)
+      ) continue;
       if (!source && !destination) {
         await setEventStatus(db, event.id, "ignored");
         ignored += 1;
@@ -280,6 +287,7 @@ export async function processObservedBgAssetEvents(
         ignored += 1;
         continue;
       }
+      if (source.openingBalanceSlot === null) continue;
       const userId = userByWallet.get(source.ownerAddress) ?? null;
       if (!userId) {
         await setEventStatus(db, event.id, "ignored");

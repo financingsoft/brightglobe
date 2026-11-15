@@ -417,12 +417,11 @@ export async function ingestFinalizedBatch(
           status: "open"
         });
         const sourceAddress = tokenAccountAddress;
-        const affectedAccount = sourceAddress !== null && [
+        if (sourceAddress !== null && [
           event.payload.source,
           event.payload.destination,
           event.payload.account
-        ].some((value) => value === sourceAddress);
-        if (affectedAccount) {
+        ].some((value) => value === sourceAddress)) {
           // Unknown instructions affecting a tracked BG token account make
           // subsequent automatic ownership/balance projection unsafe.
           await transaction.update(chainIndexerSources)

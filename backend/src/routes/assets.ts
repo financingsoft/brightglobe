@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Database } from "../db/client.js";
 import type { BetterAuthInstance } from "../auth.js";
@@ -7,7 +7,15 @@ import { createSolanaGateway } from "../blockchain/solana/gateway.js";
 import { CLASSIC_SPL_TOKEN_PROGRAM_ID, parseClassicSplMint, parseClassicSplTokenAccount, type ParsedSplMint } from "../blockchain/solana/token/classic-token.js";
 import { buildClassicSplTransferTransaction, deriveClassicSplAssociatedTokenAccounts, deriveClassicSplAssociatedTokenAddress } from "../blockchain/solana/transfer-builder.js";
 import { createRequireCanonicalAuth, type CanonicalAuthVariables } from "../middleware/require-canonical-auth.js";
-import { assetRegistry, assetTransactionIntents, walletOwnerships } from "../db/schema.js";
+import {
+  assetAccounts,
+  assetLedgerPostings,
+  assetLedgerTransactions,
+  assetRegistry,
+  assetTransactionIntents,
+  chainObservedEvents,
+  walletOwnerships
+} from "../db/schema.js";
 import { isValidSolanaAddress } from "../blockchain/solana/address.js";
 import { getAssetByCode, getOrCreateUserAssetAccount, AssetNotFoundError } from "../assets/asset-service.js";
 import { createAssetTransactionIntent, AssetTransactionConflictError, getActiveTransferReservationBaseUnits, transitionAssetTransaction } from "../assets/transactions/transaction-service.js";
@@ -79,6 +87,103 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
         balanceBaseUnits: account.balanceBaseUnits.toString(),
         reservedBaseUnits: reservedBaseUnits.toString(),
         spendableBaseUnits: (spendableBaseUnits > 0n ? spendableBaseUnits : 0n).toString()
+      });
+    } catch (error) {
+      if (error instanceof AssetNotFoundError) {
+        return context.json({ error: { code: "ASSET_NOT_FOUND", message: error.message } }, 404);
+      }
+      throw error;
+    }
+  });
+
+  routes.get("/:assetCode/activity", async (context) => {
+    const current = context.get("canonicalAuth");
+    const rawLimit = Number(context.req.query("limit") ?? "30");
+    const limit = Number.isInteger(rawLimit) ? Math.min(Math.max(rawLimit, 1), 50) : 30;
+    try {
+      const asset = await getAssetByCode(db, context.req.param("assetCode"));
+      const ledgerRows = await db.select({
+        id: assetLedgerTransactions.id,
+        transactionType: assetLedgerTransactions.transactionType,
+        referenceType: assetLedgerTransactions.referenceType,
+        referenceId: assetLedgerTransactions.referenceId,
+        deltaBaseUnits: assetLedgerPostings.deltaBaseUnits,
+        createdAt: assetLedgerTransactions.createdAt
+      }).from(assetLedgerPostings)
+        .innerJoin(assetAccounts, eq(assetAccounts.id, assetLedgerPostings.accountId))
+        .innerJoin(assetLedgerTransactions, eq(assetLedgerTransactions.id, assetLedgerPostings.transactionId))
+        .where(and(
+          eq(assetAccounts.assetId, asset.id),
+          eq(assetAccounts.canonicalUserId, current.canonicalUserId),
+          eq(assetAccounts.accountType, "user")
+        ))
+        .orderBy(desc(assetLedgerTransactions.createdAt), desc(assetLedgerTransactions.id))
+        .limit(limit);
+
+      const intentIds = [...new Set(ledgerRows
+        .filter((row) => row.referenceType === "asset_transaction_intent")
+        .map((row) => row.referenceId))];
+      const eventIds = [...new Set(ledgerRows
+        .filter((row) => row.referenceType === "chain_observed_event")
+        .map((row) => row.referenceId))];
+      const [referencedIntents, referencedEvents, recentIntents] = await Promise.all([
+        intentIds.length
+          ? db.select().from(assetTransactionIntents).where(inArray(assetTransactionIntents.id, intentIds))
+          : Promise.resolve([]),
+        eventIds.length
+          ? db.select().from(chainObservedEvents).where(inArray(chainObservedEvents.id, eventIds))
+          : Promise.resolve([]),
+        db.select().from(assetTransactionIntents)
+          .where(and(
+            eq(assetTransactionIntents.assetId, asset.id),
+            eq(assetTransactionIntents.canonicalUserId, current.canonicalUserId)
+          ))
+          .orderBy(desc(assetTransactionIntents.createdAt), desc(assetTransactionIntents.id))
+          .limit(limit)
+      ]);
+      const intentById = new Map(referencedIntents.map((intent) => [intent.id, intent] as const));
+      const eventById = new Map(referencedEvents.map((event) => [event.id, event] as const));
+      const settledIntentIds = new Set(intentIds);
+
+      const ledgerItems = ledgerRows.map((row) => {
+        const intent = row.referenceType === "asset_transaction_intent"
+          ? intentById.get(row.referenceId)
+          : undefined;
+        const event = row.referenceType === "chain_observed_event"
+          ? eventById.get(row.referenceId)
+          : undefined;
+        return {
+          id: row.id,
+          type: event?.eventType ?? row.transactionType,
+          deltaBaseUnits: row.deltaBaseUnits.toString(),
+          status: "settled",
+          chainSignature: intent?.chainSignature ?? event?.signature ?? null,
+          ledgerSettled: true,
+          createdAt: row.createdAt.toISOString()
+        };
+      });
+
+      const pendingItems = recentIntents
+        .filter((intent) => !settledIntentIds.has(intent.id))
+        .map((intent) => ({
+          id: intent.id,
+          type: intent.operation,
+          deltaBaseUnits: "-" + intent.amountBaseUnits.toString(),
+          status: intent.status === "finalized" && !intent.ledgerPostedAt
+            ? "settling"
+            : intent.status,
+          chainSignature: intent.chainSignature,
+          ledgerSettled: intent.ledgerPostedAt !== null,
+          createdAt: intent.createdAt.toISOString()
+        }));
+
+      const items = [...ledgerItems, ...pendingItems]
+        .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+        .slice(0, limit);
+      return context.json({
+        assetCode: asset.assetCode,
+        network: asset.network,
+        items
       });
     } catch (error) {
       if (error instanceof AssetNotFoundError) {

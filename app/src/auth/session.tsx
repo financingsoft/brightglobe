@@ -51,10 +51,12 @@ export type ProfileUpdateInput = Partial<Pick<
   "displayName" | "locale" | "timeZone" | "countryCode" | "avatarUrl" | "bio"
 >>;
 
+export type WalletIdentity = { network: string; address: string; verifiedAt: string };
+
 type CanonicalIdentityResponse = {
   user: { id: string; email: string | null };
   profile: UserProfile;
-  wallets: Array<{ network: string; address: string; verifiedAt: string }>;
+  wallets: WalletIdentity[];
 };
 
 export type AuthStatus =
@@ -74,6 +76,7 @@ type AuthContextValue = {
   previewEnabled: boolean;
   user: UserIdentity | null;
   profile: UserProfile | null;
+  wallets: WalletIdentity[];
   profileLoading: boolean;
   profileError: string | null;
   acceptWalletSession: (session: WalletSession) => Promise<void>;
@@ -100,6 +103,7 @@ const previewEnabled =
 function mapCanonicalIdentity(response: CanonicalIdentityResponse): {
   user: UserIdentity;
   profile: UserProfile;
+  wallets: WalletIdentity[];
 } {
   return {
     user: {
@@ -109,7 +113,8 @@ function mapCanonicalIdentity(response: CanonicalIdentityResponse): {
       phoneNumber: null,
       phoneNumberVerified: false
     },
-    profile: response.profile
+    profile: response.profile,
+    wallets: response.wallets ?? []
   };
 }
 
@@ -135,6 +140,7 @@ function UnconfiguredAuthProvider({ children }: { children: ReactNode }) {
     previewEnabled,
     user: null,
     profile: null,
+    wallets: [],
     profileLoading: false,
     profileError: null,
     acceptWalletSession: unavailable,
@@ -163,7 +169,7 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
   const { data: session, isPending, refetch } = authClient.useSession();
   const [walletSession, setWalletSession] = useState<WalletSession | null>(null);
   const [walletSessionLoading, setWalletSessionLoading] = useState(true);
-  const [account, setAccount] = useState<{ user: UserIdentity; profile: UserProfile } | null>(null);
+  const [account, setAccount] = useState<{ user: UserIdentity; profile: UserProfile; wallets: WalletIdentity[] } | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const sessionUserId = session?.user?.id;
@@ -398,6 +404,7 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
     previewEnabled: false,
     user,
     profile: account?.profile ?? null,
+    wallets: account?.wallets ?? [],
     profileLoading,
     profileError,
     acceptWalletSession,

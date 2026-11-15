@@ -43,7 +43,7 @@ export async function apiRequest<T>(
   if (Platform.OS !== "web") {
     const [cookie, walletSession] = await Promise.all([
       authClient.getCookie(),
-      getWalletSession()
+      getWalletSession().catch(() => null)
     ]);
     if (cookie) headers.set("Cookie", cookie);
     if (walletSession) headers.set("Authorization", `Bearer ${walletSession.token}`);

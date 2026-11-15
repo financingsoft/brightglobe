@@ -53,6 +53,17 @@ export async function recordTokenAccountOpeningBalance(
       return { recorded: false };
     }
 
+    const [existingCursor] = await transaction.select().from(chainIndexerCursors)
+      .where(and(
+        eq(chainIndexerCursors.network, input.network),
+        eq(chainIndexerCursors.sourceKey, "BG:" + input.tokenAccountAddress)
+      ))
+      .limit(1)
+      .for("update");
+    if (existingCursor && existingCursor.lastFinalizedSlot > input.snapshotSlot) {
+      throw new Error("The token-account opening balance snapshot is older than the existing finalized indexer cursor.");
+    }
+
     const now = new Date();
     if (input.canonicalUserId && input.amountBaseUnits > 0n) {
       await transaction.insert(assetAccounts).values({

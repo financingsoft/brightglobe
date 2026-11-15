@@ -133,14 +133,16 @@ export async function processObservedBgAssetEvents(
 
   const signatures = [...new Set(events.map((event) => event.signature))];
   const matchingIntents = await db.select({
-    chainSignature: assetTransactionIntents.chainSignature
+    chainSignature: assetTransactionIntents.chainSignature,
+    status: assetTransactionIntents.status,
+    ledgerPostedAt: assetTransactionIntents.ledgerPostedAt
   }).from(assetTransactionIntents)
     .where(and(
       eq(assetTransactionIntents.assetId, input.assetId),
       inArray(assetTransactionIntents.chainSignature, signatures)
     ));
-  const intentSignatures = new Set(
-    matchingIntents.flatMap((intent) => intent.chainSignature ? [intent.chainSignature] : [])
+  const intentBySignature = new Map(
+    matchingIntents.flatMap((intent) => intent.chainSignature ? [[intent.chainSignature, intent] as const] : [])
   );
 
   let processed = 0;
@@ -179,11 +181,34 @@ export async function processObservedBgAssetEvents(
       continue;
     }
 
-    // The transaction-intent reconciler independently validates the complete
-    // finalized envelope, exact transfer and intent, then posts the ledger.
-    if (intentSignatures.has(event.signature)) {
-      await setEventStatus(db, event.id, "ignored");
-      ignored += 1;
+    // The transaction-intent reconciler owns events associated with a
+    // BrightGlobe intent. Wait while it verifies/settles; quarantine terminal
+    // mismatches instead of silently dropping chain activity.
+    const matchingIntent = intentBySignature.get(event.signature);
+    if (matchingIntent) {
+      if (matchingIntent.status === "finalized" && matchingIntent.ledgerPostedAt !== null) {
+        await setEventStatus(db, event.id, "ignored");
+        ignored += 1;
+      } else if (
+        matchingIntent.status === "submitted" ||
+        matchingIntent.status === "confirmed" ||
+        matchingIntent.status === "finalized"
+      ) {
+        // The intent verifier may still be waiting for a finalized transaction
+        // or retrying ledger settlement. Leave this event observed.
+      } else {
+        await recordEventDiscrepancy(db, {
+          eventId: event.id,
+          signature: event.signature,
+          slot: event.slot,
+          eventType: event.eventType,
+          reason: "chain_event_belongs_to_failed_or_expired_transaction_intent",
+          payload,
+          expected: { intentStatus: matchingIntent.status }
+        });
+        await setEventStatus(db, event.id, "quarantined");
+        quarantined += 1;
+      }
       continue;
     }
 

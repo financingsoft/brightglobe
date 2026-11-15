@@ -103,13 +103,12 @@ try {
   await page.waitForTimeout(500);
   await page.screenshot({ path: resolve(outputRoot, "home-375x667.png") });
 
-  const forceTab = page.getByText("发现原力", { exact: true }).last();
-  await forceTab.click();
+  await page.goto(`http://127.0.0.1:${port}${basePath}/tasks`, { waitUntil: "networkidle", timeout: 60000 });
+  await page.getByText("发现原力", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
   await page.waitForTimeout(350);
   await page.screenshot({ path: resolve(outputRoot, "discover-force-375x667.png") });
 
-  const profileTab = page.getByText("我的", { exact: true }).last();
-  await profileTab.click();
+  await page.goto(`http://127.0.0.1:${port}${basePath}/profile`, { waitUntil: "networkidle", timeout: 60000 });
   await page.waitForTimeout(350);
   await page.screenshot({ path: resolve(outputRoot, "my-375x667.png") });
 

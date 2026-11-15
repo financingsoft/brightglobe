@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { AppScreen } from "@/components/ui";
 import { useI18n, type Locale } from "@/i18n/locale";
 import { useAuth, type AuthSession } from "@/auth/session";
+import { WalletSignInButton } from "@/wallet/WalletSignInButton";
 
 function maskPhone(phoneNumber: string | null | undefined) {
   if (!phoneNumber) return "—";
@@ -197,6 +198,9 @@ export default function SettingsScreen() {
         ) : null}
       </View>
 
+      {isAuthenticated && !isPreviewAccount && authMethod === "email" ? (
+        <WalletSignInButton />
+      ) : null}
       {isAuthenticated && !isPreviewAccount && authMethod === "wallet" ? (
         <Pressable style={styles.row} onPress={() => router.push("/login")}>
           <Text style={styles.label}>{t("绑定邮箱账户", "Link an email account")}</Text>

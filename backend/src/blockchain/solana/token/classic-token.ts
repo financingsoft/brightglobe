@@ -1,10 +1,11 @@
 import {
+  TOKEN_PROGRAM_ADDRESS,
   AccountState,
   getMintDecoder,
   getTokenDecoder
 } from "@solana-program/token";
 
-export const CLASSIC_SPL_TOKEN_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+export const CLASSIC_SPL_TOKEN_PROGRAM_ID = TOKEN_PROGRAM_ADDRESS;
 
 const MINT_ACCOUNT_SIZE = 82;
 const TOKEN_ACCOUNT_SIZE = 165;

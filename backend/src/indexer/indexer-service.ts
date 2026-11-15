@@ -735,6 +735,17 @@ export async function scanConfiguredBgAsset(
         parsedTokenAccount.mint !== mintAddress ||
         parsedTokenAccount.state === "uninitialized"
       ) {
+        await recordReconciliationDiscrepancy(db, {
+          network: "devnet",
+          assetId: asset.id,
+          discrepancyType: "new_token_account_snapshot_mismatch",
+          expected: { ownerAddress, mintAddress, tokenAccountAddress: account.address },
+          observed: {
+            ownerAddress: parsedTokenAccount.owner,
+            mintAddress: parsedTokenAccount.mint,
+            state: parsedTokenAccount.state
+          }
+        });
         await db.update(chainIndexerSources)
           .set({ status: "ignored", updatedAt: new Date() })
           .where(eq(chainIndexerSources.id, source.id));

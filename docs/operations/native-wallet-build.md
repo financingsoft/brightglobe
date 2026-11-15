@@ -30,11 +30,15 @@ The app is configured for iOS/iPadOS and Android. iOS builds can be produced by 
 
 - Only Solana Devnet is configured in AppKit.
 - Phantom and Solflare custom connectors are pinned to Devnet.
-- Wallet sign-in and identity linking request only `solana_signMessage`.
-- The app does not request transaction signatures or transaction submission.
+- Wallet sign-in and identity linking use `solana_signMessage` only.
+- The BG transfer panel may request `solana_signAndSendTransaction` only for a server-created, Devnet-only, unsigned classic-SPL transfer intent, and only when the BG Devnet asset is explicitly active with a verified mint and decimals.
+- The wallet signs and broadcasts the exact transaction; BrightGlobe never receives a private key. A wallet-returned signature is only a submission report, not final settlement.
+- No arbitrary transaction signing, swap, bridge, staking, on-ramp or Mainnet transaction workflow is enabled.
 - AppKit swaps, on-ramp, email/social login, and analytics are disabled.
 - BrightGlobe wallet-session tokens are stored in iOS Keychain / Android Keystore through Expo SecureStore.
 - Reown connection persistence uses AsyncStorage and does not contain wallet private keys.
+- Native receive QR rendering uses `react-native-qrcode-svg`; recipient QR scanning uses `expo-camera` and requests camera permission only after the user taps Scan. The QR contains a wallet address only, not a payment amount or Solana Pay request.
+- Clipboard copy uses `expo-clipboard`.
 - BD remains the legacy internal ledger and is not converted into BG or assigned to a new wallet-only identity.
 
 ## Reown license and commercial threshold

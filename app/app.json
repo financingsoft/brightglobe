@@ -8,7 +8,10 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.financingsoft.brightglobe"
+      "bundleIdentifier": "com.financingsoft.brightglobe",
+      "infoPlist": {
+        "LSApplicationQueriesSchemes": ["phantom", "solflare"]
+      }
     },
     "android": {
       "package": "com.financingsoft.brightglobe"

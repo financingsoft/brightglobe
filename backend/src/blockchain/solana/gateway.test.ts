@@ -14,7 +14,8 @@ function rpcMock(overrides: Partial<SolanaRpcClient> = {}): SolanaRpcClient {
       return values[method] as T;
     },
     getHealth: async () => "ok",
-    getLatestBlockhash: async () => ({ context: { slot: 100 }, value: { blockhash: "hash", lastValidBlockHeight: 120 } }),
+    getBlockHeight: async () => 90,
+    getLatestBlockhash: async () => ({ context: { slot: 100 }, value: { blockhash: "11111111111111111111111111111111", lastValidBlockHeight: 120 } }),
     getSignatureStatuses: async () => ({ context: { slot: 100 }, value: [] }),
     ...overrides
   };
@@ -48,4 +49,16 @@ test("validates account info response shape", async () => {
   const result = await gateway.getAccountInfo("11111111111111111111111111111111");
   assert.equal(result.contextSlot, 12);
   assert.equal(result.account, null);
+});
+
+
+test("exposes validated recent blockhash and block height for transaction intents", async () => {
+  const gateway = createSolanaGateway("https://example.com", rpcMock());
+  const [blockhash, blockHeight] = await Promise.all([
+    gateway.getLatestBlockhash("confirmed"),
+    gateway.getBlockHeight("confirmed")
+  ]);
+  assert.equal(blockhash.blockhash, "11111111111111111111111111111111");
+  assert.equal(blockhash.lastValidBlockHeight, 120);
+  assert.equal(blockHeight, 90);
 });

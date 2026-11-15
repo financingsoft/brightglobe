@@ -1,11 +1,26 @@
 # BrightGlobe Black Diamond (BD) Single-Asset Economy Contract
 
-**Status:** Binding product/economy direction; implementation, issuance, sale, advertiser settlement and Mainnet activation are not authorized by this document.  
+**Status:** Historical BD-only economy proposal; its single-asset assumptions are superseded for new BG blockchain development by the 2026-11-15 amendment below. BD V1.0 remains an internal PostgreSQL ledger. No token issuance, sale, advertiser settlement or Mainnet activation is authorized by this document.  
 **Revision:** 1.0 · 2026-11-13  
 **Supersedes:** Conflicting Gold/BG/PRE dual-layer tokenomics, token allocation and reward-distribution decisions in earlier economy documents. Historical documents remain for traceability only.  
 **Applies to:** Black Diamond asset, user rewards, advertiser and merchant activity, marketplace utility, platform reserve, token release, open-market policy, accounting, risk controls and release gates.
 
+## 2026-11-15 superseding amendment — separate BD and BG asset domains
 
+**Authority:** Approved BrightGlobe Blockchain Foundation design and implementation plan dated 2026-11-15. This amendment supersedes conflicting statements in this historical proposal that BD replaces BG or that BrightGlobe has only one asset.
+
+Current asset boundaries:
+- **BD** remains the V1.0 internal reward/accounting unit defined by the BD Internal Ledger Contract. Existing BD tables, IDs, history and accounting behavior remain unchanged.
+- **BG** is a separate planned Solana asset. Its current database record is a Devnet-only draft placeholder using the classic SPL Token program. Mint address and decimals are unset.
+- The canonical identity, wallet sign-in, BG asset registry, BG ledger, transaction lifecycle and chain-indexer foundation are separate from the legacy BD ledger.
+- A wallet signature is an external wallet authentication proof. It does not create a custodial wallet or token account and does not authorize asset movement.
+- No Mainnet mint, minting, burning, transfer, reward activation, exchange listing, or BG distribution is authorized by this amendment.
+- Historical Gold/BG/PRE single-asset or dual-asset decisions remain preserved for audit traceability. They must not be used to rename, convert or migrate BD balances into BG.
+- Any future economic conversion, purchase, reward distribution, advertiser settlement, DEX/CEX or token launch requires a new explicit economic and compliance approval.
+
+For current implementation details, use [BrightGlobe Blockchain Foundation](./blockchain-foundation/README.md). For BD ledger behavior, continue to use [BrightGlobe 1.0 BD Internal Ledger Contract](./BRIGHTGLOBE_V1_BD_LEDGER_CONTRACT.md).
+
+---
 
 ## V1.0 release-scope amendment — 2026-11-13
 

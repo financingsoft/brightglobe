@@ -1,8 +1,11 @@
 import { Hono } from "hono";
 import type { AppEnvironment } from "../config/env.js";
-import { createSolanaRpcClient } from "../blockchain/solana/rpc-client.js";
+import { createSolanaGateway, type SolanaGateway } from "../blockchain/solana/gateway.js";
 
-export function createSolanaRoutes(env: AppEnvironment) {
+export function createSolanaRoutes(
+  env: AppEnvironment,
+  gatewayFactory: (endpoint: string) => SolanaGateway = (endpoint) => createSolanaGateway(endpoint)
+) {
   const routes = new Hono();
 
   routes.get("/status", async (context) => {
@@ -15,13 +18,12 @@ export function createSolanaRoutes(env: AppEnvironment) {
     }
 
     try {
-      const rpc = createSolanaRpcClient(env.SOLANA_RPC_URL);
-      const health = await rpc.getHealth();
+      const status = await gatewayFactory(env.SOLANA_RPC_URL).getDevnetStatus();
       return context.json({
         network: env.SOLANA_NETWORK,
         enabled: true,
-        rpc: health === "ok" ? "healthy" : "unhealthy"
-      }, health === "ok" ? 200 : 503);
+        rpc: status.healthy ? "healthy" : "unhealthy"
+      }, status.healthy ? 200 : 503);
     } catch {
       return context.json({
         network: env.SOLANA_NETWORK,

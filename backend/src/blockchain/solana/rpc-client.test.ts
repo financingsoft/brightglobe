@@ -58,3 +58,35 @@ test("validates timeout bounds", () => {
     /timeout/
   );
 });
+
+test("retries transient HTTP failures within the configured bound", async () => {
+  let attempts = 0;
+  const client = createSolanaRpcClient("https://api.devnet.solana.com", {
+    maxRetries: 2,
+    fetchImpl: async (_input, init) => {
+      attempts += 1;
+      const body = JSON.parse(String(init?.body)) as { id: number };
+      if (attempts === 1) return jsonResponse({}, 503);
+      return jsonResponse({ jsonrpc: "2.0", id: body.id, result: "ok" });
+    }
+  });
+  assert.equal(await client.getHealth(), "ok");
+  assert.equal(attempts, 2);
+});
+
+test("does not retry deterministic client HTTP errors", async () => {
+  let attempts = 0;
+  const client = createSolanaRpcClient("https://api.devnet.solana.com", {
+    maxRetries: 3,
+    fetchImpl: async () => {
+      attempts += 1;
+      return jsonResponse({}, 400);
+    }
+  });
+  await assert.rejects(client.getHealth(), /HTTP 400/);
+  assert.equal(attempts, 1);
+});
+
+test("bounds retry configuration", () => {
+  assert.throws(() => createSolanaRpcClient("https://api.devnet.solana.com", { maxRetries: 4 }), /retries/);
+});

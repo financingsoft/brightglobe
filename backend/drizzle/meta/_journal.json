@@ -15,6 +15,111 @@
       "when": 1794574282973,
       "tag": "0002_bd_internal_ledger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794700800000,
+      "tag": "0003_canonical_identity",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794700860000,
+      "tag": "0004_wallet_auth",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794700920000,
+      "tag": "0005_asset_ledger",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794700980000,
+      "tag": "0006_asset_transaction_lifecycle",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794701040000,
+      "tag": "0007_chain_indexer",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794701100000,
+      "tag": "0008_bg_asset_placeholder",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794701160000,
+      "tag": "0009_wallet_identity_linking",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794701220000,
+      "tag": "0010_wallet_auth_rate_limits",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794701280000,
+      "tag": "0011_canonical_user_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794701340000,
+      "tag": "0012_indexer_source_cursors",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794701400000,
+      "tag": "0013_indexer_sources",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794701460000,
+      "tag": "0014_transaction_status_polling",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794701520000,
+      "tag": "0015_asset_system_account_unique",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1794701580000,
+      "tag": "0016_asset_transaction_ledger_settlement",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794701640000,
+      "tag": "0017_ledger_balance_projection_trigger",
+      "breakpoints": true
     }
   ]
 }

@@ -1,8 +1,10 @@
 > **V1.0 scope notice (2026-11-13): Not part of V1.0.** This document is retained as a future-release proposal only. BrightGlobe 1.0 does not provision user wallets, store wallet-provider identities, create token accounts or offer signing / transfer flows. Follow the [V1.0 App Core Contract](./BRIGHTGLOBE_V1_APP_CORE_CONTRACT.md) instead.
 
+> **2026-11-15 architecture amendment:** This earlier embedded-wallet proposal is superseded for the current blockchain foundation by [Blockchain Foundation](./blockchain-foundation/README.md) and its approved design. The implemented wallet capability is external, non-custodial Solana message-signature authentication with canonical identity linking. It does not provision an embedded wallet, store keys, create token accounts, or sign/submit asset transactions. Privy and other embedded-wallet providers are not selected or integrated. The old Better Auth-only identity and Better Auth user-ID binding sections below are historical and must not override the UUIDv7 canonical identity design.
+
 # BrightGlobe Solana Embedded Wallet Contract
 
-**Status:** Binding architecture design; provider integration not implemented  
+**Status:** Historical embedded-wallet proposal; superseded for current identity and wallet-auth implementation  
 **Revision:** 1.0 · 2026-11-13
 
 ## Decisions

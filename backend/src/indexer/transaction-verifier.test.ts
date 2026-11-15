@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { matchesFinalizedTransferIntent, type TransferEventLike } from "./transaction-verifier.js";
+import { matchesFinalizedTransferIntent, matchesFinalizedTransactionEnvelope, type TransferEventLike } from "./transaction-verifier.js";
 
 const expected = {
   fromAddress: "source-owner",
@@ -44,4 +44,19 @@ test("rejects wrong amount, mint, source owner, destination account, slot or eve
   for (const candidate of cases) {
     assert.equal(matchesFinalizedTransferIntent([candidate], expected, sourceAccounts, destinationAccounts), false);
   }
+});
+
+
+test("binds a finalized transaction to its submitted signature, recent blockhash and slot", () => {
+  const transaction = {
+    slot: 900,
+    transaction: {
+      signatures: ["submitted-signature"],
+      message: { recentBlockhash: "intent-blockhash" }
+    }
+  };
+  assert.equal(matchesFinalizedTransactionEnvelope(transaction, "submitted-signature", "intent-blockhash", 900n), true);
+  assert.equal(matchesFinalizedTransactionEnvelope(transaction, "other-signature", "intent-blockhash", 900n), false);
+  assert.equal(matchesFinalizedTransactionEnvelope(transaction, "submitted-signature", "other-blockhash", 900n), false);
+  assert.equal(matchesFinalizedTransactionEnvelope(transaction, "submitted-signature", "intent-blockhash", 901n), false);
 });

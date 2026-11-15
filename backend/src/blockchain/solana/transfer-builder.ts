@@ -1,5 +1,6 @@
 import {
   address,
+  blockhash,
   appendTransactionMessageInstructions,
   compileTransaction,
   createNoopSigner,
@@ -7,7 +8,6 @@ import {
   getBase64EncodedWireTransaction,
   setTransactionMessageFeePayer,
   setTransactionMessageLifetimeUsingBlockhash,
-  type Blockhash
 } from "@solana/kit";
 import {
   TOKEN_PROGRAM_ADDRESS,
@@ -133,7 +133,7 @@ export async function buildClassicSplTransferTransaction(
   const emptyMessage = createTransactionMessage({ version: 0 });
   const withFeePayer = setTransactionMessageFeePayer(feePayer.address, emptyMessage);
   const withLifetime = setTransactionMessageLifetimeUsingBlockhash({
-    blockhash: address(input.recentBlockhash) as Blockhash,
+    blockhash: blockhash(input.recentBlockhash),
     lastValidBlockHeight: input.lastValidBlockHeight
   }, withFeePayer);
   const message = appendTransactionMessageInstructions(

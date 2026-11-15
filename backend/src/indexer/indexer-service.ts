@@ -588,8 +588,12 @@ export async function scanConfiguredBgAsset(
   transactionStatusSync: { checked: number; confirmed: number; finalized: number; failed: number; expired: number };
 }> {
   const maxSourcesPerRun = input.maxSourcesPerRun ?? 10;
+  const maxSlotsPerSource = input.maxSlotsPerSource ?? 5000n;
   if (!Number.isInteger(maxSourcesPerRun) || maxSourcesPerRun < 1 || maxSourcesPerRun > 50) {
     throw new RangeError("Indexer source batch must be between 1 and 50 token accounts.");
+  }
+  if (maxSlotsPerSource < 1n || maxSlotsPerSource > 100_000n) {
+    throw new RangeError("Indexer slot range per source must be between 1 and 100000 slots.");
   }
   if (input.fromSlot < 0n || input.toSlot < input.fromSlot) {
     throw new RangeError("Indexer slot range is invalid.");
@@ -678,11 +682,14 @@ export async function scanConfiguredBgAsset(
     const sourceFromSlot = lastSlot === undefined ? source.firstSeenSlot : lastSlot + 1n;
     if (sourceFromSlot > input.toSlot) continue;
 
+    const sourceToSlot = input.toSlot < sourceFromSlot + maxSlotsPerSource - 1n
+      ? input.toSlot
+      : sourceFromSlot + maxSlotsPerSource - 1n;
     const result = await scanFinalizedAddressBatch(db, gateway, {
       address: source.tokenAccountAddress,
       sourceKey,
       fromSlot: sourceFromSlot,
-      toSlot: input.toSlot
+      toSlot: sourceToSlot
     });
     insertedEvents += result.insertedEvents;
   }

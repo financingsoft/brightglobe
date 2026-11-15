@@ -109,7 +109,7 @@ Only explicitly parsed classic SPL Token instructions are classified as supporte
 
 Reconciliation compares internal transaction evidence with finalized chain observations and records discrepancies. It never silently rewrites immutable ledger postings.
 
-The indexing service is implemented as an internal module. No scheduled trigger or operator endpoint is enabled yet; activation requires BG mint configuration, complete source-address configuration, and a separately reviewed operations change.
+The indexing service runs from a Cloudflare Workers scheduled handler every five minutes in the Staging environment only. The handler verifies the Devnet genesis hash, reads the finalized slot, and processes a bounded source batch. It skips safely while BG remains a draft. Production has no configured cron trigger. Once BG mint configuration is approved, complete source-address configuration is required for full coverage; deployment and token activation remain separate approvals.
 
 ## 8. Database migrations and safety
 

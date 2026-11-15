@@ -177,6 +177,9 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
           return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
         })()
       });
+      // Reflect the new short-lived reservation before handing the transaction
+      // to the external wallet for signing.
+      await onAccountRefresh().catch(() => undefined);
 
       const walletProvider = provider as {
         request: (

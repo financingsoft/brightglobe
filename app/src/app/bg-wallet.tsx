@@ -46,6 +46,8 @@ export default function BgWalletScreen() {
   }, [isAuthenticated, isPreviewAccount, authMethod, locale]);
 
   const isDraft = account?.status !== "active" || account?.decimals === null;
+  const reservedBaseUnits = account?.reservedBaseUnits ?? "0";
+  const hasReservedBalance = /^\d+$/.test(reservedBaseUnits) && BigInt(reservedBaseUnits) > 0n;
 
   return (
     <AppScreen>
@@ -59,12 +61,12 @@ export default function BgWalletScreen() {
 
       <View style={styles.balanceCard}>
         <Text style={styles.eyebrow}>BRIGHTGLOBE · BG</Text>
-        <Text style={styles.balanceLabel}>{t("账户余额", "Account balance")}</Text>
+        <Text style={styles.balanceLabel}>{t("可用 BG 余额", "Spendable BG balance")}</Text>
         {loading ? (
           <ActivityIndicator color="#EAF2FF" />
         ) : (
           <Text style={styles.balanceValue}>
-            {account ? formatAssetBaseUnits(account.balanceBaseUnits, account.decimals) : "—"}
+            {account ? formatAssetBaseUnits(account.spendableBaseUnits ?? account.balanceBaseUnits, account.decimals) : "—"}
           </Text>
         )}
         <Text style={styles.assetCode}>BG</Text>
@@ -109,6 +111,12 @@ export default function BgWalletScreen() {
         <BgTransferPanel decimals={account!.decimals!} onAccountRefresh={reloadAccount} />
       ) : null}
 
+      {hasReservedBalance ? (
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>{t("待处理转账预留", "Reserved for pending transfers")}</Text>
+          <Text style={styles.infoValue}>{formatAssetBaseUnits(reservedBaseUnits, account?.decimals ?? null)} BG</Text>
+        </View>
+      ) : null}
       <View style={styles.infoRow}>
         <Text style={styles.infoLabel}>{t("资产状态", "Asset status")}</Text>
         <Text style={styles.infoValue}>{account?.status ?? "—"}</Text>

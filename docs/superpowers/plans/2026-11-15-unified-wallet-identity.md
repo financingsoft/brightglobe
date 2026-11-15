@@ -1,160 +1,186 @@
-# BrightGlobe Unified Wallet Identity Implementation Plan
+# BrightGlobe Canonical Identity and Wallet Authentication Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> Native execution: implement directly, one task at a time. Do not delegate to subagents. Complete a task, report its verification, and stop for the user's next instruction.
 
-**Goal:** Add wallet-first registration/login and wallet binding to the existing Better Auth identity without requiring an email for wallet-only users.
+**Goal:** Establish a clean BrightGlobe identity system with UUIDv7 canonical users, retain Better Auth for email authentication, and support wallet-only Solana authentication through a separate secure session mechanism.
 
-**Architecture:** Keep one BrightGlobe user row and one Better Auth session system. Store wallet ownership and one-time challenges in dedicated tables; issue wallet sessions through a supported Better Auth extension path. The first task is a hard compatibility gate for nullable email in the exact pinned Better Auth 1.7.23 + Drizzle adapter. No placeholder email is permitted; if the gate fails, stop for an architecture decision rather than building an unsafe workaround.
+**Architecture:** A BrightGlobe-owned canonical identity is the sole business user identity. Better Auth 1.7.23 remains the email authentication provider, but its user ID is only a provider identity. Wallet-only users are created directly in the canonical identity system and authenticated through a separate wallet-session mechanism. Shared middleware resolves both session types to `canonicalUserId`.
 
 **Tech Stack:** TypeScript, Better Auth 1.7.23, Drizzle ORM, Neon PostgreSQL, Hono, Cloudflare Workers, WebCrypto Ed25519.
 
 **Spec:** `docs/superpowers/specs/2026-11-15-unified-wallet-identity.md`
 
-## Global Constraints
+## Hard constraints
 
-- Keep Better Auth and `@better-auth/drizzle-adapter` pinned at `1.7.23`; do not upgrade as part of this work.
-- Keep wallet-only users free of synthetic or placeholder email addresses.
-- Preserve one shared BrightGlobe User ID and Better Auth session model.
-- A wallet address can belong to only one user; one user may bind multiple wallets.
-- Challenges are single-use, short-lived, domain/origin-bound, network-bound, and atomically consumed.
+- Do not attempt to make Better Auth 1.7.23 accept `email: null`; its core schema requires a string.
+- Do not use synthetic/placeholder emails.
+- Do not migrate or recreate the old Better Auth users, sessions, accounts, verification records, or old user profiles.
+- Existing users must register again after release.
+- Keep Better Auth's empty schema needed for email authentication; do not drop tables without a separately reviewed dependency analysis.
+- Generate UUIDv7 canonical IDs on the server only.
+- Every business route receives a canonical user identity; never authorize business operations using a provider-local Better Auth user ID.
+- Wallet addresses are unique owners; one canonical user may bind multiple wallets.
+- Challenges are short-lived, single-use, origin/network/intent-bound, and atomically consumed.
 - Never collect or store wallet private keys or seed phrases.
-- Preserve existing email login, profile data, and all BD tables/records.
-- Work only in local tests and Staging/Devnet; never modify Production Worker `globe` or Production Neon.
+- Do not rename, convert, or mutate historical BD data.
+- Work locally and in Staging/Devnet only. Never modify Production Worker `globe` or Production Neon.
 - Do not enable Mainnet, mint BG, initiate transfers, or enable rewards.
 
-## Review Focus
+## Review focus
 
-- A wallet address already owned by another user must never be linked or used to take over that account.
-- An expired, altered, wrong-domain, wrong-network, or already-consumed challenge must be rejected.
-- Concurrent submissions of one challenge must produce at most one successful session/link operation.
-- A wallet-only user must be representable without an email, and existing email users must remain unchanged.
-- A user must not be able to remove their only usable sign-in method and lock themselves out.
+- Better Auth's email-authenticated user is created independently, then mapped transactionally to exactly one canonical identity.
+- Wallet-only registration creates a canonical identity without creating a Better Auth user.
+- Both session types resolve to the same canonical identity contract.
+- Expired, altered, wrong-domain, wrong-network, wrong-intent, or consumed challenges are rejected.
+- Concurrent challenge consumption and identity linking cannot create duplicate ownership or sessions.
+- Session revocation, cookie handling, CSRF, CORS, and origin checks are safe for both session mechanisms.
+- No old user records or profile data are silently reintroduced.
+- No production or chain state is modified.
 
 ---
 
-### Task 1: Prove Better Auth 1.7.23 supports wallet-only users
+### Task 1: Verify the actual Staging reset state and schema boundary
 
-**Files:**
-- Create: `backend/src/auth/wallet-compatibility.test.ts`
-- Inspect only: `backend/src/auth.ts`, `backend/src/db/schema.ts`, installed Better Auth 1.7.23 and Drizzle adapter types/runtime
+**Files:** No application files initially. Inspect existing Staging schema and migrations only.
 
-**Interfaces:**
-- Produces: a tested compatibility decision for nullable `user.email`, user serialization, and creating a standard Better Auth session for a wallet-authenticated user.
-- This task does not change production code or database schema.
+**Interfaces:** Produce a verified inventory of authentication tables, foreign-key dependencies, and row counts. This is a read-only task.
 
-- [ ] **Step 1: Add failing compatibility tests** for creating a user with `email: null`, reading that user through the Better Auth adapter, creating a session, and resolving the session user.
-- [ ] **Step 2: Run the focused test** with the project's test runner and record the exact failure point, if any.
-- [ ] **Step 3: Inspect the exact 1.7.23 runtime and adapter contracts**; test only documented/supported extension points for wallet-created users and session issuance. Do not cast around required email types or inject a fake email.
-- [ ] **Step 4: Run the focused test again** and record PASS only if the full create-user → create-session → read-session path works with a null email.
-- [ ] **Step 5: Gate:** if unsupported, stop here and ask for approval of the smallest safe adjustment. Do not proceed to Tasks 2–6 and do not silently upgrade Better Auth or split the auth system.
+- [ ] Confirm the target is the Staging Neon project/branch, not Production.
+- [ ] Inspect the current table list, constraints, and foreign keys.
+- [ ] Verify Better Auth user/account/session/verification records and old user_profile records are absent; do not assume the prior cleanup report is sufficient.
+- [ ] Verify BD and other non-authentication business tables were not truncated or altered.
+- [ ] Identify which empty Better Auth tables must remain for email authentication.
+- [ ] Record findings in a staging-reset verification report. Do not perform additional destructive cleanup in this task.
 
-### Task 2: Add wallet and challenge persistence
+### Task 2: Design canonical identity and provider mapping schema
 
 **Files:**
 - Modify: `backend/src/db/schema.ts`
-- Create: `backend/src/db/migrations/<generated-wallet-identity-migration>`
-- Create: `backend/src/db/wallet-identity.test.ts`
+- Create: `backend/src/db/migrations/<generated-canonical-identity-migration>`
+- Create: focused schema tests
 
 **Interfaces:**
-- Produces: `userWallets` and `walletChallenges` Drizzle tables.
-- `userWallets`: stable ID, `userId` FK, canonical Solana address, network, verified timestamp, created timestamp; unique address constraint and user lookup index.
-- `walletChallenges`: stable ID, wallet address, intent (`login` or `link`), nonce hash, exact message, expected origin/domain, network, expiry, consumed timestamp, optional requesting user ID; unique nonce hash and expiry index.
+- `canonicalUsers`: UUIDv7 primary key, status, created/updated timestamps, optional lifecycle timestamps.
+- `authIdentities`: stable ID, canonical user FK, provider type, provider subject, timestamps; unique(provider, providerSubject).
+- Provider types initially include Better Auth email identity and Solana wallet identity. Wallet ownership may be represented in a dedicated wallet table if that yields clearer network/address constraints.
+- All new identity tables use restrictive/intentional FK behavior; no cascade may erase business history unintentionally.
 
-- [ ] **Step 1: Add schema tests** for unique wallet ownership, valid intents/network values, user FK behavior, and challenge expiry/consumption fields.
-- [ ] **Step 2: Run focused tests** and verify they fail because the tables are absent.
-- [ ] **Step 3: Implement the two tables** and make `user.email` nullable only if Task 1 proved this works end-to-end. Keep its unique constraint; PostgreSQL permits multiple NULL values in a unique column.
-- [ ] **Step 4: Generate and inspect the migration**; ensure it does not rewrite or delete existing user, profile, or BD data.
-- [ ] **Step 5: Run schema tests and migration validation** against an isolated test database.
+- [ ] Write schema and constraint tests first.
+- [ ] Ensure UUIDv7 generation is server-side and has a testable abstraction.
+- [ ] Add the minimum schema and migration without changing old BD tables or dropping Better Auth tables.
+- [ ] Inspect generated SQL for destructive operations.
+- [ ] Validate migration against an isolated database.
 
-### Task 3: Implement challenge creation and atomic consumption
+### Task 3: Implement UUIDv7 generation and canonical identity service
 
 **Files:**
-- Create: `backend/src/blockchain/solana/challenge.ts`
-- Create: `backend/src/blockchain/solana/challenge.test.ts`
-- Create: `backend/src/services/wallet-challenges.ts`
-- Create: `backend/src/services/wallet-challenges.test.ts`
+- Create: canonical identity service and tests
+- Modify: only the minimum database exports required
 
 **Interfaces:**
-- `createWalletChallenge(input): Promise<WalletChallenge>`
-- `consumeWalletChallenge(input): Promise<ConsumedWalletChallenge | null>`
-- Reuse `decodeSolanaAddress` and `verifySolanaMessageSignature` from the existing Solana module.
+- Create canonical identity with backend-generated UUIDv7.
+- Resolve provider identity to canonical user.
+- Enforce one-to-one provider-subject mapping and active-user checks.
+- Make creation and mapping atomic.
 
-- [ ] **Step 1: Write tests** for cryptographically random nonce generation, exact message contents, TTL, origin/network binding, and invalid address rejection.
-- [ ] **Step 2: Write tests** proving expired, altered, wrong-intent, wrong-origin, and previously consumed challenges are rejected.
-- [ ] **Step 3: Write a concurrency test** proving two simultaneous consume attempts can yield only one success.
-- [ ] **Step 4: Run focused tests** and confirm expected failures.
-- [ ] **Step 5: Implement challenge creation and a database-atomic consume operation**; store only a hash of the nonce while retaining the exact message needed for signature verification.
-- [ ] **Step 6: Run focused tests** and verify all pass.
+- [ ] Add tests for UUIDv7 shape, uniqueness, ordering expectations, duplicate provider mapping, transaction rollback, and inactive users.
+- [ ] Implement service with transaction boundaries.
+- [ ] Run focused tests and typecheck.
 
-### Task 4: Add Better Auth wallet login and registration
+### Task 4: Bridge Better Auth email sessions to canonical identity
 
 **Files:**
-- Modify: `backend/src/auth.ts`
-- Create: `backend/src/auth/wallet-plugin.ts`
-- Create: `backend/src/auth/wallet-plugin.test.ts`
-- Modify: `backend/src/app.ts` only if route mounting is required by the supported plugin design.
+- Inspect/modify: `backend/src/auth.ts`
+- Create: canonical authentication resolver/middleware and tests
+- Modify authenticated routes only after inventorying current authorization assumptions
 
 **Interfaces:**
-- `POST /api/v1/blockchain/solana/auth/challenge` accepts wallet address and `intent: "login"`.
-- `POST /api/v1/blockchain/solana/auth/verify` accepts challenge ID and signature.
-- Successful verification resolves an existing wallet owner or creates a new wallet-only user, then creates the normal Better Auth session and cookie.
-- The session user shape must be the same shape used by existing authenticated routes.
+- Better Auth continues to create and manage email users and sessions.
+- On successful first email registration, create a canonical user and map Better Auth user ID to it transactionally or through a safe idempotent provisioning hook.
+- On login, resolve Better Auth session user ID through the mapping and expose `canonicalUserId`.
+- Missing mappings must fail closed or invoke a safe idempotent provisioning path; never fall back to treating Better Auth ID as canonical ID.
 
-- [ ] **Step 1: Write route tests** for first-time wallet registration, returning wallet login, malformed signatures, and missing/invalid challenge.
-- [ ] **Step 2: Add tests** proving no email is required and no synthetic email is written.
-- [ ] **Step 3: Implement the wallet auth flow** using the supported Better Auth extension/session API proven in Task 1.
-- [ ] **Step 4: Add rate limits** for challenge issuance and signature verification, with generic public errors that do not leak account existence.
-- [ ] **Step 5: Run wallet route tests and existing Better Auth/session tests**.
+- [ ] Test registration, existing login, missing mapping, duplicate mapping, disabled canonical user, session revocation, and transaction failure.
+- [ ] Test that business handlers receive canonical identity only.
+- [ ] Preserve existing email verification and Resend behavior.
 
-### Task 5: Add authenticated wallet binding and safe unlinking
+### Task 5: Implement wallet challenge and atomic consumption
 
 **Files:**
-- Create: `backend/src/routes/wallets.ts`
-- Create: `backend/src/routes/wallets.test.ts`
-- Modify: `backend/src/app.ts`
-- Modify: `backend/src/auth.ts` only if shared auth hooks/config are needed.
+- Create: `backend/src/blockchain/solana/challenge.ts` and tests
+- Create: wallet challenge persistence service and tests
 
 **Interfaces:**
-- `GET /api/v1/me/wallets` lists the current user's verified wallets.
-- `POST /api/v1/me/wallets/challenge` creates a `link` challenge bound to the authenticated user.
-- `POST /api/v1/me/wallets/verify` verifies and links the wallet.
-- `DELETE /api/v1/me/wallets/:address` unlinks only after re-authentication/ownership checks and only when another usable sign-in method remains.
+- `createWalletChallenge(input)`
+- `consumeWalletChallenge(input)`
+- Reuse existing Solana address and Ed25519 signature verification helpers.
 
-- [ ] **Step 1: Write tests** for successful binding, duplicate same-user binding, cross-user conflict, unauthenticated access, and wrong-user challenge use.
-- [ ] **Step 2: Write tests** preventing removal of the last usable sign-in method.
-- [ ] **Step 3: Implement routes** with ownership checks and transactional uniqueness handling.
-- [ ] **Step 4: Run route tests** and the existing auth/session suite.
+- [ ] Test cryptographically random nonce generation, exact signed message, TTL, origin/network/intent binding, and invalid addresses.
+- [ ] Test expired, altered, wrong-origin, wrong-network, wrong-intent, and consumed challenges.
+- [ ] Test concurrent consumption yields at most one success.
+- [ ] Implement nonce-hash storage and atomic database consumption.
 
-### Task 6: Add optional verified email to wallet-first accounts
+### Task 6: Implement wallet-only registration/login and wallet sessions
 
 **Files:**
-- Modify: `backend/src/auth.ts`
-- Modify: `backend/src/routes/me.ts` or create a focused email-linking route if required by existing patterns.
-- Create: focused email-linking tests.
+- Create: wallet authentication service/routes/session storage and tests
+- Modify: `backend/src/app.ts` only for route mounting
 
 **Interfaces:**
-- Wallet-first users can add an email through Better Auth's verified email flow.
-- An email already owned by another user cannot be attached or used to merge accounts.
-- Existing email/password registration and verification behavior remains unchanged.
+- Challenge endpoint accepts wallet address and login intent.
+- Verify endpoint accepts challenge identifier and signature.
+- First-time wallet login creates canonical user + wallet mapping + secure wallet session atomically.
+- Returning wallet login resolves existing canonical user and issues a new wallet session.
+- No Better Auth user and no email is created for wallet-only registration.
 
-- [ ] **Step 1: Write tests** for adding and verifying an unused email, duplicate email rejection, and attempted cross-account merge.
-- [ ] **Step 2: Implement optional email attachment** using Better Auth-supported change/update email flows.
-- [ ] **Step 3: Run email and wallet auth tests** together.
+- [ ] Test first registration, returning login, invalid signature, replay, expired challenge, duplicate wallet ownership, and inactive canonical user.
+- [ ] Implement secure opaque session tokens stored hashed at rest, with expiry, rotation, revocation, secure cookie policy, and CSRF/origin protection appropriate to the app's H5 client.
+- [ ] Add rate limiting and generic public errors.
+- [ ] Run wallet auth tests.
 
-### Task 7: Full verification and staging-only release
+### Task 7: Implement one shared canonical authentication middleware
 
 **Files:**
-- Modify only if needed: existing CI workflow for tests/migrations; no production configuration changes.
+- Create: shared auth resolver/middleware and comprehensive tests
+- Modify: authenticated route guards to consume the canonical identity context
 
-- [ ] **Step 1: Run** `npm test` in `backend`.
-- [ ] **Step 2: Run** `npm run typecheck` in `backend`.
-- [ ] **Step 3: Run** `npm run build` in `backend` (Cloudflare Worker dry-run).
-- [ ] **Step 4: Validate migrations** against an isolated database and then the existing Staging branch only after explicit confirmation.
-- [ ] **Step 5: Verify wallet login and binding against Solana Devnet only**; confirm Production Worker `globe` and Production Neon were not changed.
-- [ ] **Step 6: Commit the completed implementation in reviewable increments and open a PR; do not merge or deploy Production automatically.**
+**Interfaces:**
+- Resolve valid Better Auth sessions and valid wallet sessions to a common `canonicalUserId`.
+- Expose a single typed identity context to business routes.
+- Enforce canonical-user status and session revocation.
+
+- [ ] Test both session types against the same authorization contract.
+- [ ] Test expired/revoked sessions, CSRF/origin rejection, cookie boundaries, and unknown session types.
+- [ ] Ensure no business route uses provider-local IDs.
+- [ ] Run existing backend auth and route tests.
+
+### Task 8: Add wallet binding and optional verified email
+
+**Files:**
+- Create/modify wallet and email linking routes/services with focused tests
+
+**Interfaces:**
+- Authenticated canonical user can bind additional wallets after proving wallet ownership.
+- A wallet already mapped to another canonical user cannot be taken over.
+- Wallet-first user can add an email through Better Auth's verified email flow and map that provider identity to the existing canonical user.
+- Email already mapped to another canonical user cannot be merged automatically.
+- Unlinking is allowed only after re-authentication and only if another usable sign-in method remains.
+
+- [ ] Test successful binding, duplicate same-user binding, cross-user conflicts, email verification, duplicate email mapping, and last-method lockout prevention.
+- [ ] Implement transactional linking/unlinking.
+- [ ] Run wallet and email linking tests.
+
+### Task 9: Full verification and Staging-only release
+
+- [ ] Run backend unit tests, strict typecheck, build/dry-run, and migration validation.
+- [ ] Apply reviewed migrations to Staging only after confirming the target project and branch.
+- [ ] Verify email signup/login, wallet-only signup/login, linking, shared canonical identity, session revocation, and account status handling.
+- [ ] Verify no historical user records were migrated and no BD data changed.
+- [ ] Verify Production Worker `globe`, Production Neon, Solana Mainnet, mint state, transfers, and rewards remain untouched.
+- [ ] Commit in reviewable increments and open a PR. Do not merge or deploy Production automatically.
 
 ---
 
-## Execution Handoff
+## Execution handoff
 
-The plan deliberately starts with a compatibility gate because Better Auth's documented core user schema requires an email field. The wallet challenge, persistence, and route tasks depend on that result. Review this plan before implementation.
+The previous single-Better-Auth-user / nullable-email plan is obsolete. Better Auth 1.7.23 rejects nullable email at its core schema boundary. The approved design is canonical identity plus separate email and wallet session mechanisms. Start with the read-only Staging state verification (Task 1); do not implement schema or authentication code until that inventory is complete.

@@ -71,7 +71,7 @@ The RPC transport:
 - Verifies the configured endpoint's genesis hash before reporting Devnet healthy.
 - Requests finalized chain data for indexer reads and preserves commitment distinctions.
 
-The classic SPL Token adapter validates the owning program and binary account layout. It supports classic Token Program mint and token-account parsing. Token-2022 is explicitly unsupported by this adapter and must not be misinterpreted as classic SPL Token.
+Before transfer intents or indexing are enabled, the configured mint is fetched at finalized commitment and its owner program and binary mint layout are validated against the classic SPL Token program and configured decimals. The classic SPL Token adapter validates the owning program and binary account layout. It supports classic Token Program mint and token-account parsing. Token-2022 is explicitly unsupported by this adapter and must not be misinterpreted as classic SPL Token.
 
 All token arithmetic uses integer base units and BigInt. Floating-point token arithmetic is prohibited.
 

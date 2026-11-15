@@ -140,8 +140,7 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
       });
       return context.json({
         ...result,
-        status: "created",
-        blockhashContextSlot: blockhash.contextSlot
+        status: "created"
       }, result.replayed ? 200 : 201);
     } catch (error) {
       if (error instanceof AssetNotFoundError) {

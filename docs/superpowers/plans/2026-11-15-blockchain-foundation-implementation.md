@@ -208,7 +208,7 @@ Do not add columns to, rename, drop, truncate, or repoint BD tables. Do not alte
 
 ## 8. Completion definition
 
-Complete means the code foundation and additive migrations 0003–0017 exist on the feature branch; tests, typecheck, and Worker dry-run pass; isolated migration and Devnet read-only verification are documented; email and BD behavior is preserved; no Production resource was changed and no asset-changing chain transaction was submitted; and one PR is open for review.
+Complete means the code foundation and additive migrations 0003–0018 exist on the feature branch; tests, typecheck, and Worker dry-run pass; isolated migration and Devnet read-only verification are documented; email and BD behavior is preserved; no Production resource was changed and no asset-changing chain transaction was submitted; and one PR is open for review.
 
 Completion does not include Staging deployment, applying migrations to the Staging Neon branch, enabling rewards, issuing BG, creating a mint, or launching Mainnet. Each requires separate explicit approval.
 

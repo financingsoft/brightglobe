@@ -34,8 +34,8 @@ const solanaDevnet = {
 } satisfies AppKitNetwork;
 
 const storage = {
-  async getKeys() {
-    return AsyncStorage.getAllKeys();
+  async getKeys(): Promise<string[]> {
+    return [...await AsyncStorage.getAllKeys()];
   },
   async getEntries<T = unknown>() {
     const keys = await AsyncStorage.getAllKeys();

@@ -270,11 +270,19 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
     }
     const cookie = await authClient.getCookie();
     if (!cookie) throw new Error("The verified email session cookie is unavailable.");
-    await walletSessionRequest<{ linked: boolean }>(
-      "/api/v1/identity/link/email",
-      { method: "POST", headers: { Cookie: cookie } },
-      walletSession.token
-    );
+    try {
+      await walletSessionRequest<{ linked: boolean }>(
+        "/api/v1/identity/link/email",
+        { method: "POST", headers: { Cookie: cookie } },
+        walletSession.token
+      );
+    } catch (error) {
+      if (error instanceof WalletAuthError && error.status === 401) {
+        await clearWalletSession();
+        setWalletSession(null);
+      }
+      throw error;
+    }
     await refreshProfile();
   }, [session, walletSession, refreshProfile]);
 

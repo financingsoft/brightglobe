@@ -38,6 +38,8 @@ Classic SPL Token is the only supported token program in this foundation. Token-
 
 Keep the existing Reown AppKit React Native integration (2.0.6) with Phantom and Solflare connectors, restricted to Solana Devnet.
 
+For receive UX, adopt `react-native-qrcode-svg@6.3.54` (MIT) for the linked wallet's public address QR and Expo SDK 58's `expo-clipboard@~58.0.4` (MIT) for copying the address. The QR contains only the public Devnet wallet address; it never contains a secret or a signed transaction.
+
 The transaction flow is:
 
 1. The authenticated user selects a verified, linked Devnet wallet.

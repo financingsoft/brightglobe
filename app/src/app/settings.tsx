@@ -198,7 +198,7 @@ export default function SettingsScreen() {
         ) : null}
       </View>
 
-      {isAuthenticated && !isPreviewAccount && authMethod === "email" ? (
+      {isAuthenticated && !isPreviewAccount && authMethod === "email" && !hasWalletSession ? (
         <WalletSignInButton />
       ) : null}
       {isAuthenticated && !isPreviewAccount && authMethod === "wallet" ? (

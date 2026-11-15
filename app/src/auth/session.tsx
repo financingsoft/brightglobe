@@ -14,6 +14,7 @@ import {
   getWalletSession,
   revokeWalletSession,
   walletSessionRequest,
+  WalletAuthError,
   type WalletSession
 } from "@/wallet/auth";
 
@@ -199,6 +200,10 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
           );
       setAccount(mapCanonicalIdentity(response));
     } catch (error) {
+      if (!sessionUserId && error instanceof WalletAuthError && error.status === 401) {
+        await clearWalletSession();
+        setWalletSession(null);
+      }
       setProfileError(error instanceof Error ? error.message : "Unable to load your profile.");
       throw error;
     } finally {
@@ -228,7 +233,12 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
       .then((response) => {
         if (active) setAccount(mapCanonicalIdentity(response));
       })
-      .catch((error: unknown) => {
+      .catch(async (error: unknown) => {
+        if (!active) return;
+        if (!sessionUserId && error instanceof WalletAuthError && error.status === 401) {
+          await clearWalletSession();
+          if (active) setWalletSession(null);
+        }
         if (active) setProfileError(error instanceof Error ? error.message : "Unable to load your profile.");
       })
       .finally(() => {

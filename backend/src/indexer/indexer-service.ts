@@ -579,6 +579,7 @@ export async function scanConfiguredBgAsset(
     toSlot: bigint;
     additionalOwnerAddresses?: readonly string[];
     maxSourcesPerRun?: number;
+    maxSlotsPerSource?: bigint;
   }
 ): Promise<{
   sourcesScanned: number;

@@ -66,6 +66,8 @@ export type AuthStatus =
 type AuthContextValue = {
   status: AuthStatus;
   authMethod: "email" | "wallet" | "preview" | null;
+  hasWalletSession: boolean;
+  linkEmailIdentity: () => Promise<void>;
   isAuthenticated: boolean;
   isPreviewAccount: boolean;
   previewEnabled: boolean;
@@ -125,6 +127,8 @@ function UnconfiguredAuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(() => ({
     status: preview ? "preview" : "unconfigured",
     authMethod: preview ? "preview" : null,
+    hasWalletSession: false,
+    linkEmailIdentity: unavailable,
     isAuthenticated: preview,
     isPreviewAccount: preview,
     previewEnabled,
@@ -168,6 +172,9 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
     getWalletSession()
       .then((stored) => {
         if (active) setWalletSession(stored);
+      })
+      .catch(() => {
+        if (active) setWalletSession(null);
       })
       .finally(() => {
         if (active) setWalletSessionLoading(false);
@@ -240,6 +247,20 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
     );
     setAccount(mapCanonicalIdentity(response));
   }, []);
+
+  const linkEmailIdentity = useCallback(async () => {
+    if (!session || !walletSession) {
+      throw new Error("Both a verified email session and an active wallet session are required.");
+    }
+    const cookie = await authClient.getCookie();
+    if (!cookie) throw new Error("The verified email session cookie is unavailable.");
+    await walletSessionRequest<{ linked: boolean }>(
+      "/api/v1/identity/link/email",
+      { method: "POST", headers: { Cookie: cookie } },
+      walletSession.token
+    );
+    await refreshProfile();
+  }, [session, walletSession, refreshProfile]);
 
   const sendPhoneOtp = useCallback(async (phoneNumber: string) => {
     const result = await authClient.phoneNumber.sendOtp({ phoneNumber });
@@ -357,6 +378,8 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(() => ({
     status,
     authMethod: session ? "email" : walletSession ? "wallet" : null,
+    hasWalletSession: Boolean(walletSession),
+    linkEmailIdentity,
     isAuthenticated: status === "authenticated",
     isPreviewAccount: false,
     previewEnabled: false,
@@ -381,7 +404,7 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
     enterPreviewAccount: () => undefined
   }), [
     status, session, walletSession, user, account, profileLoading, profileError,
-    acceptWalletSession, sendPhoneOtp, verifyPhoneOtp, signUpEmail, signInEmail,
+    linkEmailIdentity, acceptWalletSession, sendPhoneOtp, verifyPhoneOtp, signUpEmail, signInEmail,
     sendVerificationEmail, requestPasswordReset, resetPassword, refreshProfile,
     updateProfile, loadSessions, revokeSession, revokeOtherSessions, signOut
   ]);

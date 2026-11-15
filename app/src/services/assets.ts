@@ -71,7 +71,7 @@ export async function reportBgTransferSubmitted(
   intentId: string,
   signature: string
 ): Promise<{ id: string; status: string; chainSignature: string; note?: string }> {
-  return apiRequest("/api/v1/assets/transactions/" + encodeURIComponent(intentId) + "/submitted", {
+  return apiRequest<{ id: string; status: string; chainSignature: string; note?: string }>("/api/v1/assets/transactions/" + encodeURIComponent(intentId) + "/submitted", {
     method: "POST",
     body: JSON.stringify({ signature })
   });

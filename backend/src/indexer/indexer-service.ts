@@ -101,7 +101,38 @@ async function verifyFinalizedTransferIntent(
   };
 }
 
-export async function syncPendingTransactionIntents(
+export async function recordFinalizedSettlementFailure(
+  db: Database,
+  intent: typeof assetTransactionIntents.$inferSelect,
+  error: unknown
+): Promise<void> {
+  const discrepancyType = "finalized_intent_ledger_settlement_failed";
+  const [existing] = await db.select({ id: chainReconciliationDiscrepancies.id })
+    .from(chainReconciliationDiscrepancies)
+    .where(and(
+      eq(chainReconciliationDiscrepancies.transactionIntentId, intent.id),
+      eq(chainReconciliationDiscrepancies.discrepancyType, discrepancyType),
+      eq(chainReconciliationDiscrepancies.status, "open")
+    ))
+    .limit(1);
+  if (existing) return;
+  await recordReconciliationDiscrepancy(db, {
+    network: "devnet",
+    assetId: intent.assetId,
+    transactionIntentId: intent.id,
+    discrepancyType,
+    expected: {
+      operation: intent.operation,
+      amountBaseUnits: intent.amountBaseUnits.toString(),
+      ledgerSettlement: "posted"
+    },
+    observed: {
+      error: error instanceof Error ? error.message : "unknown_ledger_settlement_error"
+    }
+  });
+}
+
+async function syncPendingTransactionIntents(
   db: Database,
   gateway: SolanaGateway,
   limit = 50
@@ -131,7 +162,11 @@ export async function syncPendingTransactionIntents(
   for (const intent of pending) {
     try {
       if (intent.status === "finalized") {
-        await settleFinalizedAssetTransaction(db, intent.id);
+        try {
+          await settleFinalizedAssetTransaction(db, intent.id);
+        } catch (error) {
+          await recordFinalizedSettlementFailure(db, intent, error);
+        }
         continue;
       }
       if (!intent.chainSignature) continue;
@@ -223,7 +258,11 @@ export async function syncPendingTransactionIntents(
           chainCommitment: "finalized"
         });
         finalized += 1;
-        await settleFinalizedAssetTransaction(db, intent.id);
+        try {
+          await settleFinalizedAssetTransaction(db, intent.id);
+        } catch (error) {
+          await recordFinalizedSettlementFailure(db, intent, error);
+        }
         continue;
       }
 

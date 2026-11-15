@@ -41,6 +41,9 @@ export async function createAssetTransactionIntent(
 ): Promise<{ intentId: string; replayed: boolean; recentBlockhash: string | null; lastValidBlockHeight: string | null }> {
   if (input.amountBaseUnits <= 0n) throw new RangeError("Asset transaction amount must be positive.");
   if (input.operation === "transfer") {
+    if (input.amountBaseUnits > 18446744073709551615n) {
+      throw new RangeError("Classic SPL Token transfer amounts must fit in an unsigned 64-bit integer.");
+    }
     if (!input.recentBlockhash || !isValidSolanaAddress(input.recentBlockhash) || input.lastValidBlockHeight === null || input.lastValidBlockHeight === undefined || input.lastValidBlockHeight < 0n) {
       throw new TypeError("A valid recent blockhash and last valid block height are required for transfers.");
     }
@@ -109,6 +112,8 @@ export async function createAssetTransactionIntent(
         amountBaseUnits: input.amountBaseUnits,
         fromAddress: input.fromAddress ?? null,
         toAddress: input.toAddress ?? null,
+        recentBlockhash: input.recentBlockhash ?? null,
+        lastValidBlockHeight: input.lastValidBlockHeight ?? null,
         status: "created",
         requestHash,
         idempotencyKey: input.idempotencyKey,

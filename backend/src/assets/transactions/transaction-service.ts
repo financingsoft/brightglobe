@@ -98,7 +98,7 @@ export async function createAssetTransactionIntent(
 
   const now = new Date();
   const intentId = createUuidV7(now.getTime());
-  const expiresAt = input.expiresAt === undefined ? new Date(now.getTime() + 15 * 60 * 1000) : input.expiresAt;
+  const expiresAt = input.expiresAt === undefined ? new Date(now.getTime() + 2 * 60 * 1000) : input.expiresAt;
   try {
     await db.transaction(async (transaction) => {
       await transaction.insert(assetTransactionIntents).values({
@@ -175,11 +175,11 @@ export async function transitionAssetTransaction(
         (fromStatus === "created" || fromStatus === "signed") &&
         intent.expiresAt !== null &&
         intent.expiresAt <= now;
-      const submittedBlockhashExpired =
-        fromStatus === "submitted" &&
+      const blockhashExpired =
+        (fromStatus === "created" || fromStatus === "signed" || fromStatus === "submitted") &&
         input.reason === "blockhash_expired" &&
         intent.lastValidBlockHeight !== null;
-      if (!unsignedExpired && !submittedBlockhashExpired) {
+      if (!unsignedExpired && !blockhashExpired) {
         throw new AssetTransactionConflictError("The transaction intent has not met its expiry conditions.");
       }
     }

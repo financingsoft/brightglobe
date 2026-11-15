@@ -67,6 +67,9 @@ The verify response includes a one-time sessionToken. Store it only in the platf
 - POST /api/v1/identity/link/email
 - POST /api/v1/auth/wallet/logout
 - GET /api/v1/identity/me\n- PATCH /api/v1/identity/profile\n- POST /api/v1/assets/:assetCode/transactions (creates an intent only when the asset is active)\n- POST /api/v1/assets/transactions/:intentId/submitted (records a client-reported signature; does not send it)
+- GET /api/v1/assets/:assetCode/account (internal balance, pending reservations and spendable balance)
+- GET /api/v1/assets/:assetCode/wallet/:ownerAddress (finalized Devnet classic-SPL token-account balance for a wallet already linked to the caller)
+- GET /api/v1/assets/:assetCode/activity (recent settled ledger postings and pending/failed transaction intents)
 
 Challenges expire after five minutes, are single-use, bind the origin/domain/URI/network, and have bounded verification attempts. Wallet sessions expire after 30 days and are stored server-side by SHA-256 token hash only.
 

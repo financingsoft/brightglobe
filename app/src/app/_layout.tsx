@@ -4,10 +4,12 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { View } from "react-native";
 import { LocaleProvider } from "@/i18n/locale";
 import { AuthProvider } from "@/auth/session";
+import { WalletKitProvider } from "@/wallet/WalletKitProvider";
 
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
+      <WalletKitProvider>
       <LocaleProvider>
         <AuthProvider>
           <View style={styles.root}>
@@ -41,6 +43,7 @@ export default function RootLayout() {
           </View>
         </AuthProvider>
       </LocaleProvider>
+      </WalletKitProvider>
     </SafeAreaProvider>
   );
 }

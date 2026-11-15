@@ -23,6 +23,11 @@
         "EMAIL_FROM": "BrightGlobe <noreply@go.globeapps.com>",
         "SOLANA_NETWORK": "devnet",
         "SOLANA_RPC_URL": "https://api.devnet.solana.com"
+      },
+      "triggers": {
+        "crons": [
+          "*/5 * * * *"
+        ]
       }
     }
   },
@@ -31,10 +36,5 @@
     "traces": {
       "enabled": true
     }
-  },
-  "triggers": {
-    "crons": [
-      "*/5 * * * *"
-    ]
   }
 }

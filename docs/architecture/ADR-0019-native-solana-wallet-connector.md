@@ -27,6 +27,10 @@ Use Reown AppKit for React Native with its Solana adapter as the external, non-c
 - Send the native client marker X-BrightGlobe-Client: native so the existing backend resolves the request as brightglobe://auth and returns a native bearer session rather than a browser cookie.
 - The active app and backend network must both be Devnet. Reject or disconnect a wallet session on any unsupported network; never silently switch to Mainnet.
 
+## Commercial licensing gate
+
+Reown AppKit is distributed under the Reown Community License. Before commercial production release, the project owner must review the current license terms, including permitted commercial use, MAU/RPC thresholds, infrastructure requirements, attribution and redistribution obligations. This ADR does not assume that the community license grants unrestricted commercial use. If the intended BrightGlobe deployment exceeds the permitted scope, obtain the required commercial terms or replace the connector before launch.
+
 ## Consequences
 
 - The app requires an Expo development/production native build; Expo Go is not the wallet integration target.

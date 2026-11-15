@@ -99,7 +99,7 @@ created -> signed -> submitted -> confirmed -> finalized
 
 Failure and expiry are terminal states. A submitted transaction is not successful. A finalized transaction must include a chain signature, slot, and finalized commitment. Transition history is append-only.
 
-No public endpoint submits or signs an on-chain transaction in this release. Once a separately approved BG mint is active, a client may create an intent and report a wallet-submitted signature; the API does not submit the transaction. The indexer verifies the finalized transfer instruction against the intent (mint, source owner, destination owner, amount and slot) before marking it finalized. Ledger settlement rejects any intent without this finalized evidence. The transaction-intent API remains unavailable while BG is in draft state.
+No public endpoint submits or signs an on-chain transaction in this release. Once a separately approved BG mint is active, a client may create an intent and report a wallet-submitted signature; the API does not submit the transaction. The indexer verifies the finalized transaction signature and recent blockhash, then verifies the transfer instruction against the intent (mint, source owner, destination owner, amount and slot) before marking it finalized. Ledger settlement rejects any intent without this finalized evidence. The transaction-intent API remains unavailable while BG is in draft state.
 
 ## 7. Indexing and reconciliation
 

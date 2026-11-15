@@ -480,6 +480,8 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
       lastValidBlockHeight: intent.lastValidBlockHeight?.toString() ?? null,
       chainSlot: intent.chainSlot?.toString() ?? null,
       chainCommitment: intent.chainCommitment,
+      ledgerSettled: intent.ledgerPostedAt !== null,
+      ledgerPostedAt: intent.ledgerPostedAt?.toISOString() ?? null,
       createdAt: intent.createdAt.toISOString(),
       updatedAt: intent.updatedAt.toISOString()
     });

@@ -279,6 +279,11 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
       if (!signature) {
         throw new Error("The connected wallet did not return a transaction signature.");
       }
+      try {
+        if (bs58.decode(signature).length !== 64) throw new Error("Invalid transaction signature length.");
+      } catch {
+        throw new Error("The connected wallet returned an invalid Solana transaction signature.");
+      }
 
       const current = { intentId: intent.intentId, signature };
       setPending(current);

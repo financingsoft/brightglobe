@@ -103,6 +103,13 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
     return () => { active = false; };
   }, [isAuthenticated, isPreviewAccount, providerReady, address, linkedWallet]);
 
+  const refreshOnChainBalance = async () => {
+    if (!address || !providerReady || !linkedWallet) return;
+    const snapshot = await getBgOnChainWalletBalance(address);
+    setOnChainBalance(snapshot.onChainBalanceBaseUnits);
+    setOnChainBalanceError("");
+  };
+
   const copyWalletAddress = async () => {
     if (!address) return;
     try {
@@ -142,7 +149,7 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
                 : t("交易已提交，等待 Solana finalized 最终确认。", "Transaction submitted. Waiting for Solana finalized confirmation.")
       );
       if (snapshot.status === "finalized" && snapshot.ledgerSettled) {
-        await onAccountRefresh();
+        await Promise.all([onAccountRefresh(), refreshOnChainBalance()]);
         setPending(null);
         setIdempotencyKey(null);
       } else if (snapshot.status === "failed" || snapshot.status === "expired") {
@@ -229,8 +236,9 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
       await reportBgTransferSubmitted(intent.intentId, signature);
       const snapshot = await getBgAssetTransaction(intent.intentId);
       if (snapshot.status === "finalized" && snapshot.ledgerSettled) {
-        await onAccountRefresh();
+        await Promise.all([onAccountRefresh(), refreshOnChainBalance()]);
         setPending(null);
+        setIdempotencyKey(null);
         setNotice(t("交易已最终确认，账本结算和余额同步均已完成。", "Transaction finalized, ledger settlement completed and balance synchronized."));
       } else if (snapshot.status === "finalized") {
         setNotice(t("链上交易已最终确认，账本仍在结算中。请稍后同步状态，不要重复发送。", "The chain transaction is finalized but ledger settlement is pending. Synchronize later; do not send it again."));

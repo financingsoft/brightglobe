@@ -340,6 +340,16 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
           chainSignature: intent.chainSignature
         }, 409);
       }
+      if (intent.expiresAt !== null && intent.expiresAt <= new Date()) {
+        await transitionAssetTransaction(db, {
+          intentId: intent.id,
+          toStatus: "expired",
+          reason: "intent_expired"
+        });
+        return context.json({
+          error: { code: "TRANSACTION_INTENT_EXPIRED", message: "The transfer intent expired before the wallet received it. Start a new transfer." }
+        }, 409);
+      }
       if (intent.recentBlockhash === null || intent.lastValidBlockHeight === null) {
         return context.json({
           error: { code: "TRANSACTION_BLOCKHASH_MISSING", message: "The transaction intent has no valid recent blockhash window." }

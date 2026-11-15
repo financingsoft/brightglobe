@@ -26,7 +26,7 @@ async function createWallet() {
     { name: "Ed25519" },
     true,
     ["sign", "verify"]
-  );
+  ) as CryptoKeyPair;
   const publicKey = new Uint8Array(await webcrypto.subtle.exportKey("raw", keyPair.publicKey));
   return {
     address: encodeBase58(publicKey),

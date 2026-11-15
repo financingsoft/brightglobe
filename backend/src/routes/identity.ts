@@ -14,6 +14,7 @@ import {
 } from "../db/schema.js";
 import { createUuidV7 } from "../identity/ids.js";
 import { profileUpdateSchema } from "../domain/profile.js";
+import { isSyntheticPhoneEmail } from "../domain/phone.js";
 import { createRequireCanonicalAuth, type CanonicalAuthVariables } from "../middleware/require-canonical-auth.js";
 import { hashWalletSessionToken } from "../auth/wallet/service.js";
 import { readWalletSessionCredential } from "../auth/wallet/cookie.js";
@@ -68,6 +69,9 @@ export function createIdentityRoutes(db: Database, auth: BetterAuthInstance, env
     const emailSession = await auth.api.getSession({ headers: context.req.raw.headers });
     if (!emailSession) {
       return context.json({ error: { code: "EMAIL_SESSION_REQUIRED", message: "Sign in with the email account you want to link." } }, 401);
+    }
+    if (isSyntheticPhoneEmail(emailSession.user.email)) {
+      return context.json({ error: { code: "EMAIL_IDENTITY_REQUIRED", message: "A verified email address is required to link an email identity." } }, 403);
     }
     if (!emailSession.user.emailVerified) {
       return context.json({ error: { code: "EMAIL_NOT_VERIFIED", message: "Verify the email address before linking it." } }, 403);

@@ -29,7 +29,7 @@ Use Reown AppKit for React Native with its Solana adapter as the external, non-c
 
 ## Commercial licensing gate
 
-Reown AppKit is distributed under the Reown Community License. Before commercial production release, the project owner must review the current license terms, including permitted commercial use, MAU/RPC thresholds, infrastructure requirements, attribution and redistribution obligations. This ADR does not assume that the community license grants unrestricted commercial use. If the intended BrightGlobe deployment exceeds the permitted scope, obtain the required commercial terms or replace the connector before launch.
+Reown AppKit is distributed under the Reown AppKit Community License. The current Reown Terms of Service (effective 27 July 2026) state royalty-free usage thresholds of **500 monthly active users or 2,500,000 monthly RPCs**; exceeding either threshold requires a commercial license under the SDK License. The SDK license also requires use of Reown proprietary gateway infrastructure, attribution and redistribution notices, and a copy of the license with distributed applications. Before public distribution, verify the then-current thresholds, license text, required notices, and any paid-tier entitlement. BrightGlobe must not assume unlimited commercial use. If the product approaches either threshold, obtain a commercial license or replace the connector before exceeding it.
 
 ## Consequences
 

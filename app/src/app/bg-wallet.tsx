@@ -33,7 +33,8 @@ export default function BgWalletScreen() {
     }
     setLoading(true);
     setError(null);
-    reloadAccount()
+    getBgAssetAccount()
+      .then((result) => { if (active) setAccount(result); })
       .catch((reason: unknown) => {
         if (!active) return;
         setError(reason instanceof ApiError

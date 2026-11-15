@@ -6,6 +6,8 @@ export type BgAssetAccount = {
   status: "draft" | "active" | "paused" | string;
   decimals: number | null;
   balanceBaseUnits: string;
+  reservedBaseUnits?: string;
+  spendableBaseUnits?: string;
 };
 
 export type BgOnChainWalletBalance = {

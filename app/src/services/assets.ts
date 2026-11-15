@@ -8,6 +8,28 @@ export type BgAssetAccount = {
   balanceBaseUnits: string;
 };
 
+export type BgOnChainWalletBalance = {
+  assetCode: "BG";
+  network: "devnet";
+  ownerAddress: string;
+  mintAddress: string;
+  decimals: number;
+  tokenAccountAddress: string;
+  tokenAccountExists: boolean;
+  accountState?: "initialized" | "frozen";
+  onChainBalanceBaseUnits: string;
+  commitment: "finalized";
+  slot?: string;
+};
+
+export async function getBgOnChainWalletBalance(
+  ownerAddress: string
+): Promise<BgOnChainWalletBalance> {
+  return apiRequest<BgOnChainWalletBalance>(
+    "/api/v1/assets/BG/wallet/" + encodeURIComponent(ownerAddress)
+  );
+}
+
 export type BgAssetTransactionStatus =
   | "created"
   | "signed"

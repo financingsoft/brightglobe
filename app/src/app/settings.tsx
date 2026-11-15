@@ -190,7 +190,7 @@ export default function SettingsScreen() {
                 : t("未验证 / 未登录", "Unverified / signed out")}
           </Text>
         </View>
-        {isAuthenticated && !isPreviewAccount ? (
+        {isAuthenticated && !isPreviewAccount && authMethod === "email" ? (
           <Pressable style={styles.row} onPress={openSessions}>
             <Text style={styles.label}>{t("登录设备", "Signed-in devices")}</Text>
             <Text style={styles.value}>{t("管理设备与会话", "Manage devices and sessions")} ›</Text>
@@ -341,7 +341,7 @@ export default function SettingsScreen() {
             <Text style={styles.dialogCopy}>
               {isPreviewAccount
                 ? t("这只会结束本地预览状态。", "This only ends the local preview state.")
-                : t("退出后需要再次使用手机号验证码登录。", "You will need your phone verification code to sign in again.")}
+                : t("退出后需要重新验证邮箱或连接钱包才能登录。", "You will need to verify your email or reconnect your wallet to sign in again.")}
             </Text>
             <View style={styles.actions}>
               <Pressable onPress={() => setShowLogout(false)} style={styles.dialogButton}><Text style={styles.dialogButtonText}>{t("取消", "Cancel")}</Text></Pressable>

@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, notInArray, or } from "drizzle-orm";
 import type { Database } from "../db/client.js";
 import {
   assetTransactionIntents,
@@ -116,11 +116,32 @@ export async function processObservedBgAssetEvents(
     .where(eq(walletOwnerships.network, "devnet"));
   const userByWallet = new Map(walletRows.map((wallet) => [wallet.address, wallet.canonicalUserId] as const));
 
-  const events = await db.select().from(chainObservedEvents)
+  const activeIntentRows = await db.select({
+    chainSignature: assetTransactionIntents.chainSignature
+  }).from(assetTransactionIntents)
     .where(and(
-      eq(chainObservedEvents.network, "devnet"),
-      eq(chainObservedEvents.processingStatus, "observed")
+      eq(assetTransactionIntents.assetId, input.assetId),
+      or(
+        inArray(assetTransactionIntents.status, ["submitted", "confirmed"]),
+        and(
+          eq(assetTransactionIntents.status, "finalized"),
+          isNull(assetTransactionIntents.ledgerPostedAt)
+        )
+      )
     ))
+    .limit(500);
+  const activeIntentSignatures = activeIntentRows.flatMap((intent) =>
+    intent.chainSignature ? [intent.chainSignature] : []
+  );
+  const eventFilters = [
+    eq(chainObservedEvents.network, "devnet"),
+    eq(chainObservedEvents.processingStatus, "observed")
+  ];
+  if (activeIntentSignatures.length > 0) {
+    eventFilters.push(notInArray(chainObservedEvents.signature, activeIntentSignatures));
+  }
+  const events = await db.select().from(chainObservedEvents)
+    .where(and(...eventFilters))
     .orderBy(
       asc(chainObservedEvents.slot),
       asc(chainObservedEvents.signature),

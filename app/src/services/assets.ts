@@ -71,6 +71,21 @@ export type BgAssetTransactionSnapshot = {
   updatedAt: string;
 };
 
+export type BgAssetActivityItem = {
+  id: string;
+  type: string;
+  deltaBaseUnits: string;
+  status: string;
+  chainSignature: string | null;
+  ledgerSettled: boolean;
+  createdAt: string;
+};
+
+export async function getBgAssetActivity(): Promise<BgAssetActivityItem[]> {
+  const result = await apiRequest<{ items: BgAssetActivityItem[] }>("/api/v1/assets/BG/activity?limit=30");
+  return result.items;
+}
+
 export async function getBgAssetAccount(): Promise<BgAssetAccount> {
   return apiRequest<BgAssetAccount>("/api/v1/assets/BG/account");
 }

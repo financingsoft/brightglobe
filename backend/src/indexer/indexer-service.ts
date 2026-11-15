@@ -792,6 +792,82 @@ export async function scanConfiguredBgAsset(
 
   let insertedEvents = 0;
   for (const source of batch) {
+    const liveAccountInfo = await gateway.getAccountInfo(source.tokenAccountAddress, "finalized");
+    if (!liveAccountInfo.account) {
+      await db.update(chainIndexerSources)
+        .set({ status: "ignored", updatedAt: new Date() })
+        .where(eq(chainIndexerSources.id, source.id));
+      continue;
+    }
+
+    let liveTokenAccount;
+    try {
+      liveTokenAccount = parseClassicSplTokenAccount({
+        owner: liveAccountInfo.account.owner,
+        dataBase64: liveAccountInfo.account.data[0]
+      });
+    } catch {
+      await recordReconciliationDiscrepancy(db, {
+        network: "devnet",
+        assetId: asset.id,
+        discrepancyType: "tracked_token_account_no_longer_valid",
+        expected: { tokenAccountAddress: source.tokenAccountAddress, mintAddress },
+        observed: { accountOwnerProgram: liveAccountInfo.account.owner }
+      });
+      await db.update(chainIndexerSources)
+        .set({ status: "ignored", updatedAt: new Date() })
+        .where(eq(chainIndexerSources.id, source.id));
+      continue;
+    }
+
+    if (
+      liveTokenAccount.mint !== mintAddress ||
+      liveTokenAccount.state === "uninitialized"
+    ) {
+      await recordReconciliationDiscrepancy(db, {
+        network: "devnet",
+        assetId: asset.id,
+        discrepancyType: "tracked_token_account_mint_or_state_changed",
+        expected: { tokenAccountAddress: source.tokenAccountAddress, mintAddress },
+        observed: { mintAddress: liveTokenAccount.mint, state: liveTokenAccount.state }
+      });
+      await db.update(chainIndexerSources)
+        .set({ status: "ignored", updatedAt: new Date() })
+        .where(eq(chainIndexerSources.id, source.id));
+      continue;
+    }
+
+    if (liveTokenAccount.owner !== source.ownerAddress) {
+      const previousCanonicalUserId = canonicalUserByWallet.get(source.ownerAddress) ?? null;
+      const nextCanonicalUserId = canonicalUserByWallet.get(liveTokenAccount.owner) ?? null;
+      if (previousCanonicalUserId && previousCanonicalUserId === nextCanonicalUserId) {
+        await db.update(chainIndexerSources)
+          .set({ ownerAddress: liveTokenAccount.owner, updatedAt: new Date() })
+          .where(eq(chainIndexerSources.id, source.id));
+        source.ownerAddress = liveTokenAccount.owner;
+      } else {
+        await recordReconciliationDiscrepancy(db, {
+          network: "devnet",
+          assetId: asset.id,
+          discrepancyType: "tracked_token_account_owner_changed",
+          expected: {
+            tokenAccountAddress: source.tokenAccountAddress,
+            ownerAddress: source.ownerAddress,
+            canonicalUserId: previousCanonicalUserId
+          },
+          observed: {
+            ownerAddress: liveTokenAccount.owner,
+            canonicalUserId: nextCanonicalUserId,
+            snapshotSlot: liveAccountInfo.contextSlot.toString()
+          }
+        });
+        await db.update(chainIndexerSources)
+          .set({ status: "ignored", updatedAt: new Date() })
+          .where(eq(chainIndexerSources.id, source.id));
+        continue;
+      }
+    }
+
     const sourceKey = `BG:${source.tokenAccountAddress}`;
     const lastSlot = cursorBySource.get(sourceKey);
     const sourceFromSlot = lastSlot === undefined ? source.firstSeenSlot : lastSlot + 1n;

@@ -87,8 +87,9 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
       !isRecord(body) ||
       typeof body.operation !== "string" ||
       typeof body.amountBaseUnits !== "string" ||
-      !/^[1-9][0-9]*$/.test(body.amountBaseUnits) ||
-      typeof body.idempotencyKey !== "string"
+      !/^[1-9][0-9]{0,19}$/.test(body.amountBaseUnits) ||
+      BigInt(body.amountBaseUnits) > 18446744073709551615n ||
+      typeof body.idempotencyKey !== "string" || body.idempotencyKey.length < 1 || body.idempotencyKey.length > 128
     ) {
       return context.json({
         error: { code: "INVALID_REQUEST", message: "Operation, positive integer base units, and idempotency key are required." }

@@ -16,6 +16,10 @@ import { useI18n, type Locale } from "@/i18n/locale";
 import { useAuth, type AuthSession } from "@/auth/session";
 import { WalletSignInButton } from "@/wallet/WalletSignInButton";
 
+function shortenAddress(address: string) {
+  return address.length > 14 ? `${address.slice(0, 6)}…${address.slice(-6)}` : address;
+}
+
 function maskPhone(phoneNumber: string | null | undefined) {
   if (!phoneNumber) return "—";
   if (phoneNumber.length < 8) return phoneNumber;
@@ -52,6 +56,7 @@ export default function SettingsScreen() {
     isPreviewAccount,
     user,
     profile,
+    wallets,
     signOut,
     updateProfile,
     loadSessions,
@@ -190,6 +195,18 @@ export default function SettingsScreen() {
                 : t("未验证 / 未登录", "Unverified / signed out")}
           </Text>
         </View>
+        {wallets.length > 0 ? (
+          <View style={[styles.row, styles.walletIdentityRow]}>
+            <Text style={styles.label}>{t("已验证钱包", "Verified wallets")}</Text>
+            <View style={styles.walletList}>
+              {wallets.map((wallet) => (
+                <Text key={`${wallet.network}:${wallet.address}`} selectable style={styles.value}>
+                  {wallet.network === "devnet" ? "Solana Devnet" : wallet.network} · {shortenAddress(wallet.address)}
+                </Text>
+              ))}
+            </View>
+          </View>
+        ) : null}
         {isAuthenticated && !isPreviewAccount && authMethod === "email" ? (
           <Pressable style={styles.row} onPress={openSessions}>
             <Text style={styles.label}>{t("登录设备", "Signed-in devices")}</Text>
@@ -363,6 +380,8 @@ const styles = StyleSheet.create({
   row: { minHeight: 38, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "rgba(156, 183, 224, 0.12)", gap: 12 },
   label: { color: "#C9D9F2", fontSize: 8 },
   value: { color: "#96A9C8", fontSize: 8, maxWidth: "70%", textAlign: "right" },
+  walletIdentityRow: { alignItems: "flex-start", paddingVertical: 7 },
+  walletList: { flex: 1, alignItems: "flex-end", gap: 5 },
   languageOptions: { flexDirection: "row", alignItems: "center", gap: 6 },
   language: { color: "#8A9DBD", fontSize: 8 }, languageActive: { color: "#EAF2FF", fontWeight: "700" }, separator: { color: "#9EAFCC", fontSize: 8 },
   chevron: { color: "#96A9C8", fontSize: 17 },

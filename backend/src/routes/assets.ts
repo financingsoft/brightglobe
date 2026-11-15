@@ -5,7 +5,7 @@ import type { BetterAuthInstance } from "../auth.js";
 import type { AppEnvironment } from "../config/env.js";
 import { createSolanaGateway } from "../blockchain/solana/gateway.js";
 import { CLASSIC_SPL_TOKEN_PROGRAM_ID, parseClassicSplMint, parseClassicSplTokenAccount, type ParsedSplMint } from "../blockchain/solana/token/classic-token.js";
-import { buildClassicSplTransferTransaction, deriveClassicSplAssociatedTokenAccounts } from "../blockchain/solana/transfer-builder.js";
+import { buildClassicSplTransferTransaction, deriveClassicSplAssociatedTokenAccounts, deriveClassicSplAssociatedTokenAddress } from "../blockchain/solana/transfer-builder.js";
 import { createRequireCanonicalAuth, type CanonicalAuthVariables } from "../middleware/require-canonical-auth.js";
 import { assetRegistry, assetTransactionIntents, walletOwnerships } from "../db/schema.js";
 import { isValidSolanaAddress } from "../blockchain/solana/address.js";
@@ -76,6 +76,113 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
     } catch (error) {
       if (error instanceof AssetNotFoundError) {
         return context.json({ error: { code: "ASSET_NOT_FOUND", message: error.message } }, 404);
+      }
+      throw error;
+    }
+  });
+
+  routes.get("/:assetCode/wallet/:ownerAddress", async (context) => {
+    const current = context.get("canonicalAuth");
+    const ownerAddress = context.req.param("ownerAddress");
+    if (!isValidSolanaAddress(ownerAddress)) {
+      return context.json({
+        error: { code: "INVALID_WALLET_ADDRESS", message: "The Solana wallet address is invalid." }
+      }, 400);
+    }
+
+    const [wallet] = await db.select({ address: walletOwnerships.address })
+      .from(walletOwnerships)
+      .where(and(
+        eq(walletOwnerships.canonicalUserId, current.canonicalUserId),
+        eq(walletOwnerships.network, "devnet"),
+        eq(walletOwnerships.address, ownerAddress)
+      ))
+      .limit(1);
+    if (!wallet) {
+      return context.json({
+        error: { code: "WALLET_NOT_LINKED", message: "The wallet is not linked to this BrightGlobe account." }
+      }, 403);
+    }
+
+    try {
+      const asset = await getAssetByCode(db, context.req.param("assetCode"));
+      if (asset.status !== "active" || !asset.mintAddress || asset.decimals === null) {
+        return context.json({
+          error: { code: "ASSET_NOT_ACTIVE", message: "The asset is not configured for on-chain balance queries." }
+        }, 409);
+      }
+      if (env.SOLANA_NETWORK !== "devnet") {
+        return context.json({
+          error: { code: "SOLANA_NETWORK_DISABLED", message: "Only Solana Devnet wallet balance queries are enabled." }
+        }, 503);
+      }
+
+      const gateway = createSolanaGateway(env.SOLANA_RPC_URL);
+      const cluster = await gateway.getDevnetStatus();
+      if (!cluster.healthy) {
+        return context.json({
+          error: { code: "SOLANA_RPC_UNAVAILABLE", message: "The Devnet RPC endpoint is not healthy." }
+        }, 503);
+      }
+
+      const tokenAccountAddress = await deriveClassicSplAssociatedTokenAddress({
+        ownerAddress,
+        mintAddress: asset.mintAddress
+      });
+      const accountInfo = await gateway.getAccountInfo(tokenAccountAddress, "finalized");
+      if (!accountInfo.account) {
+        return context.json({
+          assetCode: asset.assetCode,
+          network: "devnet",
+          ownerAddress,
+          mintAddress: asset.mintAddress,
+          decimals: asset.decimals,
+          tokenAccountAddress,
+          tokenAccountExists: false,
+          onChainBalanceBaseUnits: "0",
+          commitment: "finalized"
+        });
+      }
+
+      let tokenAccount;
+      try {
+        tokenAccount = parseClassicSplTokenAccount({
+          owner: accountInfo.account.owner,
+          dataBase64: accountInfo.account.data[0]
+        });
+      } catch {
+        return context.json({
+          error: { code: "TOKEN_ACCOUNT_INVALID", message: "The associated token account is invalid." }
+        }, 409);
+      }
+      if (
+        tokenAccount.owner !== ownerAddress ||
+        tokenAccount.mint !== asset.mintAddress ||
+        tokenAccount.state === "uninitialized"
+      ) {
+        return context.json({
+          error: { code: "TOKEN_ACCOUNT_MISMATCH", message: "The associated token account does not match the linked wallet and registered asset." }
+        }, 409);
+      }
+
+      return context.json({
+        assetCode: asset.assetCode,
+        network: "devnet",
+        ownerAddress,
+        mintAddress: asset.mintAddress,
+        decimals: asset.decimals,
+        tokenAccountAddress,
+        tokenAccountExists: true,
+        accountState: tokenAccount.state,
+        onChainBalanceBaseUnits: tokenAccount.amountBaseUnits.toString(),
+        commitment: "finalized",
+        slot: accountInfo.contextSlot.toString()
+      });
+    } catch (error) {
+      if (error instanceof AssetNotFoundError) {
+        return context.json({
+          error: { code: "ASSET_NOT_FOUND", message: error.message }
+        }, 404);
       }
       throw error;
     }

@@ -121,7 +121,7 @@ Additive migrations:
 - 0007 chain indexer and reconciliation
 - 0008 BG draft asset placeholder
 - 0009 wallet identity linking
-- 0010 wallet authentication rate limits\n- 0011 canonical user profiles\n- 0012 per-token-account indexer cursors\n- 0013 persistent indexer source registry\n- 0014 transaction status polling fairness\n- 0015 unique system clearing accounts\n- 0016 transaction ledger settlement marker\n- 0017 database-enforced balance projection from append-only postings
+- 0010 wallet authentication rate limits\n- 0011 canonical user profiles\n- 0012 per-token-account indexer cursors\n- 0013 persistent indexer source registry\n- 0014 transaction status polling fairness\n- 0015 unique system clearing accounts\n- 0016 transaction ledger settlement marker\n- 0017 database-enforced balance projection from append-only postings\n- 0018 recent blockhash and last-valid-height metadata
 
 These migrations do not modify Better Auth core table definitions or BD tables.
 

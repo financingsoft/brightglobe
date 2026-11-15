@@ -15,6 +15,7 @@ import { AppScreen } from "@/components/ui";
 import { useI18n, type Locale } from "@/i18n/locale";
 import { useAuth, type AuthSession } from "@/auth/session";
 import { WalletSignInButton } from "@/wallet/WalletSignInButton";
+import { WalletDisconnectButton } from "@/wallet/WalletDisconnectButton";
 
 function shortenAddress(address: string) {
   return address.length > 14 ? `${address.slice(0, 6)}…${address.slice(-6)}` : address;
@@ -218,6 +219,7 @@ export default function SettingsScreen() {
       {isAuthenticated && !isPreviewAccount && authMethod === "email" && !hasWalletSession ? (
         <WalletSignInButton />
       ) : null}
+      {isAuthenticated && !isPreviewAccount ? <WalletDisconnectButton /> : null}
       {isAuthenticated && !isPreviewAccount && authMethod === "wallet" ? (
         <Pressable style={styles.row} onPress={() => router.push("/login")}>
           <Text style={styles.label}>{t("绑定邮箱账户", "Link an email account")}</Text>

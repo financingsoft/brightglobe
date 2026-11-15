@@ -2,6 +2,8 @@ import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Database } from "../db/client.js";
 import type { BetterAuthInstance } from "../auth.js";
+import type { AppEnvironment } from "../config/env.js";
+import { createSolanaGateway } from "../blockchain/solana/gateway.js";
 import { createRequireCanonicalAuth, type CanonicalAuthVariables } from "../middleware/require-canonical-auth.js";
 import { assetRegistry, assetTransactionIntents, walletOwnerships } from "../db/schema.js";
 import { isValidSolanaAddress } from "../blockchain/solana/address.js";
@@ -13,7 +15,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export function createAssetRoutes(db: Database, auth: BetterAuthInstance) {
+export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: AppEnvironment) {
   const routes = new Hono<{ Variables: CanonicalAuthVariables }>();
   routes.use("*", createRequireCanonicalAuth(db, auth));
 
@@ -112,16 +114,31 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance) {
         return context.json({ error: { code: "SOURCE_WALLET_NOT_LINKED", message: "The source wallet is not linked to this BrightGlobe account." } }, 403);
       }
 
+      if (env.SOLANA_NETWORK !== "devnet") {
+        return context.json({ error: { code: "SOLANA_NETWORK_DISABLED", message: "Devnet transaction creation is currently disabled." } }, 503);
+      }
+      const gateway = createSolanaGateway(env.SOLANA_RPC_URL);
+      const cluster = await gateway.getDevnetStatus();
+      if (!cluster.healthy) {
+        return context.json({ error: { code: "SOLANA_RPC_UNAVAILABLE", message: "The Devnet RPC endpoint is not healthy." } }, 503);
+      }
+      const blockhash = await gateway.getLatestBlockhash("confirmed");
       const result = await createAssetTransactionIntent(db, {
         canonicalUserId: current.canonicalUserId,
         assetId: asset.id,
         operation: "transfer",
         amountBaseUnits: BigInt(body.amountBaseUnits),
-        fromAddress: typeof body.fromAddress === "string" ? body.fromAddress : null,
-        toAddress: typeof body.toAddress === "string" ? body.toAddress : null,
-        idempotencyKey: body.idempotencyKey
+        fromAddress: body.fromAddress,
+        toAddress: body.toAddress,
+        idempotencyKey: body.idempotencyKey,
+        recentBlockhash: blockhash.blockhash,
+        lastValidBlockHeight: BigInt(blockhash.lastValidBlockHeight)
       });
-      return context.json({ ...result, status: "created" }, result.replayed ? 200 : 201);
+      return context.json({
+        ...result,
+        status: "created",
+        blockhashContextSlot: blockhash.contextSlot
+      }, result.replayed ? 200 : 201);
     } catch (error) {
       if (error instanceof AssetNotFoundError) {
         return context.json({ error: { code: "ASSET_NOT_FOUND", message: error.message } }, 404);
@@ -204,6 +221,8 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance) {
       amountBaseUnits: intent.amountBaseUnits.toString(),
       status: intent.status,
       chainSignature: intent.chainSignature,
+      recentBlockhash: intent.recentBlockhash,
+      lastValidBlockHeight: intent.lastValidBlockHeight?.toString() ?? null,
       chainSlot: intent.chainSlot?.toString() ?? null,
       chainCommitment: intent.chainCommitment,
       createdAt: intent.createdAt.toISOString(),

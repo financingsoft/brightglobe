@@ -208,6 +208,10 @@ export default function SettingsScreen() {
             </View>
           </View>
         ) : null}
+        <Pressable style={styles.row} onPress={() => router.push("/bg-wallet")}>
+          <Text style={styles.label}>{t("BG 资产账户", "BG asset account")}</Text>
+          <Text style={styles.value}>{t("查看 Devnet 资产状态", "View Devnet asset status")} ›</Text>
+        </Pressable>
         {isAuthenticated && !isPreviewAccount && authMethod === "email" ? (
           <Pressable style={styles.row} onPress={openSessions}>
             <Text style={styles.label}>{t("登录设备", "Signed-in devices")}</Text>

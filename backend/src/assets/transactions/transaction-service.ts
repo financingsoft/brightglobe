@@ -37,6 +37,30 @@ export interface CreateAssetTransactionInput {
   expiresAt?: Date | null;
 }
 
+export async function getActiveTransferReservationBaseUnits(
+  db: Database,
+  input: { canonicalUserId: string; assetId: string },
+  now = new Date()
+): Promise<bigint> {
+  const [reservation] = await db.select({
+    reservedBaseUnits: sql<string>`COALESCE(SUM(${assetTransactionIntents.amountBaseUnits}), 0)::text`
+  }).from(assetTransactionIntents)
+    .where(and(
+      eq(assetTransactionIntents.canonicalUserId, input.canonicalUserId),
+      eq(assetTransactionIntents.assetId, input.assetId),
+      eq(assetTransactionIntents.operation, "transfer"),
+      isNull(assetTransactionIntents.ledgerPostedAt),
+      or(
+        inArray(assetTransactionIntents.status, ["submitted", "confirmed", "finalized"]),
+        and(
+          inArray(assetTransactionIntents.status, ["created", "signed"]),
+          gt(assetTransactionIntents.expiresAt, now)
+        )
+      )
+    ));
+  return BigInt(reservation?.reservedBaseUnits ?? "0");
+}
+
 export async function createAssetTransactionIntent(
   db: Database,
   input: CreateAssetTransactionInput

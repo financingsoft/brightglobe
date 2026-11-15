@@ -116,14 +116,21 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
 
   const openQrScanner = async () => {
     setError("");
-    if (!cameraPermission?.granted) {
-      const permission = await requestCameraPermission();
-      if (!permission.granted) {
-        setError(t("需要相机权限才能扫描收款二维码。", "Camera permission is required to scan a receiving QR code."));
-        return;
+    try {
+      if (!cameraPermission?.granted) {
+        const permission = await requestCameraPermission();
+        if (!permission.granted) {
+          setError(t(
+            "需要相机权限才能扫描收款二维码。若之前已拒绝，请在系统设置中允许 BrightGlobe 使用相机。",
+            "Camera permission is required to scan a receiving QR code. If access was previously denied, enable camera access for BrightGlobe in system settings."
+          ));
+          return;
+        }
       }
+      setScannerOpen(true);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : t("无法请求相机权限。", "Unable to request camera permission."));
     }
-    setScannerOpen(true);
   };
 
   const handleQrScanned = ({ data }: { data: string }) => {

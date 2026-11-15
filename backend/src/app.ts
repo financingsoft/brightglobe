@@ -54,7 +54,7 @@ export function createApp({ db, auth, env }: AppDependencies) {
   app.route("/api/v1/blockchain/solana", createSolanaRoutes(env));
   app.route("/api/v1/auth/wallet", createWalletAuthRoutes({ db, env, auth }));
   app.route("/api/v1/identity", createIdentityRoutes(db, auth, env));
-  app.route("/api/v1/assets", createAssetRoutes(db, auth));
+  app.route("/api/v1/assets", createAssetRoutes(db, auth, env));
 
   app.notFound((context) => context.json({
     error: { code: "NOT_FOUND", message: "The requested endpoint does not exist." }

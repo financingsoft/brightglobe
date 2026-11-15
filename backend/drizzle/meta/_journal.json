@@ -120,6 +120,13 @@
       "when": 1794701640000,
       "tag": "0017_ledger_balance_projection_trigger",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794701700000,
+      "tag": "0018_transaction_blockhash_expiry",
+      "breakpoints": true
     }
   ]
 }

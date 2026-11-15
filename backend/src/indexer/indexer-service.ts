@@ -17,7 +17,7 @@ import { CLASSIC_SPL_TOKEN_PROGRAM_ID, parseClassicSplMint } from "../blockchain
 import { expireStaleAssetTransactionIntents, transitionAssetTransaction } from "../assets/transactions/transaction-service.js";
 import { settleFinalizedAssetTransaction } from "../assets/ledger/ledger-service.js";
 import { hasBlockhashExpired } from "../assets/transactions/blockhash.js";
-import { findMatchingFinalizedTransferEvent, matchesFinalizedTransactionEnvelope } from "./transaction-verifier.js";
+import { findMatchingFinalizedTransferEvent, matchesFinalizedTransactionEnvelope, matchesFinalizedTransactionIdentity } from "./transaction-verifier.js";
 
 
 async function verifyFinalizedTransferIntent(
@@ -534,6 +534,9 @@ export async function scanFinalizedAddressBatch(
       const transaction = await gateway.getTransaction(record.signature);
       if (transaction === null) {
         throw new IndexerSourceUnavailableError("A finalized transaction is not yet available from the RPC provider.");
+      }
+      if (!matchesFinalizedTransactionIdentity(transaction, record.signature, slot)) {
+        throw new IndexerSourceUnavailableError("The RPC transaction identity does not match its finalized signature record.");
       }
       events.push(...decodeFinalizedClassicTokenEvents(record.signature, transaction));
     }

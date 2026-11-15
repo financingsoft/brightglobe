@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import QRCode from "react-native-qrcode-svg";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import bs58 from "bs58";
 import * as Clipboard from "expo-clipboard";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useAccount, useAppKit, useProvider } from "@reown/appkit-react-native";
 import { useAuth } from "@/auth/session";
@@ -58,6 +60,8 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
   const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<PendingTransfer | null>(null);
   const [notice, setNotice] = useState("");
@@ -108,6 +112,35 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
     const snapshot = await getBgOnChainWalletBalance(address);
     setOnChainBalance(snapshot.onChainBalanceBaseUnits);
     setOnChainBalanceError("");
+  };
+
+  const openQrScanner = async () => {
+    setError("");
+    if (!cameraPermission?.granted) {
+      const permission = await requestCameraPermission();
+      if (!permission.granted) {
+        setError(t("需要相机权限才能扫描收款二维码。", "Camera permission is required to scan a receiving QR code."));
+        return;
+      }
+    }
+    setScannerOpen(true);
+  };
+
+  const handleQrScanned = ({ data }: { data: string }) => {
+    const candidate = data.trim().startsWith("solana:")
+      ? data.trim().slice("solana:".length).split("?")[0]
+      : data.trim();
+    try {
+      if (bs58.decode(candidate).length !== 32) throw new Error("Invalid public key length.");
+      setRecipient(candidate);
+      setIdempotencyKey(null);
+      setScannerOpen(false);
+      setError("");
+      setNotice(t("已读取收款钱包地址，请核对后再转账。", "Wallet address scanned. Verify it before sending."));
+    } catch {
+      setScannerOpen(false);
+      setError(t("二维码不是有效的 Solana 钱包地址。", "The QR code does not contain a valid Solana wallet address."));
+    }
   };
 
   const copyWalletAddress = async () => {
@@ -294,16 +327,21 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
               <Text style={styles.copyAddressText}>{t("复制收款地址", "Copy receive address")}</Text>
             </Pressable>
           </View>
-          <TextInput
-            value={recipient}
-            onChangeText={(value) => { setRecipient(value); setIdempotencyKey(null); }}
-            autoCapitalize="none"
+          <View style={styles.recipientRow}>
+            <TextInput
+              value={recipient}
+              onChangeText={(value) => { setRecipient(value); setIdempotencyKey(null); }}
+              autoCapitalize="none"
             autoCorrect={false}
             placeholder={t("收款方 Solana 地址", "Recipient Solana address")}
             placeholderTextColor="#8293B0"
             editable={!busy && !pending}
-            style={styles.input}
-          />
+              style={[styles.input, styles.recipientInput]}
+            />
+            <Pressable accessibilityRole="button" disabled={busy || Boolean(pending)} onPress={openQrScanner} style={styles.scanButton}>
+              <Text style={styles.scanButtonText}>{t("扫码", "Scan")}</Text>
+            </Pressable>
+          </View>
           <TextInput
             value={amount}
             onChangeText={(value) => { setAmount(value); setIdempotencyKey(null); }}
@@ -323,6 +361,26 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
           ) : null}
         </>
       )}
+      <Modal visible={scannerOpen} animationType="slide" onRequestClose={() => setScannerOpen(false)}>
+        <View style={styles.scannerScreen}>
+          <CameraView
+            style={StyleSheet.absoluteFill}
+            facing="back"
+            barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+            onBarcodeScanned={handleQrScanned}
+          />
+          <View style={styles.scannerHeader}>
+            <Text style={styles.scannerTitle}>{t("扫描 Solana 收款二维码", "Scan Solana receive QR")}</Text>
+            <Pressable accessibilityRole="button" onPress={() => setScannerOpen(false)} style={styles.scannerClose}>
+              <Text style={styles.scannerCloseText}>{t("关闭", "Close")}</Text>
+            </Pressable>
+          </View>
+          <View pointerEvents="none" style={styles.scannerGuide}>
+            <View style={styles.scannerFrame} />
+            <Text style={styles.scannerHint}>{t("将钱包地址二维码放入框内", "Place a wallet address QR inside the frame")}</Text>
+          </View>
+        </View>
+      </Modal>
       <Text style={styles.copy}>
         {t(
           "仅支持 Devnet。交易由你连接的钱包签名和广播；BrightGlobe 不持有私钥。余额只在链上 finalized 并通过服务端核验后结算。",
@@ -349,7 +407,19 @@ const styles = StyleSheet.create({
   receiveAddress: { color: "#A0B2D0", fontSize: 7, textAlign: "center" as const, lineHeight: 12 },
   copyAddressButton: { minHeight: 30, paddingHorizontal: 14, borderRadius: 15, borderWidth: 1, borderColor: "rgba(174,194,230,0.35)", justifyContent: "center" as const, alignItems: "center" as const },
   copyAddressText: { color: "#D4C6F0", fontSize: 8, fontWeight: "600" },
+  recipientRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 6 },
+  recipientInput: { flex: 1 },
+  scanButton: { minHeight: 38, paddingHorizontal: 13, borderRadius: 7, backgroundColor: "rgba(112,82,173,0.45)", justifyContent: "center" as const, alignItems: "center" as const },
+  scanButtonText: { color: "#FFFFFF", fontSize: 9, fontWeight: "600" },
   input: { minHeight: 38, borderWidth: 1, borderColor: "rgba(156,183,224,0.25)", borderRadius: 7, color: "#EAF2FF", paddingHorizontal: 10, fontSize: 10 },
+  scannerScreen: { flex: 1, backgroundColor: "#050D20", justifyContent: "space-between" as const },
+  scannerHeader: { paddingTop: 58, paddingHorizontal: 20, flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const },
+  scannerTitle: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
+  scannerClose: { minHeight: 34, paddingHorizontal: 14, borderRadius: 17, backgroundColor: "rgba(5,13,32,0.7)", justifyContent: "center" as const },
+  scannerCloseText: { color: "#FFFFFF", fontSize: 11 },
+  scannerGuide: { flex: 1, justifyContent: "center" as const, alignItems: "center" as const, gap: 18 },
+  scannerFrame: { width: 250, height: 250, borderWidth: 2, borderColor: "#FFFFFF", borderRadius: 18, backgroundColor: "transparent" },
+  scannerHint: { color: "#FFFFFF", fontSize: 11, backgroundColor: "rgba(5,13,32,0.65)", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
   action: { minHeight: 36, borderRadius: 18, backgroundColor: "#7052AD", alignItems: "center", justifyContent: "center", paddingHorizontal: 12 },
   actionText: { color: "#FFFFFF", fontSize: 9, fontWeight: "600" },
   secondaryAction: { minHeight: 32, borderRadius: 16, borderWidth: 1, borderColor: "rgba(174,194,230,0.35)", alignItems: "center", justifyContent: "center" },

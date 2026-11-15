@@ -8,6 +8,11 @@ import { walletKitConfigured, SOLANA_DEVNET_CHAIN_ID } from "./appkit";
 import { signInWithSolanaWallet } from "./auth";
 
 export function WalletSignInButton() {
+  if (!walletKitConfigured) return null;
+  return <WalletSignInButtonInner />;
+}
+
+function WalletSignInButtonInner() {
   const { locale } = useI18n();
   const { acceptWalletSession } = useAuth();
   const router = useRouter();
@@ -16,8 +21,6 @@ export function WalletSignInButton() {
   const { provider, providerType } = useProvider();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-
-  if (!walletKitConfigured) return null;
 
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
 

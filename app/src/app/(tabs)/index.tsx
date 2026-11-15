@@ -22,7 +22,7 @@ export default function HomeScreen() {
   const earthSize = Math.min(310, width - (width < 350 ? 56 : 72), stageHeight - 92);
   const earthTop = Math.max(54, (stageHeight - earthSize) / 2 - 10);
   const isHomeFocused = useIsFocused();
-  const { isAuthenticated, isPreviewAccount, user } = useAuth();
+  const { isAuthenticated, isPreviewAccount, authMethod, user } = useAuth();
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [account, setAccount] = useState<BdAccountSnapshot | null>(null);
   const [accountLoading, setAccountLoading] = useState(false);
@@ -35,10 +35,12 @@ export default function HomeScreen() {
     let active = true;
     if (!isHomeFocused) return () => { active = false; };
 
-    if (!isAuthenticated || isPreviewAccount) {
+    if (!isAuthenticated || isPreviewAccount || authMethod === "wallet") {
       setAccount(null);
       setAccountLoading(false);
-      setAccountError(null);
+      setAccountError(authMethod === "wallet"
+        ? t("钱包身份与历史 BD 内部账本隔离。绑定邮箱身份后才能使用黑钻账户。", "Wallet identity is separate from the legacy BD ledger. Link a verified email identity to use the BD account.")
+        : null);
       return () => { active = false; };
     }
 
@@ -59,10 +61,10 @@ export default function HomeScreen() {
       });
 
     return () => { active = false; };
-  }, [isHomeFocused, isAuthenticated, isPreviewAccount, user?.id, locale]);
+  }, [isHomeFocused, isAuthenticated, isPreviewAccount, authMethod, user?.id, locale]);
 
   const requireLiveAccount = (action: () => void) => {
-    if (!isAuthenticated || isPreviewAccount) {
+    if (!isAuthenticated || isPreviewAccount || authMethod === "wallet") {
       setShowLoginPrompt(true);
       return;
     }
@@ -72,7 +74,7 @@ export default function HomeScreen() {
   const openPoints = () => requireLiveAccount(() => router.push("/points-record"));
 
   const handleEarthTap = async () => {
-    if (!isAuthenticated || isPreviewAccount) {
+    if (!isAuthenticated || isPreviewAccount || authMethod === "wallet") {
       setShowLoginPrompt(true);
       return;
     }
@@ -146,8 +148,10 @@ export default function HomeScreen() {
   };
 
   const isClaimed = account?.dailyCollection.status === "claimed";
-  const earthActionLabel = !isAuthenticated || isPreviewAccount
-    ? t("登录后点击地球收集黑钻", "Sign in, then tap the Earth to collect")
+  const earthActionLabel = authMethod === "wallet"
+    ? t("绑定邮箱账户后使用黑钻", "Link an email account to use BD")
+    : !isAuthenticated || isPreviewAccount
+      ? t("登录后点击地球收集黑钻", "Sign in, then tap the Earth to collect")
     : accountLoading
       ? t("正在同步账户…", "Syncing account…")
       : claiming
@@ -252,17 +256,16 @@ export default function HomeScreen() {
           <View style={styles.loginDialog}>
             <Text style={styles.dialogTitle}>{t("请先登录", "Sign in required")}</Text>
             <Text style={styles.dialogCopy}>
-              {t(
-                "登录后才能读取真实黑钻账户并申请每日收集。预览模式不会伪造余额或奖励。",
-                "Sign in to read your real BD account and request a daily collection. Preview mode never fabricates balances or rewards."
-              )}
+              {authMethod === "wallet"
+                ? t("钱包身份与历史 BD 内部账本保持隔离。请绑定已验证邮箱身份后再使用黑钻账户。", "Wallet identity is kept separate from the legacy BD ledger. Link a verified email identity before using the BD account.")
+                : t("登录后才能读取真实黑钻账户并申请每日收集。预览模式不会伪造余额或奖励。", "Sign in to read your real BD account and request a daily collection. Preview mode never fabricates balances or rewards.")}
             </Text>
             <View style={styles.dialogActions}>
               <Pressable onPress={() => setShowLoginPrompt(false)} style={styles.dialogSecondary}>
                 <Text style={styles.dialogSecondaryText}>{t("暂不登录", "Not now")}</Text>
               </Pressable>
               <Pressable onPress={() => { setShowLoginPrompt(false); router.push("/login"); }} style={styles.dialogPrimary}>
-                <Text style={styles.dialogPrimaryText}>{t("登录账户", "Sign in")}</Text>
+                <Text style={styles.dialogPrimaryText}>{authMethod === "wallet" ? t("绑定邮箱", "Link email") : t("登录账户", "Sign in")}</Text>
               </Pressable>
             </View>
           </View>

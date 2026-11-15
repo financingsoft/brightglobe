@@ -5,21 +5,68 @@ import { AppScreen } from "@/components/ui";
 import { useI18n } from "@/i18n/locale";
 import { useAuth } from "@/auth/session";
 import { ApiError } from "@/services/api";
-import { formatAssetBaseUnits, getBgAssetAccount, type BgAssetAccount } from "@/services/assets";
+import {
+  formatAssetBaseUnits,
+  getBgAssetAccount,
+  getBgAssetActivity,
+  type BgAssetAccount,
+  type BgAssetActivityItem
+} from "@/services/assets";
 import { BgTransferPanel } from "@/wallet/BgTransferPanel";
+
+function formatActivityTime(value: string, locale: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString(locale === "zh-CN" ? "zh-CN" : "en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function activityTitle(item: BgAssetActivityItem, locale: string): string {
+  const zh = locale === "zh-CN";
+  const outgoing = item.deltaBaseUnits.startsWith("-");
+  if (item.type === "transfer") return zh ? (outgoing ? "链上转出" : "链上转入") : (outgoing ? "On-chain send" : "On-chain receive");
+  if (item.type === "mint_to") return zh ? "链上代币发放" : "On-chain token mint";
+  if (item.type === "burn") return zh ? "链上代币销毁" : "On-chain token burn";
+  if (item.type === "opening_balance") return zh ? "链上初始余额" : "On-chain opening balance";
+  return zh ? "BG 账户变动" : "BG account activity";
+}
+
+function activityStatus(status: string, locale: string): string {
+  const zh = locale === "zh-CN";
+  const labels: Record<string, [string, string]> = {
+    settled: ["已结算", "Settled"],
+    created: ["待签名", "Awaiting signature"],
+    signed: ["已签名", "Signed"],
+    submitted: ["等待链上确认", "Submitted"],
+    confirmed: ["链上确认中", "Confirmed"],
+    finalized: ["链上已最终确认", "Finalized"],
+    settling: ["等待账本结算", "Ledger settling"],
+    failed: ["失败", "Failed"],
+    expired: ["已过期", "Expired"]
+  };
+  const pair = labels[status] ?? [status, status];
+  return zh ? pair[0] : pair[1];
+}
 
 export default function BgWalletScreen() {
   const router = useRouter();
   const { locale } = useI18n();
   const { isAuthenticated, isPreviewAccount, authMethod } = useAuth();
   const [account, setAccount] = useState<BgAssetAccount | null>(null);
+  const [activity, setActivity] = useState<BgAssetActivityItem[]>([]);
+  const [activityLoading, setActivityLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
 
   const reloadAccount = async () => {
-    const result = await getBgAssetAccount();
+    const [result, history] = await Promise.all([getBgAssetAccount(), getBgAssetActivity()]);
     setAccount(result);
+    setActivity(history);
     setError(null);
   };
 
@@ -27,21 +74,33 @@ export default function BgWalletScreen() {
     let active = true;
     if (!isAuthenticated || isPreviewAccount) {
       setAccount(null);
+      setActivity([]);
       setLoading(false);
+      setActivityLoading(false);
       setError(null);
       return () => { active = false; };
     }
     setLoading(true);
+    setActivityLoading(true);
     setError(null);
-    getBgAssetAccount()
-      .then((result) => { if (active) setAccount(result); })
+    Promise.all([getBgAssetAccount(), getBgAssetActivity()])
+      .then(([result, history]) => {
+        if (!active) return;
+        setAccount(result);
+        setActivity(history);
+      })
       .catch((reason: unknown) => {
         if (!active) return;
         setError(reason instanceof ApiError
           ? reason.message
           : t("暂时无法读取 BG 账户。", "Unable to load the BG account."));
       })
-      .finally(() => { if (active) setLoading(false); });
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+          setActivityLoading(false);
+        }
+      });
     return () => { active = false; };
   }, [isAuthenticated, isPreviewAccount, authMethod, locale]);
 
@@ -111,6 +170,39 @@ export default function BgWalletScreen() {
         <BgTransferPanel decimals={account!.decimals!} onAccountRefresh={reloadAccount} />
       ) : null}
 
+      <View style={styles.activitySection}>
+        <View style={styles.activityHeader}>
+          <Text style={styles.activityTitle}>{t("BG 交易记录", "BG transaction activity")}</Text>
+          <Text style={styles.activityCount}>{activity.length}</Text>
+        </View>
+        {activityLoading ? (
+          <ActivityIndicator color="#C9D9F2" />
+        ) : activity.length > 0 ? (
+          activity.map((item) => {
+            const outgoing = item.deltaBaseUnits.startsWith("-");
+            const absoluteAmount = outgoing ? item.deltaBaseUnits.slice(1) : item.deltaBaseUnits;
+            return (
+              <View key={item.id} style={styles.activityRow}>
+                <View style={styles.activityCopy}>
+                  <Text style={styles.activityName}>{activityTitle(item, locale)}</Text>
+                  <Text style={styles.activityMeta}>
+                    {formatActivityTime(item.createdAt, locale)} · {activityStatus(item.status, locale)}
+                  </Text>
+                  {item.chainSignature ? (
+                    <Text style={styles.activitySignature}>{item.chainSignature.slice(0, 8)}…{item.chainSignature.slice(-8)}</Text>
+                  ) : null}
+                </View>
+                <Text style={[styles.activityAmount, outgoing ? styles.activityOutgoing : styles.activityIncoming]}>
+                  {outgoing ? "−" : "+"}{formatAssetBaseUnits(absoluteAmount, account?.decimals ?? null)} BG
+                </Text>
+              </View>
+            );
+          })
+        ) : (
+          <Text style={styles.activityEmpty}>{t("暂无 BG 交易记录。", "No BG activity yet.")}</Text>
+        )}
+      </View>
+
       {hasReservedBalance ? (
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>{t("待处理转账预留", "Reserved for pending transfers")}</Text>
@@ -152,5 +244,18 @@ const styles = StyleSheet.create({
   infoRow: { minHeight: 36, flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderBottomWidth: 1, borderColor: "rgba(156,183,224,0.13)" },
   infoLabel: { color: "#91A5C5", fontSize: 8 },
   infoValue: { color: "#C9D9F2", fontSize: 8 },
+  activitySection: { marginTop: 18, gap: 8 },
+  activityHeader: { minHeight: 30, flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const, borderBottomWidth: 1, borderColor: "rgba(156,183,224,0.18)" },
+  activityTitle: { color: "#E1EBFC", fontSize: 10, fontWeight: "700" },
+  activityCount: { color: "#91A5C5", fontSize: 8 },
+  activityRow: { minHeight: 48, flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const, gap: 8, borderBottomWidth: 1, borderColor: "rgba(156,183,224,0.1)" },
+  activityCopy: { flex: 1, gap: 3 },
+  activityName: { color: "#DCE7F8", fontSize: 8, fontWeight: "600" },
+  activityMeta: { color: "#8A9DBD", fontSize: 7 },
+  activitySignature: { color: "#788CAB", fontSize: 6 },
+  activityAmount: { fontSize: 9, fontWeight: "700" },
+  activityOutgoing: { color: "#F0B6A7" },
+  activityIncoming: { color: "#A8D9BC" },
+  activityEmpty: { color: "#8A9DBD", fontSize: 8, paddingVertical: 12 },
   disclaimer: { color: "#788CAB", fontSize: 7, lineHeight: 12, textAlign: "center", marginTop: 14 }
 });

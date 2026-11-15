@@ -82,12 +82,12 @@ export const appKit = projectId
         icons: [],
         redirect: { native: "brightglobe://" }
       },
+      enableAnalytics: false,
       features: {
-        analytics: false,
-        email: false,
         socials: [],
         swaps: false,
-        onramp: false
+        onramp: false,
+        showWallets: true
       },
       extraConnectors: [
         new PhantomConnector({ cluster: "devnet" }),

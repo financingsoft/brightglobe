@@ -170,9 +170,18 @@ export async function transitionAssetTransaction(
     if (intent.expiresAt && intent.expiresAt <= now && (fromStatus === "created" || fromStatus === "signed") && input.toStatus !== "expired") {
       throw new AssetTransactionConflictError("The transaction intent has expired.");
     }
-    if (input.toStatus === "expired" &&
-        (!(fromStatus === "created" || fromStatus === "signed") || !intent.expiresAt || intent.expiresAt > now)) {
-      throw new AssetTransactionConflictError("Only expired unsigned transaction intents can be expired by this worker.");
+    if (input.toStatus === "expired") {
+      const unsignedExpired =
+        (fromStatus === "created" || fromStatus === "signed") &&
+        intent.expiresAt !== null &&
+        intent.expiresAt <= now;
+      const submittedBlockhashExpired =
+        fromStatus === "submitted" &&
+        input.reason === "blockhash_expired" &&
+        intent.lastValidBlockHeight !== null;
+      if (!unsignedExpired && !submittedBlockhashExpired) {
+        throw new AssetTransactionConflictError("The transaction intent has not met its expiry conditions.");
+      }
     }
     assertAssetTransactionTransition(fromStatus, input.toStatus);
 

@@ -198,7 +198,7 @@ export async function postFinalizedAssetTransaction(
   });
 }
 
-async function getOrCreateSystemAssetAccount(db: Database, assetId: string) {
+export async function getOrCreateSystemAssetAccount(db: Database, assetId: string) {
   const [existing] = await db.select().from(assetAccounts)
     .where(and(
       eq(assetAccounts.assetId, assetId),

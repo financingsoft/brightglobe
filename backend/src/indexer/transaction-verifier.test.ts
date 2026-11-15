@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { matchesFinalizedTransferIntent, matchesFinalizedTransactionEnvelope, type TransferEventLike } from "./transaction-verifier.js";
+import { matchesFinalizedTransferIntent, matchesFinalizedTransactionEnvelope, matchesFinalizedTransactionIdentity, type TransferEventLike } from "./transaction-verifier.js";
 
 const expected = {
   fromAddress: "source-owner",
@@ -59,4 +59,16 @@ test("binds a finalized transaction to its submitted signature, recent blockhash
   assert.equal(matchesFinalizedTransactionEnvelope(transaction, "other-signature", "intent-blockhash", 900n), false);
   assert.equal(matchesFinalizedTransactionEnvelope(transaction, "submitted-signature", "other-blockhash", 900n), false);
   assert.equal(matchesFinalizedTransactionEnvelope(transaction, "submitted-signature", "intent-blockhash", 901n), false);
+});
+
+
+test("validates fetched transaction signature and slot before indexing", () => {
+  const transaction = {
+    slot: 900,
+    transaction: { signatures: ["signature-a"] }
+  };
+  assert.equal(matchesFinalizedTransactionIdentity(transaction, "signature-a", 900n), true);
+  assert.equal(matchesFinalizedTransactionIdentity(transaction, "signature-b", 900n), false);
+  assert.equal(matchesFinalizedTransactionIdentity(transaction, "signature-a", 901n), false);
+  assert.equal(matchesFinalizedTransactionIdentity(null, "signature-a", 900n), false);
 });

@@ -52,7 +52,7 @@ Keep the single Worker and introduce explicit modules. Exact filenames may be ad
 - assets: asset registry, asset service, double-entry ledger, transaction intent/state machine.
 - indexer: bounded event ingestion, cursor persistence, retry/resume, finality, reconciliation.
 - middleware: canonical auth, authorization, origin/CSRF and request security.
-- routes: identity, wallet, assets, transactions, protected operator/indexer endpoints.
+- routes: identity, wallet, assets, and transaction APIs; no public indexer mutation endpoint.\n- worker runtime: internal scheduled indexer handler, configured for Staging only.
 - db: additive Drizzle schema exports and SQL migrations; preserve existing BD definitions.
 - app/config: mount versioned routes and validate Devnet-only runtime configuration.
 
@@ -224,4 +224,4 @@ New business profiles must be keyed by canonical UUIDv7 IDs. Additive migration 
 
 ## 11. Indexer source-cursor refinement
 
-The indexer uses a separate finalized-slot cursor per token-account source. Discovered BG token accounts are persisted in `chain_indexer_sources`, so closed accounts remain available for historical scanning. Each Worker invocation processes a bounded source batch and bounded RPC page count; incomplete ranges do not advance a source cursor.
+The indexer uses a separate finalized-slot cursor per token-account source. Discovered BG token accounts are persisted in `chain_indexer_sources`, so closed accounts remain available for historical scanning. Each Worker invocation processes a bounded source batch and bounded RPC page count; incomplete ranges do not advance a source cursor. A five-minute Cloudflare Cron Trigger invokes the internal scheduled handler in Staging only. It validates Devnet cluster identity, uses finalized slot height, and safely skips while the BG asset remains a draft. Production has no configured cron trigger.

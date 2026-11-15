@@ -589,6 +589,7 @@ export async function scanConfiguredBgAsset(
   insertedEvents: number;
   targetFinalizedSlot: string;
   transactionStatusSync: { checked: number; confirmed: number; finalized: number; failed: number; expired: number };
+  eventSettlement: { checked: number; processed: number; ignored: number; quarantined: number };
 }> {
   const maxSourcesPerRun = input.maxSourcesPerRun ?? 10;
   const maxSlotsPerSource = input.maxSlotsPerSource ?? 5000n;
@@ -636,10 +637,6 @@ export async function scanConfiguredBgAsset(
     ...linkedWallets.map((wallet) => wallet.address),
     ...(input.additionalOwnerAddresses ?? [])
   ])];
-  if (ownerAddresses.length === 0) {
-    throw new TypeError("No wallet or operator owner addresses are configured for BG indexing.");
-  }
-
   // Persist discovered token accounts and establish a finalized opening
   // balance before scanning subsequent history. The snapshot slot is the
   // source cursor checkpoint, preventing historical activity from being
@@ -655,7 +652,10 @@ export async function scanConfiguredBgAsset(
         tokenAccountAddress: account.address,
         firstSeenSlot: input.fromSlot,
         status: "active"
-      }).onConflictDoNothing();
+      }).onConflictDoUpdate({
+        target: [chainIndexerSources.network, chainIndexerSources.tokenAccountAddress],
+        set: { ownerAddress, status: "active", updatedAt: new Date() }
+      });
 
       const [source] = await db.select().from(chainIndexerSources)
         .where(and(
@@ -716,7 +716,20 @@ export async function scanConfiguredBgAsset(
     .orderBy(asc(chainIndexerSources.tokenAccountAddress));
 
   if (sources.length === 0) {
-    throw new TypeError("No BG token accounts were discovered for the configured owners.");
+    const transactionStatusSync = await syncPendingTransactionIntents(db, gateway);
+    const eventSettlement = await processObservedBgAssetEvents(db, {
+      assetId: asset.id,
+      mintAddress,
+      limit: 100
+    });
+    return {
+      sourcesScanned: 0,
+      sourcesRemaining: 0,
+      insertedEvents: 0,
+      targetFinalizedSlot: input.toSlot.toString(),
+      transactionStatusSync,
+      eventSettlement
+    };
   }
 
   const cursors = await db.select({

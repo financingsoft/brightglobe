@@ -14,6 +14,12 @@ import { useRouter } from "expo-router";
 import { AppScreen } from "@/components/ui";
 import { useI18n, type Locale } from "@/i18n/locale";
 import { useAuth, type AuthSession } from "@/auth/session";
+import { WalletSignInButton } from "@/wallet/WalletSignInButton";
+import { WalletDisconnectButton } from "@/wallet/WalletDisconnectButton";
+
+function shortenAddress(address: string) {
+  return address.length > 14 ? `${address.slice(0, 6)}…${address.slice(-6)}` : address;
+}
 
 function maskPhone(phoneNumber: string | null | undefined) {
   if (!phoneNumber) return "—";
@@ -44,10 +50,14 @@ export default function SettingsScreen() {
   const router = useRouter();
   const {
     status,
+    authMethod,
+    hasWalletSession,
+    linkEmailIdentity,
     isAuthenticated,
     isPreviewAccount,
     user,
     profile,
+    wallets,
     signOut,
     updateProfile,
     loadSessions,
@@ -64,6 +74,7 @@ export default function SettingsScreen() {
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [sessionActionId, setSessionActionId] = useState<string | null>(null);
   const [revokingOthers, setRevokingOthers] = useState(false);
+  const [linkingEmail, setLinkingEmail] = useState(false);
   const [sessionError, setSessionError] = useState("");
   const [sessionNotice, setSessionNotice] = useState("");
 
@@ -185,13 +196,60 @@ export default function SettingsScreen() {
                 : t("未验证 / 未登录", "Unverified / signed out")}
           </Text>
         </View>
-        {isAuthenticated && !isPreviewAccount ? (
+        {wallets.length > 0 ? (
+          <View style={[styles.row, styles.walletIdentityRow]}>
+            <Text style={styles.label}>{t("已验证钱包", "Verified wallets")}</Text>
+            <View style={styles.walletList}>
+              {wallets.map((wallet) => (
+                <Text key={`${wallet.network}:${wallet.address}`} selectable style={styles.value}>
+                  {wallet.network === "devnet" ? "Solana Devnet" : wallet.network} · {shortenAddress(wallet.address)}
+                </Text>
+              ))}
+            </View>
+          </View>
+        ) : null}
+        <Pressable style={styles.row} onPress={() => router.push("/bg-wallet")}>
+          <Text style={styles.label}>{t("BG 资产账户", "BG asset account")}</Text>
+          <Text style={styles.value}>{t("查看 Devnet 资产状态", "View Devnet asset status")} ›</Text>
+        </Pressable>
+        {isAuthenticated && !isPreviewAccount && authMethod === "email" ? (
           <Pressable style={styles.row} onPress={openSessions}>
             <Text style={styles.label}>{t("登录设备", "Signed-in devices")}</Text>
             <Text style={styles.value}>{t("管理设备与会话", "Manage devices and sessions")} ›</Text>
           </Pressable>
         ) : null}
       </View>
+
+      {isAuthenticated && !isPreviewAccount && authMethod === "email" && !hasWalletSession ? (
+        <WalletSignInButton />
+      ) : null}
+      {isAuthenticated && !isPreviewAccount ? <WalletDisconnectButton /> : null}
+      {isAuthenticated && !isPreviewAccount && authMethod === "wallet" ? (
+        <Pressable style={styles.row} onPress={() => router.push("/login")}>
+          <Text style={styles.label}>{t("绑定邮箱账户", "Link an email account")}</Text>
+          <Text style={styles.value}>{t("登录已验证邮箱后完成绑定", "Sign in with a verified email to link")} ›</Text>
+        </Pressable>
+      ) : null}
+      {isAuthenticated && !isPreviewAccount && authMethod === "email" && hasWalletSession && wallets.length === 0 ? (
+        <Pressable
+          style={styles.row}
+          disabled={linkingEmail}
+          onPress={async () => {
+            setLinkingEmail(true);
+            try {
+              await linkEmailIdentity();
+              Alert.alert(t("绑定成功", "Identity linked"), t("邮箱身份与钱包身份现已关联到同一个 BrightGlobe 账户。", "Your email and wallet identities now share one BrightGlobe account."));
+            } catch (error) {
+              Alert.alert(t("绑定失败", "Link failed"), error instanceof Error ? error.message : t("请稍后重试。", "Please try again."));
+            } finally {
+              setLinkingEmail(false);
+            }
+          }}
+        >
+          <Text style={styles.label}>{t("完成身份绑定", "Complete identity linking")}</Text>
+          <Text style={styles.value}>{linkingEmail ? t("处理中…", "Working…") : t("关联邮箱与钱包", "Link email and wallet")} ›</Text>
+        </Pressable>
+      ) : null}
 
       <View style={styles.group}>
         <Text style={styles.groupTitle}>{t("偏好设置", "Preferences")}</Text>
@@ -203,6 +261,7 @@ export default function SettingsScreen() {
         <Pressable style={styles.row} onPress={() => router.push("/help")}><Text style={styles.label}>{t("帮助中心", "Help center")}</Text><Text style={styles.chevron}>›</Text></Pressable>
         <Pressable style={styles.row} onPress={() => router.push("/help")}><Text style={styles.label}>{t("意见反馈", "Feedback")}</Text><Text style={styles.chevron}>›</Text></Pressable>
         <Pressable style={styles.row} onPress={() => router.push("/help")}><Text style={styles.label}>{t("隐私说明", "Privacy")}</Text><Text style={styles.chevron}>›</Text></Pressable>
+        <Pressable style={styles.row} onPress={() => router.push("/licenses")}><Text style={styles.label}>{t("第三方许可", "Third-party licenses")}</Text><Text style={styles.chevron}>›</Text></Pressable>
       </View>
 
       {isAuthenticated ? (
@@ -215,7 +274,9 @@ export default function SettingsScreen() {
           ? t("当前为本地演示状态，不代表真实账户。", "This is a local preview state, not a real account.")
           : status === "unauthenticated" || status === "unconfigured"
             ? t("登录后将显示真实账户信息。", "Sign in to view your account information.")
-            : t("账户身份与会话由 Better Auth 管理。", "Identity and sessions are managed by Better Auth.")}
+            : authMethod === "wallet"
+              ? t("当前使用 Solana Devnet 钱包身份登录；BD 内部账本与该身份保持隔离。", "Signed in with a Solana Devnet wallet identity; the legacy BD ledger remains separate.")
+              : t("账户身份由 BrightGlobe 统一管理，邮箱认证由 Better Auth 提供。", "BrightGlobe manages canonical identity; Better Auth provides email authentication.")}
       </Text>
 
       <Modal visible={showSessions} transparent animationType="fade" onRequestClose={() => setShowSessions(false)}>
@@ -304,7 +365,7 @@ export default function SettingsScreen() {
             <Text style={styles.dialogCopy}>
               {isPreviewAccount
                 ? t("这只会结束本地预览状态。", "This only ends the local preview state.")
-                : t("退出后需要再次使用手机号验证码登录。", "You will need your phone verification code to sign in again.")}
+                : t("退出后需要重新验证邮箱或连接钱包才能登录。", "You will need to verify your email or reconnect your wallet to sign in again.")}
             </Text>
             <View style={styles.actions}>
               <Pressable onPress={() => setShowLogout(false)} style={styles.dialogButton}><Text style={styles.dialogButtonText}>{t("取消", "Cancel")}</Text></Pressable>
@@ -326,6 +387,8 @@ const styles = StyleSheet.create({
   row: { minHeight: 38, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "rgba(156, 183, 224, 0.12)", gap: 12 },
   label: { color: "#C9D9F2", fontSize: 8 },
   value: { color: "#96A9C8", fontSize: 8, maxWidth: "70%", textAlign: "right" },
+  walletIdentityRow: { alignItems: "flex-start", paddingVertical: 7 },
+  walletList: { flex: 1, alignItems: "flex-end", gap: 5 },
   languageOptions: { flexDirection: "row", alignItems: "center", gap: 6 },
   language: { color: "#8A9DBD", fontSize: 8 }, languageActive: { color: "#EAF2FF", fontWeight: "700" }, separator: { color: "#9EAFCC", fontSize: 8 },
   chevron: { color: "#96A9C8", fontSize: 17 },

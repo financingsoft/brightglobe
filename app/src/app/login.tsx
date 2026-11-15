@@ -5,6 +5,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useI18n } from "@/i18n/locale";
 import { useAuth } from "@/auth/session";
 import { StarfieldBackground } from "@/components/StarfieldBackground";
+import { WalletSignInButton } from "@/wallet/WalletSignInButton";
+import { WalletDisconnectButton } from "@/wallet/WalletDisconnectButton";
 
 type LoginMode = "login" | "signup" | "forgot";
 
@@ -189,6 +191,9 @@ export default function LoginScreen() {
           )}
           {message ? <Text accessibilityLiveRegion="polite" style={[styles.message, messageKind === "error" && styles.errorMessage]}>{message}</Text> : null}
         </View>
+
+        <WalletSignInButton />
+        <WalletDisconnectButton />
 
         {backendUnavailable ? (
           <View style={[styles.noticeBox, compactHeight && styles.noticeBoxCompact]}>

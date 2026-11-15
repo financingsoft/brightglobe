@@ -31,7 +31,7 @@ function formatTime(value: string, locale: string): string {
 export default function PointsRecordScreen() {
   const { locale } = useI18n();
   const router = useRouter();
-  const { isAuthenticated, isPreviewAccount } = useAuth();
+  const { isAuthenticated, isPreviewAccount, authMethod } = useAuth();
   const [account, setAccount] = useState<BdAccountSnapshot | null>(null);
   const [items, setItems] = useState<BdHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,11 +40,13 @@ export default function PointsRecordScreen() {
 
   useEffect(() => {
     let active = true;
-    if (!isAuthenticated || isPreviewAccount) {
+    if (!isAuthenticated || isPreviewAccount || authMethod === "wallet") {
       setAccount(null);
       setItems([]);
       setLoading(false);
-      setError(t("登录真实账户后查看黑钻记录。", "Sign in to view your BD account history."));
+      setError(authMethod === "wallet"
+        ? t("钱包身份与历史 BD 内部账本隔离。绑定已验证邮箱身份后才能查看黑钻记录。", "Wallet identity is separate from the legacy BD ledger. Link a verified email identity to view BD history.")
+        : t("登录真实账户后查看黑钻记录。", "Sign in to view your BD account history."));
       return () => { active = false; };
     }
 
@@ -64,7 +66,7 @@ export default function PointsRecordScreen() {
       });
 
     return () => { active = false; };
-  }, [isAuthenticated, isPreviewAccount, locale]);
+  }, [isAuthenticated, isPreviewAccount, authMethod, locale]);
 
   return (
     <AppScreen>
@@ -126,9 +128,9 @@ export default function PointsRecordScreen() {
         <Text style={styles.emptyText}>{t("还没有黑钻入账记录。点击首页地球参与每日收集。", "No BD credits yet. Tap the Earth on Home when daily collection is available.")}</Text>
       )}
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
-      {(!isAuthenticated || isPreviewAccount) ? (
+      {(!isAuthenticated || isPreviewAccount || authMethod === "wallet") ? (
         <Pressable accessibilityRole="button" onPress={() => router.push("/login")} style={styles.signInButton}>
-          <Text style={styles.signInText}>{t("登录账户", "Sign in")}</Text>
+          <Text style={styles.signInText}>{authMethod === "wallet" ? t("绑定邮箱账户", "Link email account") : t("登录账户", "Sign in")}</Text>
         </Pressable>
       ) : null}
     </AppScreen>

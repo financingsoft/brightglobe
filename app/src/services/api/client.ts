@@ -1,5 +1,6 @@
 import { Platform } from "react-native";
 import { authClient } from "@/auth/client";
+import { getWalletSession } from "@/wallet/auth";
 
 type ApiErrorBody = {
   message?: string;
@@ -40,8 +41,12 @@ export async function apiRequest<T>(
   // The Expo plugin stores native session cookies in SecureStore. Attach them
   // to first-party API requests; browsers use credentialed cookie handling.
   if (Platform.OS !== "web") {
-    const cookie = await authClient.getCookie();
+    const [cookie, walletSession] = await Promise.all([
+      authClient.getCookie(),
+      getWalletSession().catch(() => null)
+    ]);
     if (cookie) headers.set("Cookie", cookie);
+    if (walletSession) headers.set("Authorization", `Bearer ${walletSession.token}`);
   }
 
   const response = await fetch(API_BASE_URL + normalizedPath, {

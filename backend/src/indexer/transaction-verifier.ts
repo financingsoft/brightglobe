@@ -30,6 +30,7 @@ export function findMatchingFinalizedTransferEvent(
       typeof source === "string" && sourceTokenAccounts.has(source) &&
       typeof destination === "string" && destinationTokenAccounts.has(destination) &&
       authority === expected.fromAddress &&
+      event.payload.originalType === "transferChecked" &&
       amount === expected.amountBaseUnits.toString() &&
       (mint === null || mint === undefined || mint === expected.mintAddress);
   }) ?? null;

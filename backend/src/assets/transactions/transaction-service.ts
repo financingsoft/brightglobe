@@ -1,12 +1,14 @@
-import { and, eq, inArray, lte } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import type { Database } from "../../db/client.js";
 import {
+  assetAccounts,
   assetRegistry,
   assetTransactionIntents,
   assetTransactionTransitions,
   walletOwnerships
 } from "../../db/schema.js";
 import { createUuidV7 } from "../../identity/ids.js";
+import { getOrCreateUserAssetAccount } from "../asset-service.js";
 import { isValidSolanaAddress } from "../../blockchain/solana/address.js";
 import { assertAssetTransactionTransition, type AssetTransactionStatus } from "./state-machine.js";
 
@@ -33,6 +35,30 @@ export interface CreateAssetTransactionInput {
   recentBlockhash?: string | null;
   lastValidBlockHeight?: bigint | null;
   expiresAt?: Date | null;
+}
+
+export async function getActiveTransferReservationBaseUnits(
+  db: Database,
+  input: { canonicalUserId: string; assetId: string },
+  now = new Date()
+): Promise<bigint> {
+  const [reservation] = await db.select({
+    reservedBaseUnits: sql<string>`COALESCE(SUM(${assetTransactionIntents.amountBaseUnits}), 0)::text`
+  }).from(assetTransactionIntents)
+    .where(and(
+      eq(assetTransactionIntents.canonicalUserId, input.canonicalUserId),
+      eq(assetTransactionIntents.assetId, input.assetId),
+      eq(assetTransactionIntents.operation, "transfer"),
+      isNull(assetTransactionIntents.ledgerPostedAt),
+      or(
+        inArray(assetTransactionIntents.status, ["submitted", "confirmed", "finalized"]),
+        and(
+          inArray(assetTransactionIntents.status, ["created", "signed"]),
+          gt(assetTransactionIntents.expiresAt, now)
+        )
+      )
+    ));
+  return BigInt(reservation?.reservedBaseUnits ?? "0");
 }
 
 export async function createAssetTransactionIntent(
@@ -102,8 +128,53 @@ export async function createAssetTransactionIntent(
   const now = new Date();
   const intentId = createUuidV7(now.getTime());
   const expiresAt = input.expiresAt === undefined ? new Date(now.getTime() + 2 * 60 * 1000) : input.expiresAt;
+  if (input.operation === "transfer") {
+    await getOrCreateUserAssetAccount(db, {
+      canonicalUserId: input.canonicalUserId,
+      assetId: input.assetId
+    });
+  }
   try {
     await db.transaction(async (transaction) => {
+      if (input.operation === "transfer") {
+        // Lock the user's aggregate asset account so parallel transfer-intent
+        // creation cannot reserve the same internal BG balance twice.
+        const [userAccount] = await transaction.select().from(assetAccounts)
+          .where(and(
+            eq(assetAccounts.assetId, input.assetId),
+            eq(assetAccounts.canonicalUserId, input.canonicalUserId),
+            eq(assetAccounts.accountType, "user")
+          ))
+          .limit(1)
+          .for("update");
+        if (!userAccount) {
+          throw new AssetTransactionConflictError("The BrightGlobe asset account is unavailable.");
+        }
+
+        const [reservation] = await transaction.select({
+          reservedBaseUnits: sql<string>`COALESCE(SUM(${assetTransactionIntents.amountBaseUnits}), 0)::text`
+        }).from(assetTransactionIntents)
+          .where(and(
+            eq(assetTransactionIntents.canonicalUserId, input.canonicalUserId),
+            eq(assetTransactionIntents.assetId, input.assetId),
+            eq(assetTransactionIntents.operation, "transfer"),
+            isNull(assetTransactionIntents.ledgerPostedAt),
+            or(
+              inArray(assetTransactionIntents.status, ["submitted", "confirmed", "finalized"]),
+              and(
+                inArray(assetTransactionIntents.status, ["created", "signed"]),
+                gt(assetTransactionIntents.expiresAt, now)
+              )
+            )
+          ));
+        const reservedBaseUnits = BigInt(reservation?.reservedBaseUnits ?? "0");
+        if (userAccount.balanceBaseUnits - reservedBaseUnits < input.amountBaseUnits) {
+          throw new AssetTransactionConflictError(
+            "The available BG ledger balance is already reserved by other pending transfers."
+          );
+        }
+      }
+
       await transaction.insert(assetTransactionIntents).values({
         id: intentId,
         canonicalUserId: input.canonicalUserId,

@@ -21,7 +21,8 @@ function event(overrides: Partial<TransferEventLike> = {}): TransferEventLike {
       destination: "destination-token-account",
       authority: "source-owner",
       amountBaseUnits: "500",
-      mint: "bg-mint"
+      mint: "bg-mint",
+      originalType: "transferChecked"
     },
     ...overrides
   };

@@ -1,13 +1,16 @@
+import "react-native-get-random-values";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { View } from "react-native";
 import { LocaleProvider } from "@/i18n/locale";
 import { AuthProvider } from "@/auth/session";
+import { WalletKitProvider } from "@/wallet/WalletKitProvider";
 
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
+      <WalletKitProvider>
       <LocaleProvider>
         <AuthProvider>
           <View style={styles.root}>
@@ -33,7 +36,9 @@ export default function RootLayout() {
               <Stack.Screen name="rewards" />
               <Stack.Screen name="settings" />
               <Stack.Screen name="wallet" />
+              <Stack.Screen name="bg-wallet" />
               <Stack.Screen name="login" />
+              <Stack.Screen name="licenses" />
               <Stack.Screen name="auth/verified" />
               <Stack.Screen name="auth/reset-password" />
               <Stack.Screen name="+not-found" />
@@ -41,6 +46,7 @@ export default function RootLayout() {
           </View>
         </AuthProvider>
       </LocaleProvider>
+      </WalletKitProvider>
     </SafeAreaProvider>
   );
 }

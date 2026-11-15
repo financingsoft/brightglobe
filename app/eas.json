@@ -6,7 +6,8 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "environment": "development"
     },
     "preview": {
       "distribution": "internal",
@@ -14,11 +15,13 @@
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://api.globeapps.com/staging",
         "EXPO_PUBLIC_ENABLE_PREVIEW_AUTH": "false"
-      }
+      },
+      "environment": "preview"
     },
     "production": {
       "autoIncrement": true,
-      "channel": "production"
+      "channel": "production",
+      "environment": "production"
     }
   },
   "submit": {

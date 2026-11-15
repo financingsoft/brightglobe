@@ -302,6 +302,8 @@ export const chainIndexerSources = pgTable("chain_indexer_sources", {
   ownerAddress: varchar("owner_address", { length: 44 }).notNull(),
   tokenAccountAddress: varchar("token_account_address", { length: 44 }).notNull(),
   firstSeenSlot: bigint("first_seen_slot", { mode: "bigint" }).notNull(),
+  openingBalanceBaseUnits: bigint("opening_balance_base_units", { mode: "bigint" }).notNull().default(0n),
+  openingBalanceSlot: bigint("opening_balance_slot", { mode: "bigint" }),
   status: varchar("status", { length: 16 }).notNull().default("active"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
@@ -310,7 +312,8 @@ export const chainIndexerSources = pgTable("chain_indexer_sources", {
   index("chain_indexer_sources_asset_status_idx").on(table.assetId, table.status),
   check("chain_indexer_sources_network_check", sql.raw("network IN ('devnet', 'mainnet-beta')")),
   check("chain_indexer_sources_status_check", sql.raw("status IN ('active', 'closed', 'ignored')")),
-  check("chain_indexer_sources_first_slot_check", sql.raw("first_seen_slot >= 0"))
+  check("chain_indexer_sources_first_slot_check", sql.raw("first_seen_slot >= 0")),
+  check("chain_indexer_sources_opening_balance_check", sql.raw("opening_balance_base_units >= 0 AND (opening_balance_slot IS NULL OR opening_balance_slot >= 0)"))
 ]);
 
 export const chainIndexerCursors = pgTable("chain_indexer_cursors", {

@@ -48,7 +48,7 @@ test("does not decode failed transactions or unrelated programs", () => {
   assert.deepEqual(unrelated, []);
 });
 
-test("quarantinable unknown SPL instructions remain explicit", () => {
+test("quarantinable unknown SPL instructions preserve their account context", () => {
   const events = decodeFinalizedClassicTokenEvents("signature", {
     slot: 1,
     meta: { err: null, innerInstructions: [] },
@@ -61,5 +61,7 @@ test("quarantinable unknown SPL instructions remain explicit", () => {
       }
     }
   });
-  assert.equal(events[0]!.eventType, "malformed_instruction");
+  assert.equal(events[0]!.eventType, "unsupported_instruction");
+  assert.equal(events[0]!.payload.account, "token-account");
+  assert.equal(events[0]!.payload.destination, "wallet");
 });

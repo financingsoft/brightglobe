@@ -5,7 +5,8 @@ import { extname, resolve } from "node:path";
 
 const appRoot = resolve(process.env.BRIGHTGLOBE_WEB_EXPORT_DIR ?? resolve(process.cwd(), "dist"));
 const outputRoot = resolve(process.cwd(), "artifacts/ui-baseline");
-const basePath = "/brightglobe";
+// The local preview server is mounted at the origin root; Expo Router routes must not be prefixed.
+const basePath = "";
 const port = 4173;
 
 const referenceImages = [
@@ -103,13 +104,12 @@ try {
   await page.waitForTimeout(500);
   await page.screenshot({ path: resolve(outputRoot, "home-375x667.png") });
 
-  const forceTab = page.getByText("发现原力", { exact: true }).last();
-  await forceTab.click();
-  await page.waitForTimeout(350);
+  await page.goto(`http://127.0.0.1:${port}${basePath}/tasks`, { waitUntil: "networkidle", timeout: 60000 });
+  await page.locator("body").waitFor({ state: "visible", timeout: 10000 });
+  await page.waitForTimeout(500);
   await page.screenshot({ path: resolve(outputRoot, "discover-force-375x667.png") });
 
-  const profileTab = page.getByText("我的", { exact: true }).last();
-  await profileTab.click();
+  await page.goto(`http://127.0.0.1:${port}${basePath}/profile`, { waitUntil: "networkidle", timeout: 60000 });
   await page.waitForTimeout(350);
   await page.screenshot({ path: resolve(outputRoot, "my-375x667.png") });
 

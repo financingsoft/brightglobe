@@ -8,7 +8,13 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.financingsoft.brightglobe"
+      "bundleIdentifier": "com.financingsoft.brightglobe",
+      "infoPlist": {
+        "LSApplicationQueriesSchemes": [
+          "phantom",
+          "solflare"
+        ]
+      }
     },
     "android": {
       "package": "com.financingsoft.brightglobe"
@@ -18,10 +24,17 @@
       "output": "static"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow BrightGlobe to scan wallet QR codes.",
+          "recordAudioAndroid": false
+        }
+      ]
     ],
     "experiments": {
-      "typedRoutes": true,
+      "typedRoutes": true
     }
   }
 }

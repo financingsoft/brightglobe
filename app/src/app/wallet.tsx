@@ -31,7 +31,7 @@ function formatTime(value: string, locale: string): string {
 export default function WalletScreen() {
   const { locale } = useI18n();
   const router = useRouter();
-  const { isAuthenticated, isPreviewAccount } = useAuth();
+  const { isAuthenticated, isPreviewAccount, authMethod } = useAuth();
   const [showAccountInfo, setShowAccountInfo] = useState(false);
   const [account, setAccount] = useState<BdAccountSnapshot | null>(null);
   const [items, setItems] = useState<BdHistoryItem[]>([]);
@@ -41,11 +41,13 @@ export default function WalletScreen() {
 
   useEffect(() => {
     let active = true;
-    if (!isAuthenticated || isPreviewAccount) {
+    if (!isAuthenticated || isPreviewAccount || authMethod === "wallet") {
       setAccount(null);
       setItems([]);
       setLoading(false);
-      setError(t("登录真实账户后查看黑钻账户。", "Sign in to view your BD account."));
+      setError(authMethod === "wallet"
+        ? t("钱包身份与历史 BD 内部账本隔离。绑定已验证邮箱身份后才能查看黑钻账户。", "Wallet identity is separate from the legacy BD ledger. Link a verified email identity to access the BD account.")
+        : t("登录真实账户后查看黑钻账户。", "Sign in to view your BD account."));
       return () => { active = false; };
     }
 
@@ -65,7 +67,7 @@ export default function WalletScreen() {
       });
 
     return () => { active = false; };
-  }, [isAuthenticated, isPreviewAccount, locale]);
+  }, [isAuthenticated, isPreviewAccount, authMethod, locale]);
 
   return (
     <AppScreen>
@@ -138,14 +140,16 @@ export default function WalletScreen() {
         <Text style={styles.emptyText}>{t("暂无入账记录。可在首页点击地球参与每日收集。", "No credits yet. Tap the Earth on Home when daily collection is available.")}</Text>
       )}
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
-      {(!isAuthenticated || isPreviewAccount) ? (
+      {(!isAuthenticated || isPreviewAccount || authMethod === "wallet") ? (
         <Pressable accessibilityRole="button" onPress={() => router.push("/login")} style={styles.signInButton}>
-          <Text style={styles.signInText}>{t("登录账户", "Sign in")}</Text>
+          <Text style={styles.signInText}>{authMethod === "wallet" ? t("绑定邮箱账户", "Link email account") : t("登录账户", "Sign in")}</Text>
         </Pressable>
       ) : null}
 
       <Text style={styles.previewNote}>
-        {t("1.0 版本不提供链上钱包、用户间转账、代币兑换或现金提现。此处显示的是服务端内部账本余额。", "V1.0 does not provide an on-chain wallet, peer transfers, token exchange or cash withdrawal. This is the server-side internal ledger balance.")}
+        {authMethod === "wallet"
+          ? t("当前登录的是 Solana Devnet 钱包身份。该身份不会自动获得历史 BD 余额，也不会将 BD 转换为 BG。", "You are signed in with a Solana Devnet wallet identity. It does not inherit legacy BD balances or convert BD into BG.")
+          : t("1.0 版本不提供链上钱包、用户间转账、代币兑换或现金提现。此处显示的是服务端内部账本余额。", "V1.0 does not provide an on-chain wallet, peer transfers, token exchange or cash withdrawal. This is the server-side internal ledger balance.")}
       </Text>
 
       <Modal visible={showAccountInfo} transparent animationType="fade" onRequestClose={() => setShowAccountInfo(false)}>

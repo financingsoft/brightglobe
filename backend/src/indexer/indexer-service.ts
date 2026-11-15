@@ -13,7 +13,9 @@ import { createUuidV7 } from "../identity/ids.js";
 import { classifyChainEvent } from "./event-policy.js";
 import type { SolanaGateway } from "../blockchain/solana/gateway.js";
 import { decodeFinalizedClassicTokenEvents } from "../blockchain/solana/transaction-decoder.js";
-import { CLASSIC_SPL_TOKEN_PROGRAM_ID, parseClassicSplMint } from "../blockchain/solana/token/classic-token.js";
+import { CLASSIC_SPL_TOKEN_PROGRAM_ID, parseClassicSplMint, parseClassicSplTokenAccount } from "../blockchain/solana/token/classic-token.js";
+import { recordTokenAccountOpeningBalance } from "./opening-balance.js";
+import { processObservedBgAssetEvents } from "./event-settlement.js";
 import { expireStaleAssetTransactionIntents, transitionAssetTransaction } from "../assets/transactions/transaction-service.js";
 import { settleFinalizedAssetTransaction } from "../assets/ledger/ledger-service.js";
 import { hasBlockhashExpired } from "../assets/transactions/blockhash.js";
@@ -57,13 +59,18 @@ async function verifyFinalizedTransferIntent(
   const sourceSet = new Set(sourceAccounts.map((account) => account.address));
   const destinationSet = new Set(destinationAccounts.map((account) => account.address));
 
-  const matching = findMatchingFinalizedTransferEvent(events, {
-    fromAddress,
-    toAddress,
-    amountBaseUnits: intent.amountBaseUnits,
-    mintAddress,
-    slot: expectedSlot
-  }, sourceSet, destinationSet);
+  const tokenMovementEvents = events.filter((event) =>
+    event.eventType === "transfer" || event.eventType === "mint_to" || event.eventType === "burn"
+  );
+  const matching = tokenMovementEvents.length === 1
+    ? findMatchingFinalizedTransferEvent(events, {
+        fromAddress,
+        toAddress,
+        amountBaseUnits: intent.amountBaseUnits,
+        mintAddress,
+        slot: expectedSlot
+      }, sourceSet, destinationSet)
+    : null;
 
   if (matching) {
     return {
@@ -94,7 +101,38 @@ async function verifyFinalizedTransferIntent(
   };
 }
 
-export async function syncPendingTransactionIntents(
+export async function recordFinalizedSettlementFailure(
+  db: Database,
+  intent: typeof assetTransactionIntents.$inferSelect,
+  error: unknown
+): Promise<void> {
+  const discrepancyType = "finalized_intent_ledger_settlement_failed";
+  const [existing] = await db.select({ id: chainReconciliationDiscrepancies.id })
+    .from(chainReconciliationDiscrepancies)
+    .where(and(
+      eq(chainReconciliationDiscrepancies.transactionIntentId, intent.id),
+      eq(chainReconciliationDiscrepancies.discrepancyType, discrepancyType),
+      eq(chainReconciliationDiscrepancies.status, "open")
+    ))
+    .limit(1);
+  if (existing) return;
+  await recordReconciliationDiscrepancy(db, {
+    network: "devnet",
+    assetId: intent.assetId,
+    transactionIntentId: intent.id,
+    discrepancyType,
+    expected: {
+      operation: intent.operation,
+      amountBaseUnits: intent.amountBaseUnits.toString(),
+      ledgerSettlement: "posted"
+    },
+    observed: {
+      error: error instanceof Error ? error.message : "unknown_ledger_settlement_error"
+    }
+  });
+}
+
+async function syncPendingTransactionIntents(
   db: Database,
   gateway: SolanaGateway,
   limit = 50
@@ -124,7 +162,11 @@ export async function syncPendingTransactionIntents(
   for (const intent of pending) {
     try {
       if (intent.status === "finalized") {
-        await settleFinalizedAssetTransaction(db, intent.id);
+        try {
+          await settleFinalizedAssetTransaction(db, intent.id);
+        } catch (error) {
+          await recordFinalizedSettlementFailure(db, intent, error);
+        }
         continue;
       }
       if (!intent.chainSignature) continue;
@@ -216,7 +258,11 @@ export async function syncPendingTransactionIntents(
           chainCommitment: "finalized"
         });
         finalized += 1;
-        await settleFinalizedAssetTransaction(db, intent.id);
+        try {
+          await settleFinalizedAssetTransaction(db, intent.id);
+        } catch (error) {
+          await recordFinalizedSettlementFailure(db, intent, error);
+        }
         continue;
       }
 
@@ -340,6 +386,52 @@ export async function ingestFinalizedBatch(
         createdAt: now
       }).onConflictDoNothing().returning({ id: chainObservedEvents.id });
       insertedEvents += inserted.length;
+      if (processingStatus === "quarantined" && inserted.length > 0) {
+        const tokenAccountAddress = input.sourceKey.startsWith("BG:")
+          ? input.sourceKey.slice("BG:".length)
+          : null;
+        const [source] = tokenAccountAddress
+          ? await transaction.select({ assetId: chainIndexerSources.assetId })
+              .from(chainIndexerSources)
+              .where(and(
+                eq(chainIndexerSources.network, input.network),
+                eq(chainIndexerSources.tokenAccountAddress, tokenAccountAddress)
+              ))
+              .limit(1)
+          : [];
+        await transaction.insert(chainReconciliationDiscrepancies).values({
+          id: createUuidV7(now.getTime()),
+          network: input.network,
+          assetId: source?.assetId ?? null,
+          transactionIntentId: null,
+          discrepancyType: "quarantined_chain_instruction",
+          expected: { supportedEventTypes: ["transfer", "mint_to", "burn"] },
+          observed: {
+            sourceKey: input.sourceKey,
+            signature: event.signature,
+            slot: event.slot.toString(),
+            programId: event.programId,
+            eventType: event.eventType,
+            payload: event.payload
+          },
+          status: "open"
+        });
+        const sourceAddress = tokenAccountAddress;
+        if (sourceAddress !== null && [
+          event.payload.source,
+          event.payload.destination,
+          event.payload.account
+        ].some((value) => value === sourceAddress)) {
+          // Unknown instructions affecting a tracked BG token account make
+          // subsequent automatic ownership/balance projection unsafe.
+          await transaction.update(chainIndexerSources)
+            .set({ status: "ignored", updatedAt: now })
+            .where(and(
+              eq(chainIndexerSources.network, input.network),
+              eq(chainIndexerSources.tokenAccountAddress, sourceAddress)
+            ));
+        }
+      }
     }
 
     await transaction.update(chainIndexerCursors)
@@ -587,6 +679,7 @@ export async function scanConfiguredBgAsset(
   insertedEvents: number;
   targetFinalizedSlot: string;
   transactionStatusSync: { checked: number; confirmed: number; finalized: number; failed: number; expired: number };
+  eventSettlement: { checked: number; processed: number; ignored: number; quarantined: number };
 }> {
   const maxSourcesPerRun = input.maxSourcesPerRun ?? 10;
   const maxSlotsPerSource = input.maxSlotsPerSource ?? 5000n;
@@ -622,19 +715,22 @@ export async function scanConfiguredBgAsset(
   });
   if (parsedMint.decimals !== decimals) throw new IndexerAssetNotConfiguredError();
 
-  const linkedWallets = await db.select({ address: walletOwnerships.address })
-    .from(walletOwnerships)
+  const linkedWallets = await db.select({
+    address: walletOwnerships.address,
+    canonicalUserId: walletOwnerships.canonicalUserId
+  }).from(walletOwnerships)
     .where(eq(walletOwnerships.network, "devnet"));
+  const canonicalUserByWallet = new Map(
+    linkedWallets.map((wallet) => [wallet.address, wallet.canonicalUserId] as const)
+  );
   const ownerAddresses = [...new Set([
     ...linkedWallets.map((wallet) => wallet.address),
     ...(input.additionalOwnerAddresses ?? [])
   ])];
-  if (ownerAddresses.length === 0) {
-    throw new TypeError("No wallet or operator owner addresses are configured for BG indexing.");
-  }
-
-  // Persist every discovered token account so closed accounts remain in the
-  // scan set and cannot disappear before their final history is indexed.
+  // Persist discovered token accounts and establish a finalized opening
+  // balance before scanning subsequent history. The snapshot slot is the
+  // source cursor checkpoint, preventing historical activity from being
+  // applied twice to the internal ledger.
   for (const ownerAddress of ownerAddresses) {
     const accounts = await gateway.getTokenAccountsByOwner(ownerAddress, mintAddress);
     for (const account of accounts) {
@@ -647,6 +743,70 @@ export async function scanConfiguredBgAsset(
         firstSeenSlot: input.fromSlot,
         status: "active"
       }).onConflictDoNothing();
+
+      const [source] = await db.select().from(chainIndexerSources)
+        .where(and(
+          eq(chainIndexerSources.network, "devnet"),
+          eq(chainIndexerSources.tokenAccountAddress, account.address)
+        ))
+        .limit(1);
+      if (
+        !source ||
+        source.assetId !== asset.id ||
+        source.status !== "active" ||
+        source.openingBalanceSlot !== null
+      ) continue;
+
+      const accountInfo = await gateway.getAccountInfo(account.address, "finalized");
+      if (!accountInfo.account) {
+        await db.update(chainIndexerSources)
+          .set({ status: "ignored", updatedAt: new Date() })
+          .where(eq(chainIndexerSources.id, source.id));
+        continue;
+      }
+      let parsedTokenAccount;
+      try {
+        parsedTokenAccount = parseClassicSplTokenAccount({
+          owner: accountInfo.account.owner,
+          dataBase64: accountInfo.account.data[0]
+        });
+      } catch {
+        await db.update(chainIndexerSources)
+          .set({ status: "ignored", updatedAt: new Date() })
+          .where(eq(chainIndexerSources.id, source.id));
+        continue;
+      }
+      if (
+        parsedTokenAccount.owner !== ownerAddress ||
+        parsedTokenAccount.mint !== mintAddress ||
+        parsedTokenAccount.state === "uninitialized"
+      ) {
+        await recordReconciliationDiscrepancy(db, {
+          network: "devnet",
+          assetId: asset.id,
+          discrepancyType: "new_token_account_snapshot_mismatch",
+          expected: { ownerAddress, mintAddress, tokenAccountAddress: account.address },
+          observed: {
+            ownerAddress: parsedTokenAccount.owner,
+            mintAddress: parsedTokenAccount.mint,
+            state: parsedTokenAccount.state
+          }
+        });
+        await db.update(chainIndexerSources)
+          .set({ status: "ignored", updatedAt: new Date() })
+          .where(eq(chainIndexerSources.id, source.id));
+        continue;
+      }
+
+      await recordTokenAccountOpeningBalance(db, {
+        sourceId: source.id,
+        assetId: asset.id,
+        network: "devnet",
+        tokenAccountAddress: account.address,
+        amountBaseUnits: parsedTokenAccount.amount,
+        snapshotSlot: BigInt(accountInfo.contextSlot),
+        canonicalUserId: canonicalUserByWallet.get(ownerAddress) ?? null
+      });
     }
   }
 
@@ -659,7 +819,20 @@ export async function scanConfiguredBgAsset(
     .orderBy(asc(chainIndexerSources.tokenAccountAddress));
 
   if (sources.length === 0) {
-    throw new TypeError("No BG token accounts were discovered for the configured owners.");
+    const transactionStatusSync = await syncPendingTransactionIntents(db, gateway);
+    const eventSettlement = await processObservedBgAssetEvents(db, {
+      assetId: asset.id,
+      mintAddress,
+      limit: 100
+    });
+    return {
+      sourcesScanned: 0,
+      sourcesRemaining: 0,
+      insertedEvents: 0,
+      targetFinalizedSlot: input.toSlot.toString(),
+      transactionStatusSync,
+      eventSettlement
+    };
   }
 
   const cursors = await db.select({
@@ -678,6 +851,82 @@ export async function scanConfiguredBgAsset(
 
   let insertedEvents = 0;
   for (const source of batch) {
+    const liveAccountInfo = await gateway.getAccountInfo(source.tokenAccountAddress, "finalized");
+    if (!liveAccountInfo.account) {
+      await db.update(chainIndexerSources)
+        .set({ status: "ignored", updatedAt: new Date() })
+        .where(eq(chainIndexerSources.id, source.id));
+      continue;
+    }
+
+    let liveTokenAccount;
+    try {
+      liveTokenAccount = parseClassicSplTokenAccount({
+        owner: liveAccountInfo.account.owner,
+        dataBase64: liveAccountInfo.account.data[0]
+      });
+    } catch {
+      await recordReconciliationDiscrepancy(db, {
+        network: "devnet",
+        assetId: asset.id,
+        discrepancyType: "tracked_token_account_no_longer_valid",
+        expected: { tokenAccountAddress: source.tokenAccountAddress, mintAddress },
+        observed: { accountOwnerProgram: liveAccountInfo.account.owner }
+      });
+      await db.update(chainIndexerSources)
+        .set({ status: "ignored", updatedAt: new Date() })
+        .where(eq(chainIndexerSources.id, source.id));
+      continue;
+    }
+
+    if (
+      liveTokenAccount.mint !== mintAddress ||
+      liveTokenAccount.state === "uninitialized"
+    ) {
+      await recordReconciliationDiscrepancy(db, {
+        network: "devnet",
+        assetId: asset.id,
+        discrepancyType: "tracked_token_account_mint_or_state_changed",
+        expected: { tokenAccountAddress: source.tokenAccountAddress, mintAddress },
+        observed: { mintAddress: liveTokenAccount.mint, state: liveTokenAccount.state }
+      });
+      await db.update(chainIndexerSources)
+        .set({ status: "ignored", updatedAt: new Date() })
+        .where(eq(chainIndexerSources.id, source.id));
+      continue;
+    }
+
+    if (liveTokenAccount.owner !== source.ownerAddress) {
+      const previousCanonicalUserId = canonicalUserByWallet.get(source.ownerAddress) ?? null;
+      const nextCanonicalUserId = canonicalUserByWallet.get(liveTokenAccount.owner) ?? null;
+      if (previousCanonicalUserId && previousCanonicalUserId === nextCanonicalUserId) {
+        await db.update(chainIndexerSources)
+          .set({ ownerAddress: liveTokenAccount.owner, updatedAt: new Date() })
+          .where(eq(chainIndexerSources.id, source.id));
+        source.ownerAddress = liveTokenAccount.owner;
+      } else {
+        await recordReconciliationDiscrepancy(db, {
+          network: "devnet",
+          assetId: asset.id,
+          discrepancyType: "tracked_token_account_owner_changed",
+          expected: {
+            tokenAccountAddress: source.tokenAccountAddress,
+            ownerAddress: source.ownerAddress,
+            canonicalUserId: previousCanonicalUserId
+          },
+          observed: {
+            ownerAddress: liveTokenAccount.owner,
+            canonicalUserId: nextCanonicalUserId,
+            snapshotSlot: liveAccountInfo.contextSlot.toString()
+          }
+        });
+        await db.update(chainIndexerSources)
+          .set({ status: "ignored", updatedAt: new Date() })
+          .where(eq(chainIndexerSources.id, source.id));
+        continue;
+      }
+    }
+
     const sourceKey = `BG:${source.tokenAccountAddress}`;
     const lastSlot = cursorBySource.get(sourceKey);
     const sourceFromSlot = lastSlot === undefined ? source.firstSeenSlot : lastSlot + 1n;
@@ -696,11 +945,17 @@ export async function scanConfiguredBgAsset(
   }
 
   const transactionStatusSync = await syncPendingTransactionIntents(db, gateway);
+  const eventSettlement = await processObservedBgAssetEvents(db, {
+    assetId: asset.id,
+    mintAddress,
+    limit: 100
+  });
   return {
     sourcesScanned: batch.length,
     sourcesRemaining: Math.max(0, pending.length - batch.length),
     insertedEvents,
     targetFinalizedSlot: input.toSlot.toString(),
-    transactionStatusSync
+    transactionStatusSync,
+    eventSettlement
   };
 }

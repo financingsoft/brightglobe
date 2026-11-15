@@ -9,6 +9,14 @@ import {
 } from "react";
 import { apiRequest } from "@/services/api";
 import { authClient, isAuthConfigured } from "./client";
+import {
+  clearWalletSession,
+  getWalletSession,
+  revokeWalletSession,
+  walletSessionRequest,
+  WalletAuthError,
+  type WalletSession
+} from "@/wallet/auth";
 
 export type UserProfile = {
   displayName: string;
@@ -43,9 +51,12 @@ export type ProfileUpdateInput = Partial<Pick<
   "displayName" | "locale" | "timeZone" | "countryCode" | "avatarUrl" | "bio"
 >>;
 
-type UserCenterResponse = {
-  user: UserIdentity;
+export type WalletIdentity = { network: string; address: string; verifiedAt: string };
+
+type CanonicalIdentityResponse = {
+  user: { id: string; email: string | null };
   profile: UserProfile;
+  wallets: WalletIdentity[];
 };
 
 export type AuthStatus =
@@ -57,13 +68,18 @@ export type AuthStatus =
 
 type AuthContextValue = {
   status: AuthStatus;
+  authMethod: "email" | "wallet" | "preview" | null;
+  hasWalletSession: boolean;
+  linkEmailIdentity: () => Promise<void>;
   isAuthenticated: boolean;
   isPreviewAccount: boolean;
   previewEnabled: boolean;
   user: UserIdentity | null;
   profile: UserProfile | null;
+  wallets: WalletIdentity[];
   profileLoading: boolean;
   profileError: string | null;
+  acceptWalletSession: (session: WalletSession) => Promise<void>;
   sendPhoneOtp: (phoneNumber: string) => Promise<void>;
   verifyPhoneOtp: (phoneNumber: string, code: string) => Promise<void>;
   signUpEmail: (email: string, password: string, name: string) => Promise<void>;
@@ -84,6 +100,24 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const previewEnabled =
   !isAuthConfigured && process.env.EXPO_PUBLIC_ENABLE_PREVIEW_AUTH === "true";
 
+function mapCanonicalIdentity(response: CanonicalIdentityResponse): {
+  user: UserIdentity;
+  profile: UserProfile;
+  wallets: WalletIdentity[];
+} {
+  return {
+    user: {
+      id: response.user.id,
+      name: response.profile.displayName,
+      email: response.user.email,
+      phoneNumber: null,
+      phoneNumberVerified: false
+    },
+    profile: response.profile,
+    wallets: response.wallets ?? []
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   if (!isAuthConfigured) {
     return <UnconfiguredAuthProvider>{children}</UnconfiguredAuthProvider>;
@@ -93,44 +127,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 function UnconfiguredAuthProvider({ children }: { children: ReactNode }) {
   const [preview, setPreview] = useState(false);
+  const unavailable = async (): Promise<never> => {
+    throw new Error("The BrightGlobe API is not configured.");
+  };
   const value = useMemo<AuthContextValue>(() => ({
     status: preview ? "preview" : "unconfigured",
+    authMethod: preview ? "preview" : null,
+    hasWalletSession: false,
+    linkEmailIdentity: unavailable,
     isAuthenticated: preview,
     isPreviewAccount: preview,
     previewEnabled,
     user: null,
     profile: null,
+    wallets: [],
     profileLoading: false,
     profileError: null,
-    sendPhoneOtp: async () => {
-      throw new Error("The BrightGlobe API is not configured.");
-    },
-    verifyPhoneOtp: async () => {
-      throw new Error("The BrightGlobe API is not configured.");
-    },
-    signUpEmail: async () => {
-      throw new Error("The BrightGlobe API is not configured.");
-    },
-    signInEmail: async () => {
-      throw new Error("The BrightGlobe API is not configured.");
-    },
-    sendVerificationEmail: async () => {
-      throw new Error("The BrightGlobe API is not configured.");
-    },
-    requestPasswordReset: async () => {
-      throw new Error("The BrightGlobe API is not configured.");
-    },
-    resetPassword: async () => {
-      throw new Error("The BrightGlobe API is not configured.");
-    },
+    acceptWalletSession: unavailable,
+    sendPhoneOtp: unavailable,
+    verifyPhoneOtp: unavailable,
+    signUpEmail: unavailable,
+    signInEmail: unavailable,
+    sendVerificationEmail: unavailable,
+    requestPasswordReset: unavailable,
+    resetPassword: unavailable,
     refreshProfile: async () => undefined,
-    updateProfile: async () => {
-      throw new Error("The BrightGlobe API is not configured.");
-    },
+    updateProfile: unavailable,
     loadSessions: async () => [],
-    revokeSession: async () => {
-      throw new Error("Device sessions require a live account.");
-    },
+    revokeSession: unavailable,
     revokeOtherSessions: async () => 0,
     signOut: async () => setPreview(false),
     enterPreviewAccount: () => {
@@ -143,32 +167,59 @@ function UnconfiguredAuthProvider({ children }: { children: ReactNode }) {
 
 function ConnectedAuthProvider({ children }: { children: ReactNode }) {
   const { data: session, isPending, refetch } = authClient.useSession();
-  const [account, setAccount] = useState<UserCenterResponse | null>(null);
+  const [walletSession, setWalletSession] = useState<WalletSession | null>(null);
+  const [walletSessionLoading, setWalletSessionLoading] = useState(true);
+  const [account, setAccount] = useState<{ user: UserIdentity; profile: UserProfile; wallets: WalletIdentity[] } | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const sessionUserId = session?.user?.id;
 
+  useEffect(() => {
+    let active = true;
+    getWalletSession()
+      .then((stored) => {
+        if (active) setWalletSession(stored);
+      })
+      .catch(() => {
+        if (active) setWalletSession(null);
+      })
+      .finally(() => {
+        if (active) setWalletSessionLoading(false);
+      });
+    return () => { active = false; };
+  }, []);
+
   const refreshProfile = useCallback(async () => {
-    if (!sessionUserId) {
+    if (!sessionUserId && !walletSession) {
       setAccount(null);
       return;
     }
     setProfileLoading(true);
     setProfileError(null);
     try {
-      const response = await apiRequest<UserCenterResponse>("/api/v1/me");
-      setAccount(response);
+      const response = sessionUserId
+        ? await apiRequest<CanonicalIdentityResponse>("/api/v1/identity/me")
+        : await walletSessionRequest<CanonicalIdentityResponse>(
+            "/api/v1/identity/me",
+            {},
+            walletSession!.token
+          );
+      setAccount(mapCanonicalIdentity(response));
     } catch (error) {
+      if (!sessionUserId && error instanceof WalletAuthError && error.status === 401) {
+        await clearWalletSession();
+        setWalletSession(null);
+      }
       setProfileError(error instanceof Error ? error.message : "Unable to load your profile.");
       throw error;
     } finally {
       setProfileLoading(false);
     }
-  }, [sessionUserId]);
+  }, [sessionUserId, walletSession]);
 
   useEffect(() => {
     let active = true;
-    if (!sessionUserId) {
+    if (!sessionUserId && !walletSession) {
       setAccount(null);
       setProfileError(null);
       setProfileLoading(false);
@@ -177,21 +228,63 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
 
     setProfileLoading(true);
     setProfileError(null);
-    apiRequest<UserCenterResponse>("/api/v1/me")
+    const load = sessionUserId
+      ? apiRequest<CanonicalIdentityResponse>("/api/v1/identity/me")
+      : walletSessionRequest<CanonicalIdentityResponse>(
+          "/api/v1/identity/me",
+          {},
+          walletSession!.token
+        );
+    load
       .then((response) => {
-        if (active) setAccount(response);
+        if (active) setAccount(mapCanonicalIdentity(response));
       })
-      .catch((error: unknown) => {
-        if (active) {
-          setProfileError(error instanceof Error ? error.message : "Unable to load your profile.");
+      .catch(async (error: unknown) => {
+        if (!active) return;
+        if (!sessionUserId && error instanceof WalletAuthError && error.status === 401) {
+          await clearWalletSession();
+          if (active) setWalletSession(null);
         }
+        if (active) setProfileError(error instanceof Error ? error.message : "Unable to load your profile.");
       })
       .finally(() => {
         if (active) setProfileLoading(false);
       });
 
     return () => { active = false; };
-  }, [sessionUserId]);
+  }, [sessionUserId, walletSession]);
+
+  const acceptWalletSession = useCallback(async (next: WalletSession) => {
+    setWalletSession(next);
+    const response = await walletSessionRequest<CanonicalIdentityResponse>(
+      "/api/v1/identity/me",
+      {},
+      next.token
+    );
+    setAccount(mapCanonicalIdentity(response));
+  }, []);
+
+  const linkEmailIdentity = useCallback(async () => {
+    if (!session || !walletSession) {
+      throw new Error("Both a verified email session and an active wallet session are required.");
+    }
+    const cookie = await authClient.getCookie();
+    if (!cookie) throw new Error("The verified email session cookie is unavailable.");
+    try {
+      await walletSessionRequest<{ linked: boolean }>(
+        "/api/v1/identity/link/email",
+        { method: "POST", headers: { Cookie: cookie } },
+        walletSession.token
+      );
+    } catch (error) {
+      if (error instanceof WalletAuthError && error.status === 401) {
+        await clearWalletSession();
+        setWalletSession(null);
+      }
+      throw error;
+    }
+    await refreshProfile();
+  }, [session, walletSession, refreshProfile]);
 
   const sendPhoneOtp = useCallback(async (phoneNumber: string) => {
     const result = await authClient.phoneNumber.sendOtp({ phoneNumber });
@@ -242,68 +335,87 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateProfile = useCallback(async (input: ProfileUpdateInput) => {
-    const response = await apiRequest<{ profile: UserProfile }>("/api/v1/me/profile", {
-      method: "PATCH",
-      body: JSON.stringify(input)
-    });
+    const response = sessionUserId
+      ? await apiRequest<{ profile: UserProfile }>("/api/v1/identity/profile", {
+          method: "PATCH",
+          body: JSON.stringify(input)
+        })
+      : await walletSessionRequest<{ profile: UserProfile }>(
+          "/api/v1/identity/profile",
+          { method: "PATCH", body: JSON.stringify(input) },
+          walletSession!.token
+        );
     setAccount((current) => current ? {
       ...current,
-      user: {
-        ...current.user,
-        ...(input.displayName !== undefined ? { name: input.displayName } : {})
-      },
+      user: { ...current.user, ...(input.displayName !== undefined ? { name: input.displayName } : {}) },
       profile: response.profile
     } : current);
-  }, []);
+  }, [sessionUserId, walletSession]);
 
   const loadSessions = useCallback(async () => {
+    if (!sessionUserId) return [];
     const response = await apiRequest<{ sessions: AuthSession[] }>("/api/v1/me/sessions");
     return response.sessions;
-  }, []);
+  }, [sessionUserId]);
 
   const revokeSession = useCallback(async (sessionId: string) => {
-    await apiRequest<void>(`/api/v1/me/sessions/${encodeURIComponent(sessionId)}`, {
-      method: "DELETE"
-    });
-  }, []);
+    if (!sessionUserId) throw new Error("Wallet sessions are managed separately.");
+    await apiRequest<void>(`/api/v1/me/sessions/${encodeURIComponent(sessionId)}`, { method: "DELETE" });
+  }, [sessionUserId]);
 
   const revokeOtherSessions = useCallback(async () => {
+    if (!sessionUserId) return 0;
     const response = await apiRequest<{ revokedCount: number }>("/api/v1/me/sessions/revoke-others", {
       method: "POST"
     });
     return response.revokedCount;
-  }, []);
+  }, [sessionUserId]);
 
   const signOut = useCallback(async () => {
-    const result = await authClient.signOut();
-    if (result.error) throw new Error(result.error.message || "Unable to sign out.");
+    let walletRevokeError: unknown = null;
+    if (walletSession) {
+      try {
+        await revokeWalletSession(walletSession.token);
+      } catch (error) {
+        walletRevokeError = error;
+      } finally {
+        await clearWalletSession();
+        setWalletSession(null);
+      }
+    }
+    if (session) {
+      const result = await authClient.signOut();
+      if (result.error) throw new Error(result.error.message || "Unable to sign out.");
+      await refetch();
+    }
     setAccount(null);
-    await refetch();
-  }, [refetch]);
+    if (walletRevokeError) {
+      throw new Error("Signed out locally, but the wallet session revocation could not be confirmed. It will expire automatically.");
+    }
+  }, [walletSession, session, refetch]);
 
-  const user: UserIdentity | null = account?.user ?? (session?.user ? {
-    id: session.user.id,
-    name: session.user.name,
-    email: null,
-    phoneNumber: null,
-    phoneNumberVerified: false
-  } : null);
+  const user = account?.user ?? null;
 
-  const status: AuthStatus = isPending
+  const status: AuthStatus = isPending || walletSessionLoading
     ? "loading"
-    : session
+    : session || walletSession
       ? "authenticated"
       : "unauthenticated";
 
   const value = useMemo<AuthContextValue>(() => ({
     status,
+    authMethod: session ? "email" : walletSession ? "wallet" : null,
+    hasWalletSession: Boolean(walletSession),
+    linkEmailIdentity,
     isAuthenticated: status === "authenticated",
     isPreviewAccount: false,
     previewEnabled: false,
     user,
     profile: account?.profile ?? null,
+    wallets: account?.wallets ?? [],
     profileLoading,
     profileError,
+    acceptWalletSession,
     sendPhoneOtp,
     verifyPhoneOtp,
     signUpEmail,
@@ -319,11 +431,10 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
     signOut,
     enterPreviewAccount: () => undefined
   }), [
-    status, user, account, profileLoading, profileError,
-    sendPhoneOtp, verifyPhoneOtp, signUpEmail, signInEmail,
-    sendVerificationEmail, requestPasswordReset, resetPassword,
-    refreshProfile, updateProfile, loadSessions, revokeSession,
-    revokeOtherSessions, signOut
+    status, session, walletSession, user, account, profileLoading, profileError,
+    linkEmailIdentity, acceptWalletSession, sendPhoneOtp, verifyPhoneOtp, signUpEmail, signInEmail,
+    sendVerificationEmail, requestPasswordReset, resetPassword, refreshProfile,
+    updateProfile, loadSessions, revokeSession, revokeOtherSessions, signOut
   ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -149,6 +149,20 @@ export async function processObservedBgAssetEvents(
 
   for (const event of events) {
     const payload = event.payload;
+    const touchesTrackedBgAccount = event.eventType === "transfer"
+      ? Boolean(
+          sourceByTokenAccount.has(readString(payload, "source") ?? "") ||
+          sourceByTokenAccount.has(readString(payload, "destination") ?? "")
+        )
+      : event.eventType === "mint_to" || event.eventType === "burn"
+        ? sourceByTokenAccount.has(readString(payload, "account") ?? "")
+        : false;
+    if (!touchesTrackedBgAccount) {
+      await setEventStatus(db, event.id, "ignored");
+      ignored += 1;
+      continue;
+    }
+
     const payloadMint = readString(payload, "mint");
     if (payloadMint && payloadMint !== input.mintAddress) {
       await recordEventDiscrepancy(db, {

@@ -339,10 +339,10 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
               value={recipient}
               onChangeText={(value) => { setRecipient(value); setIdempotencyKey(null); }}
               autoCapitalize="none"
-            autoCorrect={false}
-            placeholder={t("收款方 Solana 地址", "Recipient Solana address")}
-            placeholderTextColor="#8293B0"
-            editable={!busy && !pending}
+              autoCorrect={false}
+              placeholder={t("收款方 Solana 地址", "Recipient Solana address")}
+              placeholderTextColor="#8293B0"
+              editable={!busy && !pending}
               style={[styles.input, styles.recipientInput]}
             />
             <Pressable accessibilityRole="button" disabled={busy || Boolean(pending)} onPress={openQrScanner} style={styles.scanButton}>

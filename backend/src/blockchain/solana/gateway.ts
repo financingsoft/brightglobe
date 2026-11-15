@@ -43,6 +43,8 @@ export interface SolanaGateway {
       rentEpoch: number;
     } | null;
   }>;
+  getLatestBlockhash(commitment?: "processed" | "confirmed" | "finalized"): Promise<{ blockhash: string; lastValidBlockHeight: number; contextSlot: number }>;
+  getBlockHeight(commitment?: "processed" | "confirmed" | "finalized"): Promise<number>;
   getTransaction(signature: string): Promise<unknown | null>;
   getTokenAccountsByOwner(ownerAddress: string, mintAddress: string): Promise<Array<{ address: string; contextSlot: number }>>;
   getSignaturesForAddress(address: string, before?: string, limit?: number): Promise<Array<{
@@ -81,6 +83,30 @@ export function createSolanaGateway(
         slot,
         blockHeight
       };
+    },
+
+    async getLatestBlockhash(commitment = "confirmed") {
+      const raw = await rpc.getLatestBlockhash(commitment);
+      if (
+        !Number.isSafeInteger(raw.context.slot) || raw.context.slot < 0 ||
+        !Number.isSafeInteger(raw.value.lastValidBlockHeight) || raw.value.lastValidBlockHeight < 0 ||
+        typeof raw.value.blockhash !== "string" || raw.value.blockhash.length < 32 || raw.value.blockhash.length > 44
+      ) {
+        throw new TypeError("Solana RPC returned an invalid latest blockhash response.");
+      }
+      return {
+        blockhash: raw.value.blockhash,
+        lastValidBlockHeight: raw.value.lastValidBlockHeight,
+        contextSlot: raw.context.slot
+      };
+    },
+
+    async getBlockHeight(commitment = "confirmed") {
+      const raw = await rpc.request<unknown>("getBlockHeight", [{ commitment }]);
+      if (typeof raw !== "number" || !Number.isSafeInteger(raw) || raw < 0) {
+        throw new TypeError("Solana RPC returned an invalid block height.");
+      }
+      return raw;
     },
 
     async getAccountInfo(address, commitment = "confirmed") {

@@ -386,6 +386,37 @@ export async function ingestFinalizedBatch(
         createdAt: now
       }).onConflictDoNothing().returning({ id: chainObservedEvents.id });
       insertedEvents += inserted.length;
+      if (processingStatus === "quarantined" && inserted.length > 0) {
+        const tokenAccountAddress = input.sourceKey.startsWith("BG:")
+          ? input.sourceKey.slice("BG:".length)
+          : null;
+        const [source] = tokenAccountAddress
+          ? await transaction.select({ assetId: chainIndexerSources.assetId })
+              .from(chainIndexerSources)
+              .where(and(
+                eq(chainIndexerSources.network, input.network),
+                eq(chainIndexerSources.tokenAccountAddress, tokenAccountAddress)
+              ))
+              .limit(1)
+          : [];
+        await transaction.insert(chainReconciliationDiscrepancies).values({
+          id: createUuidV7(now.getTime()),
+          network: input.network,
+          assetId: source?.assetId ?? null,
+          transactionIntentId: null,
+          discrepancyType: "quarantined_chain_instruction",
+          expected: { supportedEventTypes: ["transfer", "mint_to", "burn"] },
+          observed: {
+            sourceKey: input.sourceKey,
+            signature: event.signature,
+            slot: event.slot.toString(),
+            programId: event.programId,
+            eventType: event.eventType,
+            payload: event.payload
+          },
+          status: "open"
+        });
+      }
     }
 
     await transaction.update(chainIndexerCursors)

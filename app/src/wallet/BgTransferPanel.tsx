@@ -330,6 +330,9 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
               <QRCode value={address!} size={148} color="#101828" backgroundColor="#FFFFFF" quietZone={8} />
             </View>
             <Text selectable style={styles.receiveAddress}>{address}</Text>
+            <Text style={styles.receiveHint}>
+              {t("二维码仅包含 Devnet 钱包地址，不包含 BG 金额或支付请求。", "This QR contains only a Devnet wallet address, not a BG amount or payment request.")}
+            </Text>
             <Pressable accessibilityRole="button" onPress={copyWalletAddress} style={styles.copyAddressButton}>
               <Text style={styles.copyAddressText}>{t("复制收款地址", "Copy receive address")}</Text>
             </Pressable>
@@ -412,6 +415,7 @@ const styles = StyleSheet.create({
   receiveTitle: { color: "#D4C6F0", fontSize: 8, fontWeight: "700" },
   qrSurface: { padding: 5, backgroundColor: "#FFFFFF", borderRadius: 4 },
   receiveAddress: { color: "#A0B2D0", fontSize: 7, textAlign: "center" as const, lineHeight: 12 },
+  receiveHint: { color: "#788CAB", fontSize: 6, textAlign: "center" as const, lineHeight: 10 },
   copyAddressButton: { minHeight: 30, paddingHorizontal: 14, borderRadius: 15, borderWidth: 1, borderColor: "rgba(174,194,230,0.35)", justifyContent: "center" as const, alignItems: "center" as const },
   copyAddressText: { color: "#D4C6F0", fontSize: 8, fontWeight: "600" },
   recipientRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 6 },

@@ -164,7 +164,7 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
       });
 
       const pendingItems = recentIntents
-        .filter((intent) => !settledIntentIds.has(intent.id))
+        .filter((intent) => intent.ledgerPostedAt === null && !settledIntentIds.has(intent.id))
         .map((intent) => ({
           id: intent.id,
           type: intent.operation,

@@ -5,7 +5,8 @@ import { extname, resolve } from "node:path";
 
 const appRoot = resolve(process.env.BRIGHTGLOBE_WEB_EXPORT_DIR ?? resolve(process.cwd(), "dist"));
 const outputRoot = resolve(process.cwd(), "artifacts/ui-baseline");
-const basePath = "/brightglobe";
+// The local preview server is mounted at the origin root; Expo Router routes must not be prefixed.
+const basePath = "";
 const port = 4173;
 
 const referenceImages = [

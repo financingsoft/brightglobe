@@ -696,12 +696,7 @@ export async function scanConfiguredBgAsset(
         tokenAccountAddress: account.address,
         firstSeenSlot: input.fromSlot,
         status: "active"
-      }).onConflictDoUpdate({
-        target: [chainIndexerSources.network, chainIndexerSources.tokenAccountAddress],
-        // Preserve the recorded owner until the finalized account snapshot
-        // validates whether an ownership change is safe to reattribute.
-        set: { status: "active", updatedAt: new Date() }
-      });
+      }).onConflictDoNothing();
 
       const [source] = await db.select().from(chainIndexerSources)
         .where(and(

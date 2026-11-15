@@ -5,7 +5,7 @@ import { useAccount, useAppKit, useProvider } from "@reown/appkit-react-native";
 import { useAuth } from "@/auth/session";
 import { useI18n } from "@/i18n/locale";
 import { walletKitConfigured, SOLANA_DEVNET_CHAIN_ID } from "./appkit";
-import { signInWithSolanaWallet } from "./auth";
+import { linkSolanaWalletToEmail, signInWithSolanaWallet } from "./auth";
 
 export function WalletSignInButton() {
   if (!walletKitConfigured) return null;
@@ -14,7 +14,7 @@ export function WalletSignInButton() {
 
 function WalletSignInButtonInner() {
   const { locale } = useI18n();
-  const { acceptWalletSession } = useAuth();
+  const { acceptWalletSession, authMethod } = useAuth();
   const router = useRouter();
   const { open } = useAppKit();
   const { address, chainId, namespace, isConnected } = useAccount();
@@ -41,16 +41,15 @@ function WalletSignInButtonInner() {
     setBusy(true);
     setError("");
     try {
-      const session = await signInWithSolanaWallet(
-        address,
-        String(chainId),
-        provider as {
+      const walletProvider = provider as {
           request: (
             args: { method: "solana_signMessage"; params: { message: string; pubkey: string } },
             chain: string
           ) => Promise<unknown>;
-        }
-      );
+        };
+      const session = authMethod === "email"
+        ? await linkSolanaWalletToEmail(address, String(chainId), walletProvider)
+        : await signInWithSolanaWallet(address, String(chainId), walletProvider);
       await acceptWalletSession(session);
       router.replace("/(tabs)");
     } catch (reason) {
@@ -72,13 +71,17 @@ function WalletSignInButtonInner() {
         {busy ? <ActivityIndicator color="#EAF2FF" /> : (
           <Text style={styles.buttonText}>
             {isConnected
-              ? t("使用已连接的钱包登录", "Sign in with connected wallet")
+              ? authMethod === "email"
+                ? t("将钱包绑定到当前账户", "Link wallet to this account")
+                : t("使用已连接的钱包登录", "Sign in with connected wallet")
               : t("连接 Solana 钱包", "Connect Solana wallet")}
           </Text>
         )}
       </Pressable>
       <Text style={styles.caption}>
-        {t("仅支持 Solana Devnet。连接钱包后，还需签署一次性登录验证消息；不会请求转账授权。", "Solana Devnet only. After connecting, sign a one-time login message. No transfer approval is requested.")}
+        {authMethod === "email"
+          ? t("将钱包绑定到当前邮箱账户，需要签署一次性身份验证消息。", "Link this wallet to your email account by signing a one-time identity proof.")
+          : t("仅支持 Solana Devnet。连接钱包后，还需签署一次性登录验证消息；不会请求转账授权。", "Solana Devnet only. After connecting, sign a one-time login message. No transfer approval is requested.")}
       </Text>
       {error ? <Text accessibilityLiveRegion="polite" style={styles.error}>{error}</Text> : null}
     </>

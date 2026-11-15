@@ -59,13 +59,18 @@ async function verifyFinalizedTransferIntent(
   const sourceSet = new Set(sourceAccounts.map((account) => account.address));
   const destinationSet = new Set(destinationAccounts.map((account) => account.address));
 
-  const matching = findMatchingFinalizedTransferEvent(events, {
-    fromAddress,
-    toAddress,
-    amountBaseUnits: intent.amountBaseUnits,
-    mintAddress,
-    slot: expectedSlot
-  }, sourceSet, destinationSet);
+  const tokenMovementEvents = events.filter((event) =>
+    event.eventType === "transfer" || event.eventType === "mint_to" || event.eventType === "burn"
+  );
+  const matching = tokenMovementEvents.length === 1
+    ? findMatchingFinalizedTransferEvent(events, {
+        fromAddress,
+        toAddress,
+        amountBaseUnits: intent.amountBaseUnits,
+        mintAddress,
+        slot: expectedSlot
+      }, sourceSet, destinationSet)
+    : null;
 
   if (matching) {
     return {

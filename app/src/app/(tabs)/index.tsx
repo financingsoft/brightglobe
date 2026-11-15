@@ -64,14 +64,20 @@ export default function HomeScreen() {
   }, [isHomeFocused, isAuthenticated, isPreviewAccount, authMethod, user?.id, locale]);
 
   const requireLiveAccount = (action: () => void) => {
-    if (!isAuthenticated || isPreviewAccount || authMethod === "wallet") {
+    if (!isAuthenticated || isPreviewAccount) {
       setShowLoginPrompt(true);
       return;
     }
     action();
   };
 
-  const openPoints = () => requireLiveAccount(() => router.push("/points-record"));
+  const openPoints = () => {
+    if (authMethod === "wallet") {
+      setShowLoginPrompt(true);
+      return;
+    }
+    requireLiveAccount(() => router.push("/points-record"));
+  };
 
   const handleEarthTap = async () => {
     if (!isAuthenticated || isPreviewAccount || authMethod === "wallet") {

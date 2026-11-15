@@ -704,7 +704,12 @@ export async function scanConfiguredBgAsset(
           eq(chainIndexerSources.tokenAccountAddress, account.address)
         ))
         .limit(1);
-      if (!source || source.assetId !== asset.id || source.openingBalanceSlot !== null) continue;
+      if (
+        !source ||
+        source.assetId !== asset.id ||
+        source.status !== "active" ||
+        source.openingBalanceSlot !== null
+      ) continue;
 
       const accountInfo = await gateway.getAccountInfo(account.address, "finalized");
       if (!accountInfo.account) {

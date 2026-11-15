@@ -108,6 +108,13 @@ export async function syncPendingTransactionIntents(
   let confirmed = 0;
   let finalized = 0;
   let failed = 0;
+  let expiredCount = expired;
+  const needsBlockHeight = pending.some((intent) =>
+    intent.status === "submitted" && intent.lastValidBlockHeight !== null
+  );
+  const currentBlockHeight = needsBlockHeight
+    ? BigInt(await gateway.getBlockHeight("confirmed"))
+    : null;
   for (const intent of pending) {
     try {
       if (intent.status === "finalized") {
@@ -117,7 +124,23 @@ export async function syncPendingTransactionIntents(
       if (!intent.chainSignature) continue;
       const response = await gateway.getSignatureStatuses([intent.chainSignature]);
       const status = response.value[0];
-      if (!status || !status.confirmationStatus) continue;
+      if (!status) {
+        if (
+          intent.status === "submitted" &&
+          intent.lastValidBlockHeight !== null &&
+          currentBlockHeight !== null &&
+          currentBlockHeight > intent.lastValidBlockHeight
+        ) {
+          await transitionAssetTransaction(db, {
+            intentId: intent.id,
+            toStatus: "expired",
+            reason: "blockhash_expired"
+          });
+          expiredCount += 1;
+        }
+        continue;
+      }
+      if (!status.confirmationStatus) continue;
       if (!Number.isSafeInteger(status.slot) || status.slot < 0) {
         throw new Error("Solana RPC returned an unsafe transaction slot.");
       }
@@ -209,7 +232,7 @@ export async function syncPendingTransactionIntents(
     }
   }
 
-  return { checked: pending.length, confirmed, finalized, failed, expired };
+  return { checked: pending.length, confirmed, finalized, failed, expired: expiredCount };
 }
 
 export class IndexerGapError extends Error {

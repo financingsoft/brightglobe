@@ -50,7 +50,8 @@
     "text-encoding": "0.7.0",
     "expo-application": "~58.0.4",
     "react-native-qrcode-svg": "6.3.54",
-    "expo-clipboard": "~58.0.4"
+    "expo-clipboard": "~58.0.4",
+    "expo-camera": "~58.0.14"
   },
   "devDependencies": {
     "@types/react": "~19.3.0",

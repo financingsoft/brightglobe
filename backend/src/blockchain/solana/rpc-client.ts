@@ -116,7 +116,7 @@ export function createSolanaRpcClient(
     getLatestBlockhash: (commitment = "confirmed") =>
       request<{ context: { slot: number }; value: { blockhash: string; lastValidBlockHeight: number } }>("getLatestBlockhash", [{ commitment }]),
     getSignatureStatuses: (signatures, searchTransactionHistory = false) =>
-      request<{ context: { slot: number }; value: Array<{ slot: number; confirmations: number | null; err: unknown | null; confirmationStatus?: "processed" | "confirmed" | "finalized" } | null }>("getSignatureStatuses", [
+      request<{ context: { slot: number }; value: Array<{ slot: number; confirmations: number | null; err: unknown | null; confirmationStatus?: "processed" | "confirmed" | "finalized" } | null>>("getSignatureStatuses", [
         [...signatures],
         { searchTransactionHistory }
       ])

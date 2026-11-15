@@ -131,7 +131,7 @@ export function decimalStringToBaseUnits(value: string, decimals: number): bigin
     throw new RangeError("Token decimals must be an integer between 0 and 18.");
   }
   const normalized = value.trim();
-  if (!/^(0|[1-9][0-9]*)(?:\\.[0-9]+)?$/.test(normalized)) {
+  if (!/^(0|[1-9][0-9]*)(?:\.[0-9]+)?$/.test(normalized)) {
     throw new TypeError("Token amount must be a non-negative decimal string.");
   }
   const [whole, fraction = ""] = normalized.split(".");

@@ -49,6 +49,31 @@ function decodeInstruction(
         ? "burn"
         : "unsupported_instruction";
   const amountBaseUnits = amountField(info);
+  const payload = {
+    source: stringField(info, "source"),
+    destination: stringField(info, "destination"),
+    authority: stringField(info, "authority"),
+    account: stringField(info, "account"),
+    mint: stringField(info, "mint"),
+    authorityType: stringField(info, "authorityType"),
+    newAuthority: stringField(info, "newAuthority"),
+    delegate: stringField(info, "delegate"),
+    owner: stringField(info, "owner"),
+    amountBaseUnits,
+    originalType: type
+  };
+
+  if (eventType === "unsupported_instruction") {
+    return {
+      signature,
+      slot,
+      instructionIndex,
+      eventIndex,
+      programId: CLASSIC_SPL_TOKEN_PROGRAM_ID,
+      eventType,
+      payload
+    };
+  }
   if (!amountBaseUnits || !/^(0|[1-9][0-9]*)$/.test(amountBaseUnits)) {
     return {
       signature,
@@ -57,7 +82,7 @@ function decodeInstruction(
       eventIndex,
       programId: CLASSIC_SPL_TOKEN_PROGRAM_ID,
       eventType: "malformed_instruction",
-      payload: { originalType: type }
+      payload
     };
   }
 
@@ -68,15 +93,7 @@ function decodeInstruction(
     eventIndex,
     programId: CLASSIC_SPL_TOKEN_PROGRAM_ID,
     eventType,
-    payload: {
-      source: stringField(info, "source"),
-      destination: stringField(info, "destination"),
-      authority: stringField(info, "authority"),
-      account: stringField(info, "account"),
-      mint: stringField(info, "mint"),
-      amountBaseUnits,
-      originalType: type
-    }
+    payload: { ...payload, amountBaseUnits }
   };
 }
 

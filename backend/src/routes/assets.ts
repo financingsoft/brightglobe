@@ -172,6 +172,29 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
     if (intent.status === "submitted" && intent.chainSignature === body.signature) {
       return context.json({ id: intent.id, status: "submitted", chainSignature: intent.chainSignature }, 200);
     }
+    if (intent.recentBlockhash === null || intent.lastValidBlockHeight === null) {
+      return context.json({ error: { code: "TRANSACTION_BLOCKHASH_MISSING", message: "The transaction intent has no valid recent blockhash window." } }, 409);
+    }
+    const gateway = createSolanaGateway(env.SOLANA_RPC_URL);
+    const cluster = await gateway.getDevnetStatus();
+    if (!cluster.healthy) {
+      return context.json({ error: { code: "SOLANA_RPC_UNAVAILABLE", message: "The Devnet RPC endpoint is not healthy." } }, 503);
+    }
+    const [signatureStatus, currentBlockHeight] = await Promise.all([
+      gateway.getSignatureStatuses([body.signature]),
+      gateway.getBlockHeight("confirmed")
+    ]);
+    const observedStatus = signatureStatus.value[0];
+    if (!observedStatus && BigInt(currentBlockHeight) > intent.lastValidBlockHeight) {
+      if (intent.status === "created" || intent.status === "signed") {
+        await transitionAssetTransaction(db, {
+          intentId: intent.id,
+          toStatus: "expired",
+          reason: "blockhash_expired"
+        });
+      }
+      return context.json({ error: { code: "TRANSACTION_BLOCKHASH_EXPIRED", message: "The transaction blockhash expired before the signature reached Devnet. Create a new intent." } }, 409);
+    }
     try {
       if (intent.status === "created") {
         await transitionAssetTransaction(db, {

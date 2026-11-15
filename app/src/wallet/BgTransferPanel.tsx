@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useAccount, useAppKit, useProvider } from "@reown/appkit-react-native";
@@ -7,7 +7,9 @@ import { useI18n } from "@/i18n/locale";
 import {
   createBgTransferIntent,
   decimalStringToAssetBaseUnits,
+  formatAssetBaseUnits,
   getBgAssetTransaction,
+  getBgOnChainWalletBalance,
   reportBgTransferSubmitted
 } from "@/services/assets";
 import { SOLANA_DEVNET_CHAIN_ID, walletKitConfigured } from "./appkit";
@@ -57,6 +59,9 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
   const [pending, setPending] = useState<PendingTransfer | null>(null);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const [onChainBalance, setOnChainBalance] = useState<string | null>(null);
+  const [onChainBalanceLoading, setOnChainBalanceLoading] = useState(false);
+  const [onChainBalanceError, setOnChainBalanceError] = useState("");
 
   const linkedWallet = Boolean(address && wallets.some(
     (wallet) => wallet.network === "devnet" && wallet.address === address
@@ -69,6 +74,31 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
     provider &&
     String(chainId) === SOLANA_DEVNET_CHAIN_ID
   );
+
+  useEffect(() => {
+    let active = true;
+    if (!isAuthenticated || isPreviewAccount || !providerReady || !address || !linkedWallet) {
+      setOnChainBalance(null);
+      setOnChainBalanceLoading(false);
+      setOnChainBalanceError("");
+      return () => { active = false; };
+    }
+    setOnChainBalanceLoading(true);
+    setOnChainBalanceError("");
+    getBgOnChainWalletBalance(address)
+      .then((snapshot) => {
+        if (active) setOnChainBalance(snapshot.onChainBalanceBaseUnits);
+      })
+      .catch((reason: unknown) => {
+        if (active) setOnChainBalanceError(
+          reason instanceof Error ? reason.message : t("无法读取链上余额。", "Unable to load the on-chain balance.")
+        );
+      })
+      .finally(() => {
+        if (active) setOnChainBalanceLoading(false);
+      });
+    return () => { active = false; };
+  }, [isAuthenticated, isPreviewAccount, providerReady, address, linkedWallet]);
 
   const connectWallet = async () => {
     setError("");
@@ -210,6 +240,17 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
       ) : (
         <>
           <Text style={styles.connectedAddress}>{t("已验证钱包", "Verified wallet")} · {address!.slice(0, 6)}…{address!.slice(-6)}</Text>
+          <View style={styles.chainBalanceRow}>
+            <Text style={styles.chainBalanceLabel}>{t("钱包链上 BG 余额", "On-chain BG balance")}</Text>
+            {onChainBalanceLoading ? (
+              <ActivityIndicator size="small" color="#C9D9F2" />
+            ) : (
+              <Text style={styles.chainBalanceValue}>
+                {onChainBalance === null ? "—" : formatAssetBaseUnits(onChainBalance, decimals)}
+              </Text>
+            )}
+          </View>
+          {onChainBalanceError ? <Text style={styles.copy}>{onChainBalanceError}</Text> : null}
           <TextInput
             value={recipient}
             onChangeText={setRecipient}
@@ -256,6 +297,9 @@ const styles = StyleSheet.create({
   sectionTitle: { color: "#E1EBFC", fontSize: 10, fontWeight: "700" },
   copy: { color: "#A0B2D0", fontSize: 8, lineHeight: 14 },
   connectedAddress: { color: "#A0B2D0", fontSize: 8 },
+  chainBalanceRow: { minHeight: 30, flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const, borderBottomWidth: 1, borderColor: "rgba(156,183,224,0.16)" },
+  chainBalanceLabel: { color: "#91A5C5", fontSize: 8 },
+  chainBalanceValue: { color: "#EAF2FF", fontSize: 10, fontWeight: "700" },
   input: { minHeight: 38, borderWidth: 1, borderColor: "rgba(156,183,224,0.25)", borderRadius: 7, color: "#EAF2FF", paddingHorizontal: 10, fontSize: 10 },
   action: { minHeight: 36, borderRadius: 18, backgroundColor: "#7052AD", alignItems: "center", justifyContent: "center", paddingHorizontal: 12 },
   actionText: { color: "#FFFFFF", fontSize: 9, fontWeight: "600" },

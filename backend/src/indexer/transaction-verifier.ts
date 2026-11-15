@@ -67,3 +67,19 @@ export function matchesFinalizedTransactionEnvelope(
     messageRecord.recentBlockhash === recentBlockhash &&
     BigInt(root.slot) === expectedSlot;
 }
+
+
+export function matchesFinalizedTransactionIdentity(
+  transaction: unknown,
+  signature: string,
+  expectedSlot: bigint
+): boolean {
+  if (typeof transaction !== "object" || transaction === null || Array.isArray(transaction)) return false;
+  const root = transaction as Record<string, unknown>;
+  if (typeof root.slot !== "number" || !Number.isSafeInteger(root.slot) || root.slot < 0) return false;
+  const tx = root.transaction;
+  if (typeof tx !== "object" || tx === null || Array.isArray(tx)) return false;
+  const signatures = (tx as Record<string, unknown>).signatures;
+  if (!Array.isArray(signatures) || typeof signatures[0] !== "string") return false;
+  return signatures[0] === signature && BigInt(root.slot) === expectedSlot;
+}

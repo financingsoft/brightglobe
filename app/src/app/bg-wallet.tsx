@@ -59,6 +59,7 @@ export default function BgWalletScreen() {
   const [account, setAccount] = useState<BgAssetAccount | null>(null);
   const [activity, setActivity] = useState<BgAssetActivityItem[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
@@ -104,6 +105,19 @@ export default function BgWalletScreen() {
     return () => { active = false; };
   }, [isAuthenticated, isPreviewAccount, authMethod, locale]);
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await reloadAccount();
+    } catch (reason) {
+      setError(reason instanceof ApiError
+        ? reason.message
+        : t("刷新 BG 账户失败。", "Unable to refresh the BG account."));
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const isDraft = account?.status !== "active" || account?.decimals === null;
   const reservedBaseUnits = account?.reservedBaseUnits ?? "0";
   const hasReservedBalance = /^\d+$/.test(reservedBaseUnits) && BigInt(reservedBaseUnits) > 0n;
@@ -115,7 +129,9 @@ export default function BgWalletScreen() {
           <Text style={styles.backGlyph}>‹</Text>
         </Pressable>
         <Text style={styles.headerTitle}>{t("BG 资产账户", "BG asset account")}</Text>
-        <View style={styles.headerAction} />
+        <Pressable accessibilityRole="button" onPress={handleRefresh} disabled={refreshing || loading} style={styles.headerAction}>
+          {refreshing || loading ? <ActivityIndicator size="small" color="#C9D9F2" /> : <Text style={styles.refreshGlyph}>↻</Text>}
+        </Pressable>
       </View>
 
       <View style={styles.balanceCard}>
@@ -228,6 +244,7 @@ const styles = StyleSheet.create({
   header: { height: 38, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderColor: "rgba(156,183,224,0.2)" },
   headerAction: { width: 30, minHeight: 30, justifyContent: "center" },
   backGlyph: { color: "#EAF2FF", fontSize: 27, lineHeight: 30 },
+  refreshGlyph: { color: "#C9D9F2", fontSize: 18, textAlign: "right" as const },
   headerTitle: { color: "#EAF2FF", fontSize: 13, fontWeight: "700" },
   balanceCard: { marginTop: 16, padding: 20, borderRadius: 12, backgroundColor: "#111F37", alignItems: "center", gap: 7 },
   eyebrow: { color: "#9AAECD", fontSize: 8, letterSpacing: 1.5, fontWeight: "700" },

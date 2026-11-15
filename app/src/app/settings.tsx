@@ -257,6 +257,7 @@ export default function SettingsScreen() {
         <Pressable style={styles.row} onPress={() => router.push("/help")}><Text style={styles.label}>{t("帮助中心", "Help center")}</Text><Text style={styles.chevron}>›</Text></Pressable>
         <Pressable style={styles.row} onPress={() => router.push("/help")}><Text style={styles.label}>{t("意见反馈", "Feedback")}</Text><Text style={styles.chevron}>›</Text></Pressable>
         <Pressable style={styles.row} onPress={() => router.push("/help")}><Text style={styles.label}>{t("隐私说明", "Privacy")}</Text><Text style={styles.chevron}>›</Text></Pressable>
+        <Pressable style={styles.row} onPress={() => router.push("/licenses")}><Text style={styles.label}>{t("第三方许可", "Third-party licenses")}</Text><Text style={styles.chevron}>›</Text></Pressable>
       </View>
 
       {isAuthenticated ? (

@@ -115,6 +115,9 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
         return context.json({ error: { code: "SOURCE_WALLET_NOT_LINKED", message: "The source wallet is not linked to this BrightGlobe account." } }, 403);
       }
 
+      if (asset.status !== "active" || !asset.mintAddress || asset.decimals === null) {
+        return context.json({ error: { code: "ASSET_NOT_ACTIVE", message: "The asset is not active for transfers." } }, 409);
+      }
       if (env.SOLANA_NETWORK !== "devnet") {
         return context.json({ error: { code: "SOLANA_NETWORK_DISABLED", message: "Devnet transaction creation is currently disabled." } }, 503);
       }

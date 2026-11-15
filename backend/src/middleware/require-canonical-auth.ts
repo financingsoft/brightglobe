@@ -5,6 +5,7 @@ import type { Database } from "../db/client.js";
 import { canonicalUsers, providerIdentities, walletSessions } from "../db/schema.js";
 import { provisionCanonicalIdentity } from "../identity/identity-service.js";
 import { hashWalletSessionToken } from "../auth/wallet/service.js";
+import { isSyntheticPhoneEmail } from "../domain/phone.js";
 import { readWalletSessionCredential } from "../auth/wallet/cookie.js";
 
 export interface CanonicalAuthContext {
@@ -21,6 +22,9 @@ export function createRequireCanonicalAuth(db: Database, auth: BetterAuthInstanc
   return createMiddleware<{ Variables: CanonicalAuthVariables }>(async (context, next) => {
     const emailSession = await auth.api.getSession({ headers: context.req.raw.headers });
     if (emailSession) {
+      if (isSyntheticPhoneEmail(emailSession.user.email)) {
+        return context.json({ error: { code: "EMAIL_IDENTITY_REQUIRED", message: "Phone-only sessions cannot be provisioned as email identities. Link a verified email or sign in with a wallet." } }, 403);
+      }
       if (!emailSession.user.emailVerified) {
         return context.json({
           error: { code: "EMAIL_NOT_VERIFIED", message: "Verify your email before using this feature." }

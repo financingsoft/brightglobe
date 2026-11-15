@@ -4,7 +4,7 @@ BrightGlobe is an Earth-centered community app. Its V1.0 core interaction is sim
 
 **Tap the Earth. Collect Black Diamond (BD).**
 
-In V1.0, BD is recorded only in a server-authoritative internal platform account. The app does not issue a Mainnet token, provision user blockchain wallets, or support user-to-user transfers, token exchange, redemption or cash-out. Solana is reserved for a possible future audit-anchor milestone, subject to separate approval.
+BD remains a server-authoritative internal platform reward account. Separately, the approved blockchain foundation adds non-custodial Solana wallet authentication and a distinct BG asset domain. BG is currently only a Devnet draft placeholder: there is no mint address, decimals, token account provisioning, issuance, transfer, exchange, redemption or cash-out. The new foundation is not yet deployed to Staging or Production.
 
 ## Architecture
 
@@ -12,7 +12,7 @@ In V1.0, BD is recorded only in a server-authoritative internal platform account
 - `backend/` — Cloudflare Workers API, Hono, Better Auth identity, Neon PostgreSQL, Drizzle schema and migrations.
 - `docs/` — binding app-core, BD ledger, UI, identity and release contracts.
 
-Better Auth is the single identity authority. Neon PostgreSQL is the source of truth for BD account balances and append-only ledger entries. The API runs on Cloudflare Workers with request-scoped Neon connections so idle traffic does not require an always-on application server. The client never chooses reward amounts or modifies balances locally.
+BrightGlobe canonical identity is the business identity authority. Better Auth remains the email-authentication provider; Solana wallet signatures are a separate non-custodial authentication provider. Neon PostgreSQL is the source of truth for legacy BD balances and append-only BD ledger entries, and separately stores canonical identities and future BG-domain records. The API runs on Cloudflare Workers with request-scoped Neon connections. The client never chooses reward amounts or modifies balances locally.
 
 ## Current implementation status
 
@@ -21,7 +21,7 @@ Better Auth is the single identity authority. Neon PostgreSQL is the source of t
 - [x] Better Auth phone OTP foundation and authenticated user-center APIs.
 - [x] V1.0 BD account, reward-rule, reward-event and double-entry ledger schema.
 - [x] Daily Earth-collection API with server-derived UTC period, active-rule and budget checks, idempotency and atomic posting.
-- [x] Home Earth tap wired to authenticated BD collection API.
+- [x] Home Earth tap wired to authenticated BD collection API.\n- [x] Canonical UUIDv7 identity, provider mapping and canonical profile foundation.\n- [x] Solana Devnet wallet challenge, Ed25519 verification, web cookie and native bearer-session foundation.\n- [x] BG Devnet draft asset registry, classic SPL Token parser, append-only ledger, transaction state machine and finalized-chain indexer modules.\n- [x] Additive migrations 0003–0010 applied and structurally tested on an isolated Neon validation child branch.\n- [ ] Complete backend typecheck, unit tests and Worker dry-run CI before opening the final PR.
 - [x] BD account and history screens now read API data instead of hard-coded preview balances.
 - [x] Unit tests added for UTC period keys, reward event keys and exact base-unit formatting.
 - [ ] Run backend typecheck, full tests and Drizzle migration validation in CI after this change.
@@ -51,7 +51,7 @@ A missing or disabled reward rule makes daily collection unavailable. No hard-co
 - Exactly one invitation-code type remains the product direction, but invite reward issuance is not implemented in this slice.
 - Task, advertising and event rewards require their own eligibility, budgets, policy review and release approval.
 - BD cannot be bought, sold, transferred, withdrawn, exchanged or redeemed in V1.0.
-- No user blockchain wallet, Solana token account, Mainnet SPL Token mint, DEX, CEX, OTC, escrow, matching or merchant token settlement is active.
+- No custodial wallet, BG token account provisioning, Mainnet SPL Token mint, minting, burning, on-chain transfer, DEX, CEX, OTC, escrow, matching or merchant token settlement is active. External wallet sign-in is a non-custodial identity proof only.
 - Do not describe internal BD as cash, an investment, an on-chain token balance, a mining yield or guaranteed income.
 
 ## Browser preview
@@ -66,11 +66,11 @@ Live UI preview: [https://financingsoft.github.io/brightglobe/](https://financin
 - [BrightGlobe 1.0 BD Internal Ledger Contract](docs/BRIGHTGLOBE_V1_BD_LEDGER_CONTRACT.md) — tables, signed double-entry postings, idempotency, budget controls and API contract.
 - [BrightGlobe 1.0 Compliance and Release Gates](docs/BRIGHTGLOBE_V1_RELEASE_GATES.md) — jurisdiction, store policy and production activation gates.
 - [NetEase Planet V1.6.0 UI Reconstruction Contract](docs/NETEASE_PLANET_V1.6_UI_CONTRACT.md) — source hierarchy, screen structure and navigation, subject to the V1.0 BD override.
-- [User Center Backend Contract](docs/USER_CENTER_BACKEND_CONTRACT.md) — Cloudflare Workers, Better Auth, phone OTP, Neon PostgreSQL and authenticated APIs.
+- [User Center Backend Contract](docs/USER_CENTER_BACKEND_CONTRACT.md) — Cloudflare Workers, Better Auth, phone OTP, Neon PostgreSQL and authenticated APIs.\n- [Blockchain Foundation](docs/blockchain-foundation/README.md) — canonical identity, non-custodial wallet auth, Devnet BG asset registry, ledger, transaction lifecycle and indexer.
 
 ### Future-only / historical contracts
-- [Black Diamond Single-Asset Economy Contract](docs/BLACK_DIAMOND_ECONOMY_CONTRACT.md) — long-term economic proposal; its transferable-token and open-market sections do not apply to V1.0.
+- [Black Diamond Single-Asset Economy Contract](docs/BLACK_DIAMOND_ECONOMY_CONTRACT.md) — historical BD economy proposal; its 2026-11-15 amendment separates legacy BD accounting from the new BG asset domain.
 - [Solana Embedded Wallet Contract](docs/SOLANA_WALLET_CONTRACT.md) — future wallet proposal; not an implementation instruction for V1.0.
 - Former Gold/BG/PRE documents are retained for audit traceability and are not current V1.0 implementation instructions.
 
-No Mainnet issuance, exchange, wallet, cash-out or merchant BD settlement is authorized by the V1.0 contracts.
+No Mainnet issuance, minting, burning, token transfer, exchange, cash-out or merchant BD settlement is authorized. The Devnet wallet authentication and BG draft foundation are not a token launch.

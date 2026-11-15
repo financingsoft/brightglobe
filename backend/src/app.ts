@@ -8,6 +8,9 @@ import type { Database } from "./db/client.js";
 import { createMeRoutes } from "./routes/me.js";
 import { createBdRoutes } from "./routes/bd.js";
 import { createSolanaRoutes } from "./routes/solana.js";
+import { createWalletAuthRoutes } from "./routes/wallet-auth.js";
+import { createIdentityRoutes } from "./routes/identity.js";
+import { createAssetRoutes } from "./routes/assets.js";
 
 interface AppDependencies {
   db: Database;
@@ -20,7 +23,7 @@ export function createApp({ db, auth, env }: AppDependencies) {
 
   app.use("*", cors({
     origin: (origin) => isAllowedOrigin(origin, env.APP_ORIGINS, env.NODE_ENV) ? origin : "",
-    allowHeaders: ["Content-Type", "Authorization", "Cookie", "X-Requested-With"],
+    allowHeaders: ["Content-Type", "Authorization", "Cookie", "X-Requested-With", "X-BrightGlobe-Client"],
     allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     exposeHeaders: ["Set-Cookie"],
     credentials: true,
@@ -49,6 +52,9 @@ export function createApp({ db, auth, env }: AppDependencies) {
   app.route("/api/v1/me", createMeRoutes(db, auth));
   app.route("/api/v1/me/bd", createBdRoutes(db, auth));
   app.route("/api/v1/blockchain/solana", createSolanaRoutes(env));
+  app.route("/api/v1/auth/wallet", createWalletAuthRoutes({ db, env, auth }));
+  app.route("/api/v1/identity", createIdentityRoutes(db, auth, env));
+  app.route("/api/v1/assets", createAssetRoutes(db, auth, env));
 
   app.notFound((context) => context.json({
     error: { code: "NOT_FOUND", message: "The requested endpoint does not exist." }

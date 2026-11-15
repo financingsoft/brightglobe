@@ -10,6 +10,24 @@ This contract complements, and does not replace, the [NetEase Planet V1.6 UI Rec
 
 ---
 
+## 2026-11-15 canonical identity amendment
+
+**Authority:** Approved BrightGlobe Blockchain Foundation design. This amendment supersedes conflicting identity statements below while preserving the legacy Better Auth and BD contracts.
+
+- BrightGlobe business identity is now a canonical UUIDv7 in `canonical_users`.
+- Better Auth 1.7.23 remains the email credential/session provider. Its user ID is a provider-local subject mapped through `provider_identities`; it is not the canonical ID for new BG-domain records.
+- Wallet-only users can create canonical identities without Better Auth rows or synthetic emails.
+- Wallet sessions are independently stored as SHA-256 token hashes. Native clients receive a bearer token only at sign-in and must store it in OS secure storage; web clients receive a Secure HttpOnly cookie.
+- Email and wallet identities can be linked only with proof of control. An identity already linked to a different canonical user is rejected; no automatic account merge occurs.
+- New canonical profile data is stored in `canonical_user_profiles`, keyed by canonical UUIDv7.
+- Existing `user_profile`, Better Auth tables, and BD tables remain legacy/provider-local and are not silently rekeyed or migrated. BD APIs continue to use their existing Better Auth user-ID contract.
+- New BG assets, wallet ownership, transactions, ledger and chain-indexer records reference canonical user IDs.
+- Solana wallet authentication is Devnet-only. It is external-wallet message signing, not a custodial embedded wallet. No private key or seed phrase is stored.
+
+For current identity and wallet endpoints, see [Blockchain Foundation](./blockchain-foundation/README.md). The remaining sections below continue to govern legacy Better Auth email/phone behavior and existing BD user-center APIs where they do not conflict with this amendment.
+
+---
+
 ## 1. Architectural decision
 
 BrightGlobe uses one independently deployable Cloudflare Workers user-center API:
@@ -41,7 +59,7 @@ The GitHub Pages website is a static UI preview, not an authentication server.
 
 - Better Auth owns `user`, `session`, `account`, and `verification`, including phone verification fields.
 - BrightGlobe owns `user_profile` and product-specific profile preferences.
-- Better Auth user IDs are the canonical foreign key for every future domain table.
+- Better Auth user IDs remain the foreign key for legacy Better Auth-owned records and existing BD tables. New BG-domain records must reference the canonical UUIDv7 identity described in the 2026-11-15 amendment.
 - Product modules must not create their own login tables or store passwords, OTPs, cookies, or provider tokens.
 - Points, Contribution Power, referrals, and reward balances are separate services, not profile columns.
 

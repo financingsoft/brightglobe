@@ -3,7 +3,9 @@
   "name": "globe",
   "main": "src/worker.ts",
   "compatibility_date": "2026-11-14",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "workers_dev": true,
   "vars": {
     "NODE_ENV": "production"
@@ -21,10 +23,18 @@
         "EMAIL_FROM": "BrightGlobe <noreply@go.globeapps.com>",
         "SOLANA_NETWORK": "devnet",
         "SOLANA_RPC_URL": "https://api.devnet.solana.com"
+      },
+      "triggers": {
+        "crons": [
+          "*/5 * * * *"
+        ]
       }
     }
   },
   "observability": {
-    "enabled": true
+    "enabled": true,
+    "traces": {
+      "enabled": true
+    }
   }
 }

@@ -2,9 +2,16 @@ import { createApp } from "./app.js";
 import { createAuth } from "./auth.js";
 import { parseEnvironment, type WorkerBindings } from "./config/env.js";
 import { createDatabase } from "./db/client.js";
+import { createSolanaGateway } from "./blockchain/solana/gateway.js";
+import { scanConfiguredBgAsset, IndexerAssetNotConfiguredError } from "./indexer/indexer-service.js";
 
 interface WorkerExecutionContext {
   waitUntil(promise: Promise<unknown>): void;
+}
+
+interface WorkerScheduledController {
+  scheduledTime: number;
+  cron: string;
 }
 
 const worker = {
@@ -58,6 +65,57 @@ const worker = {
       });
       throw error;
     }
+  },
+
+  async scheduled(
+    controller: WorkerScheduledController,
+    bindings: WorkerBindings,
+    executionContext: WorkerExecutionContext
+  ): Promise<void> {
+    let env;
+    try {
+      env = parseEnvironment(bindings);
+    } catch (error: unknown) {
+      console.error("[BrightGlobe Indexer] Invalid runtime configuration:", error);
+      return;
+    }
+
+    // Production remains inert while the configured chain is disabled.
+    if (env.SOLANA_NETWORK !== "devnet") return;
+
+    const task = (async () => {
+      const { db, pool } = createDatabase(env.DATABASE_URL);
+      try {
+        const gateway = createSolanaGateway(env.SOLANA_RPC_URL);
+        const cluster = await gateway.getDevnetStatus();
+        if (!cluster.healthy) {
+          throw new Error("The configured Solana Devnet RPC is not healthy.");
+        }
+        const result = await scanConfiguredBgAsset(db, gateway, {
+          fromSlot: BigInt(cluster.slot),
+          toSlot: BigInt(cluster.slot),
+          maxSourcesPerRun: 10
+        });
+        console.log("[BrightGlobe Indexer] Scheduled scan completed:", JSON.stringify({
+          cron: controller.cron,
+          scheduledTime: controller.scheduledTime,
+          ...result
+        }));
+      } catch (error: unknown) {
+        if (error instanceof IndexerAssetNotConfiguredError) {
+          console.log("[BrightGlobe Indexer] BG asset is still a draft; scheduled scan skipped.");
+          return;
+        }
+        console.error("[BrightGlobe Indexer] Scheduled scan failed:", error);
+        throw error;
+      } finally {
+        await pool.end();
+      }
+    })();
+
+    executionContext.waitUntil(task.catch((error: unknown) => {
+      console.error("[BrightGlobe Indexer] Background execution failed:", error);
+    }));
   }
 };
 

@@ -33,6 +33,22 @@ export interface ClassicSplTransferBuildResult {
 }
 
 /**
+ * Derive one wallet's classic SPL Associated Token Account using the official
+ * Token Program client.
+ */
+export async function deriveClassicSplAssociatedTokenAddress(input: {
+  ownerAddress: string;
+  mintAddress: string;
+}): Promise<string> {
+  const [tokenAccount] = await findAssociatedTokenPda({
+    owner: address(input.ownerAddress),
+    tokenProgram: TOKEN_PROGRAM_ADDRESS,
+    mint: address(input.mintAddress)
+  });
+  return tokenAccount;
+}
+
+/**
  * Derive canonical classic SPL Associated Token Accounts using the official
  * Token Program client. The source ATA must already exist; the destination ATA
  * is created idempotently inside the transfer transaction.

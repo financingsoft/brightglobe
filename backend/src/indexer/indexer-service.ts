@@ -666,7 +666,12 @@ export async function scanConfiguredBgAsset(
       if (!source || source.assetId !== asset.id || source.openingBalanceSlot !== null) continue;
 
       const accountInfo = await gateway.getAccountInfo(account.address, "finalized");
-      if (!accountInfo.account) continue;
+      if (!accountInfo.account) {
+        await db.update(chainIndexerSources)
+          .set({ status: "ignored", updatedAt: new Date() })
+          .where(eq(chainIndexerSources.id, source.id));
+        continue;
+      }
       let parsedTokenAccount;
       try {
         parsedTokenAccount = parseClassicSplTokenAccount({

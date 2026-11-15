@@ -1,5 +1,11 @@
 import { decodeSolanaAddress } from "./address.js";
 
+function toArrayBufferView(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
+  const copy = new Uint8Array(bytes.length);
+  copy.set(bytes);
+  return copy;
+}
+
 /**
  * Verifies a detached Ed25519 signature over the exact message bytes using
  * the 32-byte public key encoded by a Solana base58 wallet address.
@@ -15,7 +21,7 @@ export async function verifySolanaMessageSignature(
   try {
     const publicKey = await crypto.subtle.importKey(
       "raw",
-      publicKeyBytes,
+      toArrayBufferView(publicKeyBytes),
       { name: "Ed25519" },
       false,
       ["verify"]
@@ -24,8 +30,8 @@ export async function verifySolanaMessageSignature(
     return await crypto.subtle.verify(
       "Ed25519",
       publicKey,
-      signature,
-      message
+      toArrayBufferView(signature),
+      toArrayBufferView(message)
     );
   } catch {
     return false;

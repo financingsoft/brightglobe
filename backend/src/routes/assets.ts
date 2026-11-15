@@ -119,6 +119,8 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
       if (asset.status !== "active" || !asset.mintAddress || asset.decimals === null) {
         return context.json({ error: { code: "ASSET_NOT_ACTIVE", message: "The asset is not active for transfers." } }, 409);
       }
+      const mintAddress = asset.mintAddress;
+      const configuredDecimals = asset.decimals;
       if (env.SOLANA_NETWORK !== "devnet") {
         return context.json({ error: { code: "SOLANA_NETWORK_DISABLED", message: "Devnet transaction creation is currently disabled." } }, 503);
       }
@@ -130,15 +132,20 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
       if (asset.tokenProgram !== CLASSIC_SPL_TOKEN_PROGRAM_ID) {
         return context.json({ error: { code: "UNSUPPORTED_TOKEN_PROGRAM", message: "Only the classic SPL Token program is supported." } }, 409);
       }
-      const mintAccount = await gateway.getAccountInfo(asset.mintAddress, "finalized");
+      const mintAccount = await gateway.getAccountInfo(mintAddress, "finalized");
       if (!mintAccount.account) {
         return context.json({ error: { code: "ASSET_MINT_NOT_FOUND", message: "The configured BG mint account was not found on Devnet." } }, 409);
       }
-      const parsedMint = parseClassicSplMint({
-        owner: mintAccount.account.owner,
-        dataBase64: mintAccount.account.data[0]
-      });
-      if (parsedMint.decimals !== asset.decimals) {
+      let parsedMint;
+      try {
+        parsedMint = parseClassicSplMint({
+          owner: mintAccount.account.owner,
+          dataBase64: mintAccount.account.data[0]
+        });
+      } catch {
+        return context.json({ error: { code: "ASSET_MINT_INVALID", message: "The configured mint is not a valid classic SPL Token mint." } }, 409);
+      }
+      if (parsedMint.decimals !== configuredDecimals) {
         return context.json({ error: { code: "ASSET_DECIMALS_MISMATCH", message: "The configured asset decimals do not match the on-chain mint." } }, 409);
       }
       const blockhash = await gateway.getLatestBlockhash("confirmed");

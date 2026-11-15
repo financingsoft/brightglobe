@@ -9,6 +9,7 @@ import { assetRegistry, assetTransactionIntents, walletOwnerships } from "../db/
 import { isValidSolanaAddress } from "../blockchain/solana/address.js";
 import { getAssetByCode, getOrCreateUserAssetAccount, AssetNotFoundError } from "../assets/asset-service.js";
 import { createAssetTransactionIntent, AssetTransactionConflictError, transitionAssetTransaction } from "../assets/transactions/transaction-service.js";
+import { hasBlockhashExpired } from "../assets/transactions/blockhash.js";
 import { decodeBase58 } from "../auth/wallet/base58.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -185,7 +186,7 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
       gateway.getBlockHeight("confirmed")
     ]);
     const observedStatus = signatureStatus.value[0];
-    if (!observedStatus && BigInt(currentBlockHeight) > intent.lastValidBlockHeight) {
+    if (!observedStatus && hasBlockhashExpired(BigInt(currentBlockHeight), intent.lastValidBlockHeight)) {
       if (intent.status === "created" || intent.status === "signed") {
         await transitionAssetTransaction(db, {
           intentId: intent.id,

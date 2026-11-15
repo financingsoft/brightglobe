@@ -73,9 +73,14 @@ A long-running Yellowstone/Vixen gRPC indexer is not introduced at this stage. R
 
 Do not deploy a reward distributor or create a BG mint in this change.
 
-The Solana Foundation Rewards repository is a candidate for a future Merkle-distribution program, but its published audit is tied to a specific source revision (\`aa1cfd9276375e44e57d1917d110ff095fb6d475\`). The current repository head is newer than that audited revision. Do not treat the current head as covered by the earlier audit. Any future adoption must pin the reviewed revision, re-check the license and dependencies, complete an independent security review, and obtain explicit deployment authorization.
+Two mature candidates were reviewed:
 
-BrightGlobe's internal ledger and reward eligibility rules remain authoritative for internal rewards. External wallet claims require a separate distributor contract, claim-proof lifecycle and finalized reconciliation design.
+- **Solana Foundation Rewards** (\`solana-foundation/rewards\`, MIT): supports direct allocations and Merkle claims, with vesting options. Its audit status file identifies \`aa1cfd9276375e44e57d1917d110ff095fb6d475\` as the audited-through commit. The current \`main\` branch is 92 commits ahead of that baseline, so the current head must not be described as covered by the published audit. The program also includes Token-2022-specific Points functionality; BrightGlobe would only consider classic-SPL-compatible direct/Merkle paths after source-level compatibility review.
+- **Jito Merkle Distributor** (\`jito-foundation/distributor\`, GPL-3.0): includes Neodyme and OtterSec audit reports, but its workspace pins older Solana 1.16.16 / Anchor 0.28 dependencies. Its copyleft license and older protocol stack make direct adoption unsuitable for BrightGlobe's current product and dependency baseline.
+
+Neither program is integrated or deployed by this change. Before future adoption, pin an immutable reviewed commit, map the exact audited source scope, review all findings and dependencies, obtain legal approval for the license, complete a BrightGlobe-specific security review, and obtain explicit deployment authorization.
+
+BrightGlobe's internal ledger and reward eligibility rules remain authoritative for internal rewards. External wallet claims require a separate distributor contract, claim-proof lifecycle, treasury authority model, budget limits and finalized reconciliation design.
 
 ### 7. Merchant payment protocol
 

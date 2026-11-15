@@ -358,10 +358,16 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
   }, [sessionUserId]);
 
   const signOut = useCallback(async () => {
+    let walletRevokeError: unknown = null;
     if (walletSession) {
-      await revokeWalletSession(walletSession.token);
-      await clearWalletSession();
-      setWalletSession(null);
+      try {
+        await revokeWalletSession(walletSession.token);
+      } catch (error) {
+        walletRevokeError = error;
+      } finally {
+        await clearWalletSession();
+        setWalletSession(null);
+      }
     }
     if (session) {
       const result = await authClient.signOut();
@@ -369,6 +375,9 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
       await refetch();
     }
     setAccount(null);
+    if (walletRevokeError) {
+      throw new Error("Signed out locally, but the wallet session revocation could not be confirmed. It will expire automatically.");
+    }
   }, [walletSession, session, refetch]);
 
   const user = account?.user ?? (session?.user ? {

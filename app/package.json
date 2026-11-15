@@ -47,7 +47,8 @@
     "bs58": "6.0.0",
     "react-native-get-random-values": "1.11.0",
     "react-native-svg": "15.12.1",
-    "text-encoding": "0.7.0"
+    "text-encoding": "0.7.0",
+    "expo-application": "~58.0.4"
   },
   "devDependencies": {
     "@types/react": "~19.3.0",

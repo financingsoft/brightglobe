@@ -256,6 +256,8 @@ export const assetTransactionIntents = pgTable("asset_transaction_intents", {
   requestHash: varchar("request_hash", { length: 64 }).notNull(),
   idempotencyKey: varchar("idempotency_key", { length: 128 }).notNull(),
   chainSignature: varchar("chain_signature", { length: 128 }),
+  recentBlockhash: varchar("recent_blockhash", { length: 44 }),
+  lastValidBlockHeight: bigint("last_valid_block_height", { mode: "bigint" }),
   chainSlot: bigint("chain_slot", { mode: "bigint" }),
   chainCommitment: varchar("chain_commitment", { length: 16 }),
   lastStatusCheckAt: timestamp("last_status_check_at", { withTimezone: true }),

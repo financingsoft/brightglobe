@@ -24,7 +24,7 @@ Use Reown AppKit for React Native with its Solana adapter as the external, non-c
 - Require a Reown Project ID from the Reown Dashboard as public app configuration (EXPO_PUBLIC_REOWN_PROJECT_ID). It is not a private signing key. Do not hardcode it in source.
 - Keep Reown connection state separate from BrightGlobe canonical identity/session state. A connected wallet is not authenticated until the backend challenge is verified.
 - Persist BrightGlobe wallet-session credentials only in native SecureStore; never persist raw challenge signatures or private keys.
-- Send the native client marker X-BrightGlobe-Client: brightglobe://app so the existing backend returns a native bearer session rather than a browser cookie.
+- Send the native client marker X-BrightGlobe-Client: native so the existing backend resolves the request as brightglobe://auth and returns a native bearer session rather than a browser cookie.
 - The active app and backend network must both be Devnet. Reject or disconnect a wallet session on any unsupported network; never silently switch to Mainnet.
 
 ## Consequences

@@ -13,7 +13,9 @@ import { createUuidV7 } from "../identity/ids.js";
 import { classifyChainEvent } from "./event-policy.js";
 import type { SolanaGateway } from "../blockchain/solana/gateway.js";
 import { decodeFinalizedClassicTokenEvents } from "../blockchain/solana/transaction-decoder.js";
-import { CLASSIC_SPL_TOKEN_PROGRAM_ID, parseClassicSplMint } from "../blockchain/solana/token/classic-token.js";
+import { CLASSIC_SPL_TOKEN_PROGRAM_ID, parseClassicSplMint, parseClassicSplTokenAccount } from "../blockchain/solana/token/classic-token.js";
+import { recordTokenAccountOpeningBalance } from "./opening-balance.js";
+import { processObservedBgAssetEvents } from "./event-settlement.js";
 import { expireStaleAssetTransactionIntents, transitionAssetTransaction } from "../assets/transactions/transaction-service.js";
 import { settleFinalizedAssetTransaction } from "../assets/ledger/ledger-service.js";
 import { hasBlockhashExpired } from "../assets/transactions/blockhash.js";
@@ -622,9 +624,14 @@ export async function scanConfiguredBgAsset(
   });
   if (parsedMint.decimals !== decimals) throw new IndexerAssetNotConfiguredError();
 
-  const linkedWallets = await db.select({ address: walletOwnerships.address })
-    .from(walletOwnerships)
+  const linkedWallets = await db.select({
+    address: walletOwnerships.address,
+    canonicalUserId: walletOwnerships.canonicalUserId
+  }).from(walletOwnerships)
     .where(eq(walletOwnerships.network, "devnet"));
+  const canonicalUserByWallet = new Map(
+    linkedWallets.map((wallet) => [wallet.address, wallet.canonicalUserId] as const)
+  );
   const ownerAddresses = [...new Set([
     ...linkedWallets.map((wallet) => wallet.address),
     ...(input.additionalOwnerAddresses ?? [])
@@ -633,8 +640,10 @@ export async function scanConfiguredBgAsset(
     throw new TypeError("No wallet or operator owner addresses are configured for BG indexing.");
   }
 
-  // Persist every discovered token account so closed accounts remain in the
-  // scan set and cannot disappear before their final history is indexed.
+  // Persist discovered token accounts and establish a finalized opening
+  // balance before scanning subsequent history. The snapshot slot is the
+  // source cursor checkpoint, preventing historical activity from being
+  // applied twice to the internal ledger.
   for (const ownerAddress of ownerAddresses) {
     const accounts = await gateway.getTokenAccountsByOwner(ownerAddress, mintAddress);
     for (const account of accounts) {
@@ -647,6 +656,49 @@ export async function scanConfiguredBgAsset(
         firstSeenSlot: input.fromSlot,
         status: "active"
       }).onConflictDoNothing();
+
+      const [source] = await db.select().from(chainIndexerSources)
+        .where(and(
+          eq(chainIndexerSources.network, "devnet"),
+          eq(chainIndexerSources.tokenAccountAddress, account.address)
+        ))
+        .limit(1);
+      if (!source || source.assetId !== asset.id || source.openingBalanceSlot !== null) continue;
+
+      const accountInfo = await gateway.getAccountInfo(account.address, "finalized");
+      if (!accountInfo.account) continue;
+      let parsedTokenAccount;
+      try {
+        parsedTokenAccount = parseClassicSplTokenAccount({
+          owner: accountInfo.account.owner,
+          dataBase64: accountInfo.account.data[0]
+        });
+      } catch {
+        await db.update(chainIndexerSources)
+          .set({ status: "ignored", updatedAt: new Date() })
+          .where(eq(chainIndexerSources.id, source.id));
+        continue;
+      }
+      if (
+        parsedTokenAccount.owner !== ownerAddress ||
+        parsedTokenAccount.mint !== mintAddress ||
+        parsedTokenAccount.state === "uninitialized"
+      ) {
+        await db.update(chainIndexerSources)
+          .set({ status: "ignored", updatedAt: new Date() })
+          .where(eq(chainIndexerSources.id, source.id));
+        continue;
+      }
+
+      await recordTokenAccountOpeningBalance(db, {
+        sourceId: source.id,
+        assetId: asset.id,
+        network: "devnet",
+        tokenAccountAddress: account.address,
+        amountBaseUnits: parsedTokenAccount.amount,
+        snapshotSlot: BigInt(accountInfo.contextSlot),
+        canonicalUserId: canonicalUserByWallet.get(ownerAddress) ?? null
+      });
     }
   }
 
@@ -696,11 +748,17 @@ export async function scanConfiguredBgAsset(
   }
 
   const transactionStatusSync = await syncPendingTransactionIntents(db, gateway);
+  const eventSettlement = await processObservedBgAssetEvents(db, {
+    assetId: asset.id,
+    mintAddress,
+    limit: 100
+  });
   return {
     sourcesScanned: batch.length,
     sourcesRemaining: Math.max(0, pending.length - batch.length),
     insertedEvents,
     targetFinalizedSlot: input.toSlot.toString(),
-    transactionStatusSync
+    transactionStatusSync,
+    eventSettlement
   };
 }

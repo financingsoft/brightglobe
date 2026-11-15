@@ -29,7 +29,6 @@
         "expo-camera",
         {
           "cameraPermission": "Allow BrightGlobe to scan wallet QR codes.",
-          "microphonePermission": "Allow BrightGlobe to use the microphone.",
           "recordAudioAndroid": false
         }
       ]

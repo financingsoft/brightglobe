@@ -380,13 +380,7 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
     }
   }, [walletSession, session, refetch]);
 
-  const user = account?.user ?? (session?.user ? {
-    id: session.user.id,
-    name: session.user.name,
-    email: null,
-    phoneNumber: null,
-    phoneNumberVerified: false
-  } : null);
+  const user = account?.user ?? null;
 
   const status: AuthStatus = isPending || walletSessionLoading
     ? "loading"

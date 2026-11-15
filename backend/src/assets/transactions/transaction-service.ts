@@ -30,15 +30,20 @@ export interface CreateAssetTransactionInput {
   fromAddress?: string | null;
   toAddress?: string | null;
   idempotencyKey: string;
+  recentBlockhash?: string | null;
+  lastValidBlockHeight?: bigint | null;
   expiresAt?: Date | null;
 }
 
 export async function createAssetTransactionIntent(
   db: Database,
   input: CreateAssetTransactionInput
-): Promise<{ intentId: string; replayed: boolean }> {
+): Promise<{ intentId: string; replayed: boolean; recentBlockhash: string | null; lastValidBlockHeight: string | null }> {
   if (input.amountBaseUnits <= 0n) throw new RangeError("Asset transaction amount must be positive.");
   if (input.operation === "transfer") {
+    if (!input.recentBlockhash || !isValidSolanaAddress(input.recentBlockhash) || input.lastValidBlockHeight === null || input.lastValidBlockHeight === undefined || input.lastValidBlockHeight < 0n) {
+      throw new TypeError("A valid recent blockhash and last valid block height are required for transfers.");
+    }
     if (!input.fromAddress || !input.toAddress ||
         !isValidSolanaAddress(input.fromAddress) || !isValidSolanaAddress(input.toAddress) ||
         input.fromAddress === input.toAddress) {
@@ -121,7 +126,7 @@ export async function createAssetTransactionIntent(
         createdAt: now
       });
     });
-    return { intentId, replayed: false };
+    return { intentId, replayed: false, recentBlockhash: input.recentBlockhash ?? null, lastValidBlockHeight: input.lastValidBlockHeight?.toString() ?? null };
   } catch (error) {
     const raced = await db.select().from(assetTransactionIntents)
       .where(and(
@@ -133,7 +138,7 @@ export async function createAssetTransactionIntent(
       if (raced[0].requestHash !== requestHash) {
         throw new AssetTransactionConflictError("The idempotency key was reused with a different request.");
       }
-      return { intentId: raced[0].id, replayed: true };
+      return { intentId: raced[0].id, replayed: true, recentBlockhash: raced[0].recentBlockhash, lastValidBlockHeight: raced[0].lastValidBlockHeight?.toString() ?? null };
     }
     throw error;
   }

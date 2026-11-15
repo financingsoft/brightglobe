@@ -16,7 +16,7 @@ import { decodeFinalizedClassicTokenEvents } from "../blockchain/solana/transact
 import { expireStaleAssetTransactionIntents, transitionAssetTransaction } from "../assets/transactions/transaction-service.js";
 import { settleFinalizedAssetTransaction } from "../assets/ledger/ledger-service.js";
 import { hasBlockhashExpired } from "../assets/transactions/blockhash.js";
-import { findMatchingFinalizedTransferEvent } from "./transaction-verifier.js";
+import { findMatchingFinalizedTransferEvent, matchesFinalizedTransactionEnvelope } from "./transaction-verifier.js";
 
 
 async function verifyFinalizedTransferIntent(
@@ -26,9 +26,10 @@ async function verifyFinalizedTransferIntent(
   expectedSlot: bigint
 ): Promise<{ valid: boolean; retryable?: boolean; observed: Record<string, unknown> }> {
   const signature = intent.chainSignature;
+  const recentBlockhash = intent.recentBlockhash;
   const fromAddress = intent.fromAddress;
   const toAddress = intent.toAddress;
-  if (intent.operation !== "transfer" || !signature || !fromAddress || !toAddress) {
+  if (intent.operation !== "transfer" || !signature || !recentBlockhash || !fromAddress || !toAddress) {
     return { valid: false, observed: { reason: "unsupported_or_incomplete_intent" } };
   }
 
@@ -43,6 +44,9 @@ async function verifyFinalizedTransferIntent(
   const transaction = await gateway.getTransaction(signature);
   if (transaction === null) {
     return { valid: false, retryable: true, observed: { reason: "finalized_transaction_data_unavailable" } };
+  }
+  if (!matchesFinalizedTransactionEnvelope(transaction, signature, recentBlockhash, expectedSlot)) {
+    return { valid: false, observed: { reason: "finalized_transaction_envelope_mismatch" } };
   }
   const events = decodeFinalizedClassicTokenEvents(signature, transaction);
   const [sourceAccounts, destinationAccounts] = await Promise.all([

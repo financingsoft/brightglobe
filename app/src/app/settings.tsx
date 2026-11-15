@@ -224,7 +224,7 @@ export default function SettingsScreen() {
           <Text style={styles.value}>{t("登录已验证邮箱后完成绑定", "Sign in with a verified email to link")} ›</Text>
         </Pressable>
       ) : null}
-      {isAuthenticated && !isPreviewAccount && authMethod === "email" && hasWalletSession ? (
+      {isAuthenticated && !isPreviewAccount && authMethod === "email" && hasWalletSession && wallets.length === 0 ? (
         <Pressable
           style={styles.row}
           disabled={linkingEmail}

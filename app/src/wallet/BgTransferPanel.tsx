@@ -57,6 +57,7 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
   const { provider, providerType } = useProvider();
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
+  const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<PendingTransfer | null>(null);
   const [notice, setNotice] = useState("");
@@ -143,8 +144,10 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
       if (snapshot.status === "finalized" && snapshot.ledgerSettled) {
         await onAccountRefresh();
         setPending(null);
+        setIdempotencyKey(null);
       } else if (snapshot.status === "failed" || snapshot.status === "expired") {
         setPending(null);
+        setIdempotencyKey(null);
       }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : t("同步交易状态失败。", "Unable to synchronize the transaction status."));
@@ -180,15 +183,17 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
     setBusy(true);
     try {
       const amountBaseUnits = decimalStringToAssetBaseUnits(amount, decimals);
+      const operationKey = idempotencyKey ?? ("bg-transfer-" + (() => {
+        const bytes = new Uint8Array(16);
+        crypto.getRandomValues(bytes);
+        return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+      })());
+      setIdempotencyKey(operationKey);
       const intent = await createBgTransferIntent({
         fromAddress: address,
         toAddress: recipient.trim(),
         amountBaseUnits,
-        idempotencyKey: "bg-transfer-" + (() => {
-          const bytes = new Uint8Array(16);
-          crypto.getRandomValues(bytes);
-          return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-        })()
+        idempotencyKey: operationKey
       });
       // Reflect the new short-lived reservation before handing the transaction
       // to the external wallet for signing.
@@ -283,7 +288,7 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
           </View>
           <TextInput
             value={recipient}
-            onChangeText={setRecipient}
+            onChangeText={(value) => { setRecipient(value); setIdempotencyKey(null); }}
             autoCapitalize="none"
             autoCorrect={false}
             placeholder={t("收款方 Solana 地址", "Recipient Solana address")}
@@ -293,7 +298,7 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
           />
           <TextInput
             value={amount}
-            onChangeText={setAmount}
+            onChangeText={(value) => { setAmount(value); setIdempotencyKey(null); }}
             keyboardType="decimal-pad"
             placeholder={t("转账数量", "Amount")}
             placeholderTextColor="#8293B0"

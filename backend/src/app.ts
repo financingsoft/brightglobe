@@ -7,6 +7,7 @@ import { isAllowedOrigin } from "./config/origins.js";
 import type { Database } from "./db/client.js";
 import { createMeRoutes } from "./routes/me.js";
 import { createBdRoutes } from "./routes/bd.js";
+import { createSolanaRoutes } from "./routes/solana.js";
 
 interface AppDependencies {
   db: Database;
@@ -47,6 +48,7 @@ export function createApp({ db, auth, env }: AppDependencies) {
   app.all("/staging/api/auth/*", (context) => auth.handler(context.req.raw));
   app.route("/api/v1/me", createMeRoutes(db, auth));
   app.route("/api/v1/me/bd", createBdRoutes(db, auth));
+  app.route("/api/v1/blockchain/solana", createSolanaRoutes(env));
 
   app.notFound((context) => context.json({
     error: { code: "NOT_FOUND", message: "The requested endpoint does not exist." }

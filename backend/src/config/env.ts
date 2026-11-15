@@ -14,13 +14,25 @@ const environmentSchema = z.object({
   EMAIL_FROM: z.preprocess(emptyToUndefined, z.string().min(3).optional()),
   SMS_ENABLED: z.enum(["true", "false"]).default("true").transform((value) => value === "true"),
   SMS_GATEWAY_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
-  SMS_GATEWAY_TOKEN: z.preprocess(emptyToUndefined, z.string().min(1).optional())
+  SMS_GATEWAY_TOKEN: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  SOLANA_NETWORK: z.enum(["disabled", "devnet"]).default("disabled"),
+  SOLANA_RPC_URL: z.preprocess(
+    emptyToUndefined,
+    z.string().url().default("https://api.devnet.solana.com")
+  )
 }).superRefine((value, context) => {
   if (value.EMAIL_ENABLED && (!value.RESEND_API_KEY || !value.EMAIL_FROM)) {
     context.addIssue({
       code: "custom",
       path: ["RESEND_API_KEY"],
       message: "EMAIL_ENABLED requires RESEND_API_KEY and EMAIL_FROM."
+    });
+  }
+  if (value.SOLANA_RPC_URL && !value.SOLANA_RPC_URL.startsWith("https://")) {
+    context.addIssue({
+      code: "custom",
+      path: ["SOLANA_RPC_URL"],
+      message: "SOLANA_RPC_URL must use HTTPS."
     });
   }
   if (value.NODE_ENV === "production") {
@@ -50,6 +62,8 @@ export interface WorkerBindings {
   SMS_ENABLED?: string;
   SMS_GATEWAY_URL?: string;
   SMS_GATEWAY_TOKEN?: string;
+  SOLANA_NETWORK?: string;
+  SOLANA_RPC_URL?: string;
 }
 
 export function parseEnvironment(bindings: WorkerBindings): AppEnvironment {

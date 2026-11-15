@@ -14,6 +14,36 @@ test("parses Worker bindings with safe development defaults", () => {
   assert.equal(env.DATABASE_URL, requiredBindings.DATABASE_URL);
   assert.equal(env.SMS_ENABLED, true);
   assert.equal(env.EMAIL_ENABLED, false);
+  assert.equal(env.SOLANA_NETWORK, "disabled");
+  assert.equal(env.SOLANA_RPC_URL, "https://api.devnet.solana.com");
+});
+
+test("enables only Solana Devnet when explicitly configured", () => {
+  const env = parseEnvironment({
+    ...requiredBindings,
+    SOLANA_NETWORK: "devnet",
+    SOLANA_RPC_URL: "https://api.devnet.solana.com"
+  });
+  assert.equal(env.SOLANA_NETWORK, "devnet");
+  assert.equal(env.SOLANA_RPC_URL, "https://api.devnet.solana.com");
+});
+
+test("rejects unsupported Solana networks", () => {
+  assert.throws(
+    () => parseEnvironment({ ...requiredBindings, SOLANA_NETWORK: "mainnet-beta" }),
+    /SOLANA_NETWORK/
+  );
+});
+
+test("rejects insecure Solana RPC endpoints", () => {
+  assert.throws(
+    () => parseEnvironment({
+      ...requiredBindings,
+      SOLANA_NETWORK: "devnet",
+      SOLANA_RPC_URL: "http://api.devnet.solana.com"
+    }),
+    /SOLANA_RPC_URL must use HTTPS/
+  );
 });
 
 test("rejects production without a configured SMS gateway when SMS is enabled", () => {

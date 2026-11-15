@@ -18,7 +18,9 @@
         "EMAIL_ENABLED": "true",
         "BETTER_AUTH_URL": "https://api.globeapps.com/staging/api/auth",
         "APP_ORIGINS": "https://test.globeapps.com",
-        "EMAIL_FROM": "BrightGlobe <noreply@go.globeapps.com>"
+        "EMAIL_FROM": "BrightGlobe <noreply@go.globeapps.com>",
+        "SOLANA_NETWORK": "devnet",
+        "SOLANA_RPC_URL": "https://api.devnet.solana.com"
       }
     }
   },

@@ -6,6 +6,7 @@ import { useI18n } from "@/i18n/locale";
 import { useAuth } from "@/auth/session";
 import { StarfieldBackground } from "@/components/StarfieldBackground";
 import { WalletSignInButton } from "@/wallet/WalletSignInButton";
+import { WalletDisconnectButton } from "@/wallet/WalletDisconnectButton";
 
 type LoginMode = "login" | "signup" | "forgot";
 
@@ -192,6 +193,7 @@ export default function LoginScreen() {
         </View>
 
         <WalletSignInButton />
+        <WalletDisconnectButton />
 
         {backendUnavailable ? (
           <View style={[styles.noticeBox, compactHeight && styles.noticeBoxCompact]}>

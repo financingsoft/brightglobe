@@ -44,6 +44,9 @@ export default function SettingsScreen() {
   const router = useRouter();
   const {
     status,
+    authMethod,
+    hasWalletSession,
+    linkEmailIdentity,
     isAuthenticated,
     isPreviewAccount,
     user,
@@ -64,6 +67,7 @@ export default function SettingsScreen() {
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [sessionActionId, setSessionActionId] = useState<string | null>(null);
   const [revokingOthers, setRevokingOthers] = useState(false);
+  const [linkingEmail, setLinkingEmail] = useState(false);
   const [sessionError, setSessionError] = useState("");
   const [sessionNotice, setSessionNotice] = useState("");
 
@@ -193,6 +197,33 @@ export default function SettingsScreen() {
         ) : null}
       </View>
 
+      {isAuthenticated && !isPreviewAccount && authMethod === "wallet" ? (
+        <Pressable style={styles.row} onPress={() => router.push("/login")}>
+          <Text style={styles.label}>{t("绑定邮箱账户", "Link an email account")}</Text>
+          <Text style={styles.value}>{t("登录已验证邮箱后完成绑定", "Sign in with a verified email to link")} ›</Text>
+        </Pressable>
+      ) : null}
+      {isAuthenticated && !isPreviewAccount && authMethod === "email" && hasWalletSession ? (
+        <Pressable
+          style={styles.row}
+          disabled={linkingEmail}
+          onPress={async () => {
+            setLinkingEmail(true);
+            try {
+              await linkEmailIdentity();
+              Alert.alert(t("绑定成功", "Identity linked"), t("邮箱身份与钱包身份现已关联到同一个 BrightGlobe 账户。", "Your email and wallet identities now share one BrightGlobe account."));
+            } catch (error) {
+              Alert.alert(t("绑定失败", "Link failed"), error instanceof Error ? error.message : t("请稍后重试。", "Please try again."));
+            } finally {
+              setLinkingEmail(false);
+            }
+          }}
+        >
+          <Text style={styles.label}>{t("完成身份绑定", "Complete identity linking")}</Text>
+          <Text style={styles.value}>{linkingEmail ? t("处理中…", "Working…") : t("关联邮箱与钱包", "Link email and wallet")} ›</Text>
+        </Pressable>
+      ) : null}
+
       <View style={styles.group}>
         <Text style={styles.groupTitle}>{t("偏好设置", "Preferences")}</Text>
         <View style={styles.row}><Text style={styles.label}>{t("语言", "Language")}</Text><View style={styles.languageOptions}>
@@ -215,7 +246,9 @@ export default function SettingsScreen() {
           ? t("当前为本地演示状态，不代表真实账户。", "This is a local preview state, not a real account.")
           : status === "unauthenticated" || status === "unconfigured"
             ? t("登录后将显示真实账户信息。", "Sign in to view your account information.")
-            : t("账户身份与会话由 Better Auth 管理。", "Identity and sessions are managed by Better Auth.")}
+            : authMethod === "wallet"
+              ? t("当前使用 Solana Devnet 钱包身份登录；BD 内部账本与该身份保持隔离。", "Signed in with a Solana Devnet wallet identity; the legacy BD ledger remains separate.")
+              : t("账户身份由 BrightGlobe 统一管理，邮箱认证由 Better Auth 提供。", "BrightGlobe manages canonical identity; Better Auth provides email authentication.")}
       </Text>
 
       <Modal visible={showSessions} transparent animationType="fade" onRequestClose={() => setShowSessions(false)}>

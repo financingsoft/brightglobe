@@ -226,6 +226,16 @@ function BgTransferPanelInner({ decimals, onAccountRefresh }: Props) {
       setError(t("请输入收款钱包地址。", "Enter a destination wallet address."));
       return;
     }
+    try {
+      if (bs58.decode(recipient.trim()).length !== 32) throw new Error("Invalid Solana address length.");
+    } catch {
+      setError(t("收款地址格式不正确，请输入有效的 Solana 地址。", "The recipient is not a valid Solana address."));
+      return;
+    }
+    if (recipient.trim() === address) {
+      setError(t("收款地址不能与当前发送钱包相同。", "The recipient must be different from the sending wallet."));
+      return;
+    }
 
     setBusy(true);
     try {

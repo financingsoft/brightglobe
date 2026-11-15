@@ -13,6 +13,7 @@ import { createUuidV7 } from "../identity/ids.js";
 import { classifyChainEvent } from "./event-policy.js";
 import type { SolanaGateway } from "../blockchain/solana/gateway.js";
 import { decodeFinalizedClassicTokenEvents } from "../blockchain/solana/transaction-decoder.js";
+import { CLASSIC_SPL_TOKEN_PROGRAM_ID, parseClassicSplMint } from "../blockchain/solana/token/classic-token.js";
 import { expireStaleAssetTransactionIntents, transitionAssetTransaction } from "../assets/transactions/transaction-service.js";
 import { settleFinalizedAssetTransaction } from "../assets/ledger/ledger-service.js";
 import { hasBlockhashExpired } from "../assets/transactions/blockhash.js";
@@ -600,6 +601,18 @@ export async function scanConfiguredBgAsset(
   if (!asset || asset.status !== "active" || !asset.mintAddress || asset.decimals === null) {
     throw new IndexerAssetNotConfiguredError();
   }
+  const mintAddress = asset.mintAddress;
+  const decimals = asset.decimals;
+  if (asset.tokenProgram !== CLASSIC_SPL_TOKEN_PROGRAM_ID) {
+    throw new IndexerAssetNotConfiguredError();
+  }
+  const mintAccount = await gateway.getAccountInfo(mintAddress, "finalized");
+  if (!mintAccount.account) throw new IndexerAssetNotConfiguredError();
+  const parsedMint = parseClassicSplMint({
+    owner: mintAccount.account.owner,
+    dataBase64: mintAccount.account.data[0]
+  });
+  if (parsedMint.decimals !== decimals) throw new IndexerAssetNotConfiguredError();
 
   const linkedWallets = await db.select({ address: walletOwnerships.address })
     .from(walletOwnerships)
@@ -615,7 +628,7 @@ export async function scanConfiguredBgAsset(
   // Persist every discovered token account so closed accounts remain in the
   // scan set and cannot disappear before their final history is indexed.
   for (const ownerAddress of ownerAddresses) {
-    const accounts = await gateway.getTokenAccountsByOwner(ownerAddress, asset.mintAddress);
+    const accounts = await gateway.getTokenAccountsByOwner(ownerAddress, mintAddress);
     for (const account of accounts) {
       await db.insert(chainIndexerSources).values({
         id: createUuidV7(),

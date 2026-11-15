@@ -1,6 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 import bs58 from "bs58";
-import { apiBaseUrl } from "@/auth/client";
+import { apiBaseUrl, authClient } from "@/auth/client";
 
 const SESSION_KEY = "brightglobe.wallet.session.v1";
 
@@ -43,7 +43,8 @@ export class WalletAuthError extends Error {
 async function request<T>(
   path: string,
   init: RequestInit = {},
-  token?: string
+  token?: string,
+  cookie?: string
 ): Promise<T> {
   if (!apiBaseUrl) throw new Error("BrightGlobe API is not configured.");
   const headers = new Headers(init.headers);
@@ -51,6 +52,7 @@ async function request<T>(
   headers.set("Content-Type", "application/json");
   headers.set("X-BrightGlobe-Client", "native");
   if (token) headers.set("Authorization", `Bearer ${token}`);
+  if (cookie) headers.set("Cookie", cookie);
 
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
@@ -170,4 +172,68 @@ export async function signInWithSolanaWallet(
 
 export async function revokeWalletSession(token: string): Promise<void> {
   await request<void>("/api/v1/auth/wallet/logout", { method: "POST" }, token);
+}
+
+export async function linkSolanaWalletToEmail(
+  address: string,
+  chainId: string,
+  provider: {
+    request: (
+      args: { method: "solana_signMessage"; params: { message: string; pubkey: string } },
+      chain: string
+    ) => Promise<unknown>;
+  }
+): Promise<WalletSession> {
+  if (chainId !== "EtWTRABZaYq6iMfeYKouRu166VU2xqa1") {
+    throw new Error("BrightGlobe wallet linking is Devnet-only. Switch your wallet to Solana Devnet.");
+  }
+  const cookie = await authClient.getCookie();
+  if (!cookie) throw new Error("Sign in with your verified email account before linking a wallet.");
+
+  const challenge = await request<WalletChallenge>(
+    "/api/v1/auth/wallet/link/challenge",
+    { method: "POST", body: JSON.stringify({ address }) },
+    undefined,
+    cookie
+  );
+  const messageBytes = new TextEncoder().encode(challenge.message);
+  const result = await provider.request(
+    {
+      method: "solana_signMessage",
+      params: { message: bs58.encode(messageBytes), pubkey: address }
+    },
+    `solana:${chainId}`
+  );
+  if (
+    typeof result !== "object" ||
+    result === null ||
+    !("signature" in result) ||
+    typeof (result as { signature?: unknown }).signature !== "string"
+  ) {
+    throw new Error("The connected wallet did not return a valid message signature.");
+  }
+
+  const verified = await request<WalletVerifyResponse>(
+    "/api/v1/auth/wallet/link/verify",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        challengeId: challenge.challengeId,
+        address,
+        signature: (result as { signature: string }).signature
+      })
+    },
+    undefined,
+    cookie
+  );
+  if (!verified.sessionToken || !verified.canonicalUserId || !verified.sessionExpiresAt) {
+    throw new Error("The server returned an incomplete linked wallet session.");
+  }
+  const session: WalletSession = {
+    token: verified.sessionToken,
+    canonicalUserId: verified.canonicalUserId,
+    expiresAt: verified.sessionExpiresAt
+  };
+  await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(session));
+  return session;
 }

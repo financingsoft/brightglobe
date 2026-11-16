@@ -83,3 +83,11 @@ Every implementation task response/PR includes:
 - Risks: unresolved gaps, assumptions and follow-up decisions.
 
 A request to “continue” does not waive these requirements.
+
+
+## Automated Marketplace contract guard
+
+- The machine-readable route policy is `docs/PLAY_ROUTE_POLICY_MANIFEST.json`. Every new/changed Globe Play route updates it in the same PR.
+- Run `node scripts/validate-marketplace-contract.mjs` before marking a Marketplace task complete.
+- The `Globe Play Contract Guard` GitHub Actions workflow runs this validator on relevant PRs and pushes.
+- This static guard is not a substitute for runtime CDN/SEO/Neon tests. Until `apps/play-web` exists, report those checks as pending, not passed.

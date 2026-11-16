@@ -50,6 +50,54 @@ BEGIN
   END IF;
 
   IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint c
+    JOIN pg_class t ON t.oid = c.conrelid
+    JOIN pg_namespace n ON n.oid = t.relnamespace
+    WHERE n.nspname = 'marketplace'
+      AND t.relname = 'developer_invitations'
+      AND c.conname = 'developer_invitations_token_hash_check'
+      AND position('
+      AND tgconstraint <> 0
+      AND tgdeferrable
+  ) THEN
+    RAISE EXCEPTION 'missing deferred developer owner invariant trigger';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgname = 'audit_events_append_only_guard'
+      AND NOT tgisinternal
+  ) THEN
+    RAISE EXCEPTION 'missing append-only audit trigger';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgname = 'app_listing_publication_guard'
+      AND NOT tgisinternal
+  ) THEN
+    RAISE EXCEPTION 'missing listing publication guard';
+  END IF;
+
+  RAISE NOTICE 'Marketplace V1 schema assertions passed.';
+END;
+$assertions$;
+ in pg_get_constraintdef(c.oid)) > 0
+  ) THEN
+    RAISE EXCEPTION 'missing fully anchored invitation token hash constraint';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'marketplace'
+      AND p.proname = 'assert_developer_has_exactly_one_owner'
+      AND p.prosrc LIKE '%FOR UPDATE%'
+  ) THEN
+    RAISE EXCEPTION 'owner invariant must lock the developer parent row';
+  END IF;
+
+  IF NOT EXISTS (
     SELECT 1 FROM pg_trigger
     WHERE tgname = 'developer_owner_invariant_membership'
       AND tgconstraint <> 0

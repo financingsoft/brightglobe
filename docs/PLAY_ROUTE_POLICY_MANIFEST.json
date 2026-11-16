@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "contractVersion": "1.0",
   "status": "planned-route-contract",
-  "note": "Normative route inventory for implementation. It is not evidence these routes exist or that runtime cache/SEO behavior is verified.",
+  "note": "Normative route inventory for implementation. It is not evidence these routes exist or that runtime cache/SEO behavior is verified. implementationStatus distinguishes scaffolded shells from API-backed production routes.",
   "routes": [
     {
       "id": "home",
@@ -21,7 +21,8 @@
         "site-home",
         "locale"
       ],
-      "notes": "Localized public landing page."
+      "notes": "Localized public landing page.",
+      "implementationStatus": "implemented-shell"
     },
     {
       "id": "category-index",
@@ -40,7 +41,8 @@
         "category-index",
         "locale"
       ],
-      "notes": "Published category catalogue only."
+      "notes": "Published category catalogue only.",
+      "implementationStatus": "implemented-shell"
     },
     {
       "id": "category-detail",
@@ -179,7 +181,8 @@
         "search-index",
         "locale"
       ],
-      "notes": "Normalize query and allowlist filters; never index arbitrary query combinations."
+      "notes": "Normalize query and allowlist filters; never index arbitrary query combinations.",
+      "implementationStatus": "implemented-shell"
     },
     {
       "id": "account",

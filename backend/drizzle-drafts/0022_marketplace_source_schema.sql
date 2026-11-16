@@ -223,6 +223,19 @@ CREATE UNIQUE INDEX app_versions_app_platform_code_uidx
 CREATE INDEX app_versions_app_platform_status_idx
   ON marketplace.app_versions(app_id, platform, status);
 
+CREATE OR REPLACE FUNCTION marketplace.guard_initial_app_version()
+RETURNS trigger LANGUAGE plpgsql AS $
+BEGIN
+  IF NEW.status <> 'draft' THEN
+    RAISE EXCEPTION 'new app versions must start as drafts' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$;
+CREATE TRIGGER app_versions_initial_state_guard
+  BEFORE INSERT ON marketplace.app_versions
+  FOR EACH ROW EXECUTE FUNCTION marketplace.guard_initial_app_version();
+
 CREATE TABLE marketplace.app_artifacts (
   id uuid PRIMARY KEY,
   app_version_id uuid NOT NULL REFERENCES marketplace.app_versions(id) ON DELETE RESTRICT,
@@ -337,6 +350,19 @@ CREATE TABLE marketplace.distribution_sources (
 CREATE INDEX distribution_sources_version_status_idx
   ON marketplace.distribution_sources(app_version_id, status, verification_status);
 
+CREATE OR REPLACE FUNCTION marketplace.guard_initial_distribution_source()
+RETURNS trigger LANGUAGE plpgsql AS $
+BEGIN
+  IF NEW.status <> 'pending' OR NEW.verification_status <> 'pending' THEN
+    RAISE EXCEPTION 'new distribution sources must start pending verification and approval' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$;
+CREATE TRIGGER distribution_sources_initial_state_guard
+  BEFORE INSERT ON marketplace.distribution_sources
+  FOR EACH ROW EXECUTE FUNCTION marketplace.guard_initial_distribution_source();
+
 CREATE TABLE marketplace.reviews (
   id uuid PRIMARY KEY,
   app_id uuid NOT NULL REFERENCES marketplace.apps(id) ON DELETE RESTRICT,
@@ -384,6 +410,19 @@ CREATE TABLE marketplace.review_revisions (
 );
 CREATE INDEX review_revisions_review_status_idx
   ON marketplace.review_revisions(review_id, moderation_status);
+
+CREATE OR REPLACE FUNCTION marketplace.guard_initial_review_revision()
+RETURNS trigger LANGUAGE plpgsql AS $
+BEGIN
+  IF NEW.moderation_status <> 'pending' THEN
+    RAISE EXCEPTION 'new review revisions must start pending moderation' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$;
+CREATE TRIGGER review_revision_initial_state_guard
+  BEFORE INSERT ON marketplace.review_revisions
+  FOR EACH ROW EXECUTE FUNCTION marketplace.guard_initial_review_revision();
 
 ALTER TABLE marketplace.reviews
   ADD CONSTRAINT reviews_published_revision_fk
@@ -712,6 +751,11 @@ BEGIN
      IS DISTINCT FROM
      (to_jsonb(OLD) - ARRAY['moderation_status','reviewed_by_canonical_user_id','decision_code','reviewed_at']) THEN
     RAISE EXCEPTION 'review revision content is immutable' USING ERRCODE = '23514';
+  END IF;
+  IF NEW.moderation_status <> 'approved' AND EXISTS (
+    SELECT 1 FROM marketplace.reviews r WHERE r.published_revision_id = NEW.id
+  ) THEN
+    RAISE EXCEPTION 'a published review revision cannot lose approval while it is current' USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
 END;

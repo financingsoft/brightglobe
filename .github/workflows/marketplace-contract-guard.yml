@@ -33,3 +33,20 @@ jobs:
           BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
           EVENT_NAME: ${{ github.event_name }}
         run: node scripts/validate-marketplace-contract.mjs
+      - name: Install Globe Play Web dependencies
+        if: hashFiles('apps/play-web/package.json') != ''
+        working-directory: apps/play-web
+        run: npm install --no-audit --no-fund
+      - name: Validate Globe Play Web locale catalogs
+        if: hashFiles('apps/play-web/package.json') != ''
+        working-directory: apps/play-web
+        run: npm run validate:locales
+      - name: Typecheck Globe Play Web
+        if: hashFiles('apps/play-web/package.json') != ''
+        working-directory: apps/play-web
+        run: npm run typecheck
+      - name: Build Globe Play Web
+        if: hashFiles('apps/play-web/package.json') != ''
+        working-directory: apps/play-web
+        run: npm run build
+

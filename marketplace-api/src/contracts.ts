@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const publicHttpsUrlSchema = z.string().url().refine((value) => { const url = new URL(value); return url.protocol === "https:" && url.hostname !== "r2.dev" && !url.hostname.endsWith(".r2.dev") && !url.hostname.endsWith(".internal") && url.hostname !== "localhost"; }, "A public HTTPS URL is required.");
+
 const ratingSchema = z.object({
   average: z.number().min(0).max(5),
   count: z.number().int().nonnegative()
@@ -9,12 +11,12 @@ const publisherSchema = z.object({
   slug: z.string().min(1).max(100),
   name: z.string().min(1).max(120),
   verificationStatus: z.enum(["verified", "unverified"]),
-  websiteUrl: z.string().url().nullable()
+  websiteUrl: publicHttpsUrlSchema.nullable()
 }).strict();
 
 const mediaSchema = z.object({
   type: z.enum(["icon", "screenshot", "video", "banner"]),
-  url: z.string().url(),
+  url: publicHttpsUrlSchema,
   alt: z.string().max(240),
   width: z.number().int().positive().nullable(),
   height: z.number().int().positive().nullable()
@@ -23,7 +25,7 @@ const mediaSchema = z.object({
 const distributionSchema = z.object({
   type: z.enum(["official_store_link", "developer_download"]),
   label: z.string().min(1).max(80),
-  url: z.string().url()
+  url: publicHttpsUrlSchema
 }).strict();
 
 export const publicAppDetailSchema = z.object({
@@ -52,9 +54,9 @@ export const publicAppDetailSchema = z.object({
     releaseNotes: z.string().nullable(),
     distribution: z.array(distributionSchema)
   }).strict()),
-  privacyPolicyUrl: z.string().url().nullable(),
-  supportUrl: z.string().url().nullable(),
-  websiteUrl: z.string().url().nullable(),
+  privacyPolicyUrl: publicHttpsUrlSchema.nullable(),
+  supportUrl: publicHttpsUrlSchema.nullable(),
+  websiteUrl: publicHttpsUrlSchema.nullable(),
   rating: ratingSchema.optional(),
   publishedAt: z.string().datetime(),
   updatedAt: z.string().datetime()

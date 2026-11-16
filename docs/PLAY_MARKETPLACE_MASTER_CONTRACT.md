@@ -386,3 +386,12 @@ Product/security:
 - Backup/restore and incident-response evidence.
 
 No Production launch until applicable gates pass and separate explicit Production approval is obtained. Green CI is necessary but insufficient.
+
+
+## 14. Automated contract guard and route policy manifest
+
+- `docs/PLAY_ROUTE_POLICY_MANIFEST.json` is the machine-readable source of truth for public/private route classification, edge-cache eligibility, TTL, SEO indexing state, locale strategy, cache-key dimensions and invalidation tags.
+- Every new or changed route must update this manifest in the same PR as its implementation. A route without an explicit policy is not approved for release.
+- `scripts/validate-marketplace-contract.mjs` and `.github/workflows/marketplace-contract-guard.yml` validate mandatory contract presence, required agent instructions and route-policy invariants on PRs and pushes.
+- This static guard does not prove actual CDN HIT/BYPASS behavior, SSR output, Google crawlability or Neon query counts. Once `apps/play-web` exists, its CI must add runtime tests for response headers/cache behavior, authenticated bypass, cache-key isolation, invalidation, rendered HTML metadata, sitemap/hreflang/JSON-LD, and measured origin/Neon query counts.
+- CI must report runtime checks as pending until a real application and Staging test environment exist; it must never report an unimplemented check as passed.

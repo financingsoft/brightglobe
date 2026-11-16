@@ -198,8 +198,7 @@
         ],
         "properties": {
           "data": {
-            "type": "object",
-            "description": "Strict public app detail projection; executable Zod schema is in src/contracts.ts."
+            "$ref": "#/components/schemas/PublicAppDetail"
           },
           "meta": {
             "$ref": "#/components/schemas/Meta"
@@ -215,8 +214,7 @@
         ],
         "properties": {
           "data": {
-            "type": "object",
-            "description": "Published review page with signed opaque cursor; executable Zod schema is in src/contracts.ts."
+            "$ref": "#/components/schemas/PublicReviewPage"
           },
           "meta": {
             "$ref": "#/components/schemas/Meta"
@@ -247,6 +245,477 @@
               },
               "requestId": {
                 "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "PublicAppDetail": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "tagline",
+          "description",
+          "appType",
+          "contentLocale",
+          "publisher",
+          "categories",
+          "media",
+          "platforms",
+          "latestVersions",
+          "privacyPolicyUrl",
+          "supportUrl",
+          "websiteUrl",
+          "publishedAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 140
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "tagline": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 240
+          },
+          "description": {
+            "type": "string"
+          },
+          "appType": {
+            "type": "string",
+            "enum": [
+              "app",
+              "game"
+            ]
+          },
+          "contentLocale": {
+            "type": "string"
+          },
+          "publisher": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "slug",
+              "name",
+              "verificationStatus",
+              "websiteUrl"
+            ],
+            "properties": {
+              "slug": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "verificationStatus": {
+                "type": "string",
+                "enum": [
+                  "verified",
+                  "unverified"
+                ]
+              },
+              "websiteUrl": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "format": "uri",
+                    "pattern": "^https://"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "slug",
+                "name"
+              ],
+              "properties": {
+                "slug": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "type",
+                "url",
+                "alt",
+                "width",
+                "height"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "icon",
+                    "screenshot",
+                    "video",
+                    "banner"
+                  ]
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "pattern": "^https://"
+                },
+                "alt": {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                "width": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1
+                },
+                "height": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "platforms": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "platform",
+                "minimumOsVersion",
+                "availabilityStatus"
+              ],
+              "properties": {
+                "platform": {
+                  "type": "string"
+                },
+                "minimumOsVersion": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 64
+                },
+                "availabilityStatus": {
+                  "type": "string",
+                  "enum": [
+                    "available",
+                    "unavailable",
+                    "limited"
+                  ]
+                }
+              }
+            }
+          },
+          "latestVersions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "platform",
+                "versionName",
+                "releasedAt",
+                "releaseNotes",
+                "distribution"
+              ],
+              "properties": {
+                "platform": {
+                  "type": "string"
+                },
+                "versionName": {
+                  "type": "string"
+                },
+                "releasedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "releaseNotes": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "distribution": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "type",
+                      "label",
+                      "url"
+                    ],
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "official_store_link",
+                          "developer_download"
+                        ]
+                      },
+                      "label": {
+                        "type": "string",
+                        "maxLength": 80
+                      },
+                      "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "pattern": "^https://"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "privacyPolicyUrl": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "uri",
+                "pattern": "^https://"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "supportUrl": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "uri",
+                "pattern": "^https://"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "websiteUrl": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "uri",
+                "pattern": "^https://"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rating": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "average",
+              "count"
+            ],
+            "properties": {
+              "average": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 5
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PublicReview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "body",
+          "rating",
+          "author",
+          "appVersion",
+          "createdAt",
+          "helpfulCount"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 160
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rating": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 5
+          },
+          "author": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "displayName",
+              "publisherAffiliation"
+            ],
+            "properties": {
+              "displayName": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "publisherAffiliation": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "developer",
+                  "employee",
+                  "other"
+                ]
+              }
+            }
+          },
+          "appVersion": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 80
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "helpfulCount": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "PublicReviewPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "app",
+          "items",
+          "pageInfo"
+        ],
+        "properties": {
+          "app": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "slug",
+              "name"
+            ],
+            "properties": {
+              "slug": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "rating": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "average",
+              "count"
+            ],
+            "properties": {
+              "average": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 5
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicReview"
+            }
+          },
+          "pageInfo": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "nextCursor",
+              "hasNextPage"
+            ],
+            "properties": {
+              "nextCursor": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "hasNextPage": {
+                "type": "boolean"
               }
             }
           }

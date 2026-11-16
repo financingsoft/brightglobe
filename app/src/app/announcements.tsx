@@ -9,7 +9,7 @@ import { getAnnouncements, getCommunityEvents, type Announcement, type Community
 export default function AnnouncementsScreen() {
   const { locale } = useI18n();
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isPreviewAccount } = useAuth();
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
   const [items, setItems] = useState<Announcement[]>([]);
   const [events, setEvents] = useState<CommunityEvent[]>([]);
@@ -18,7 +18,7 @@ export default function AnnouncementsScreen() {
 
   useFocusEffect(useCallback(() => {
     let active = true;
-    if (!isAuthenticated) { setItems([]); setEvents([]); return () => { active = false; }; }
+    if (!isAuthenticated || isPreviewAccount) { setItems([]); setEvents([]); return () => { active = false; }; }
     setLoading(true);
     setError(null);
     Promise.all([getAnnouncements(), getCommunityEvents()]).then(([news, activities]) => {

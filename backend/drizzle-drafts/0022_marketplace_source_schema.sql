@@ -224,14 +224,14 @@ CREATE INDEX app_versions_app_platform_status_idx
   ON marketplace.app_versions(app_id, platform, status);
 
 CREATE OR REPLACE FUNCTION marketplace.guard_initial_app_version()
-RETURNS trigger LANGUAGE plpgsql AS $
+RETURNS trigger LANGUAGE plpgsql AS $function$
 BEGIN
   IF NEW.status <> 'draft' THEN
     RAISE EXCEPTION 'new app versions must start as drafts' USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
 END;
-$;
+$function$;
 CREATE TRIGGER app_versions_initial_state_guard
   BEFORE INSERT ON marketplace.app_versions
   FOR EACH ROW EXECUTE FUNCTION marketplace.guard_initial_app_version();
@@ -278,7 +278,7 @@ CREATE TRIGGER app_artifacts_android_apk_guard
   FOR EACH ROW EXECUTE FUNCTION marketplace.guard_android_apk_artifact();
 
 CREATE OR REPLACE FUNCTION marketplace.guard_artifact_mutation()
-RETURNS trigger LANGUAGE plpgsql AS $
+RETURNS trigger LANGUAGE plpgsql AS $function$
 BEGIN
   IF TG_OP = 'INSERT' THEN
     IF NEW.scan_status <> 'pending' OR NEW.approval_status <> 'pending' THEN
@@ -300,13 +300,13 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$;
+$function$;
 CREATE TRIGGER app_artifacts_mutation_guard
   BEFORE INSERT OR UPDATE ON marketplace.app_artifacts
   FOR EACH ROW EXECUTE FUNCTION marketplace.guard_artifact_mutation();
 
 CREATE OR REPLACE FUNCTION marketplace.guard_app_version_distribution_state()
-RETURNS trigger LANGUAGE plpgsql AS $
+RETURNS trigger LANGUAGE plpgsql AS $function$
 BEGIN
   IF NEW.status <> 'approved' AND OLD.status = 'approved'
      AND EXISTS (
@@ -318,7 +318,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$;
+$function$;
 CREATE TRIGGER app_versions_distribution_state_guard
   BEFORE UPDATE OF status ON marketplace.app_versions
   FOR EACH ROW EXECUTE FUNCTION marketplace.guard_app_version_distribution_state();
@@ -351,14 +351,14 @@ CREATE INDEX distribution_sources_version_status_idx
   ON marketplace.distribution_sources(app_version_id, status, verification_status);
 
 CREATE OR REPLACE FUNCTION marketplace.guard_initial_distribution_source()
-RETURNS trigger LANGUAGE plpgsql AS $
+RETURNS trigger LANGUAGE plpgsql AS $function$
 BEGIN
   IF NEW.status <> 'pending' OR NEW.verification_status <> 'pending' THEN
     RAISE EXCEPTION 'new distribution sources must start pending verification and approval' USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
 END;
-$;
+$function$;
 CREATE TRIGGER distribution_sources_initial_state_guard
   BEFORE INSERT ON marketplace.distribution_sources
   FOR EACH ROW EXECUTE FUNCTION marketplace.guard_initial_distribution_source();
@@ -412,14 +412,14 @@ CREATE INDEX review_revisions_review_status_idx
   ON marketplace.review_revisions(review_id, moderation_status);
 
 CREATE OR REPLACE FUNCTION marketplace.guard_initial_review_revision()
-RETURNS trigger LANGUAGE plpgsql AS $
+RETURNS trigger LANGUAGE plpgsql AS $function$
 BEGIN
   IF NEW.moderation_status <> 'pending' THEN
     RAISE EXCEPTION 'new review revisions must start pending moderation' USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
 END;
-$;
+$function$;
 CREATE TRIGGER review_revision_initial_state_guard
   BEFORE INSERT ON marketplace.review_revisions
   FOR EACH ROW EXECUTE FUNCTION marketplace.guard_initial_review_revision();
@@ -641,14 +641,14 @@ CREATE TRIGGER apps_publication_slug_guard
   FOR EACH ROW EXECUTE FUNCTION marketplace.guard_app_publication_and_slug();
 
 CREATE OR REPLACE FUNCTION marketplace.guard_initial_app_state()
-RETURNS trigger LANGUAGE plpgsql AS $
+RETURNS trigger LANGUAGE plpgsql AS $function$
 BEGIN
   IF NEW.status <> 'draft' OR NEW.slug_locked_at IS NOT NULL OR NEW.published_at IS NOT NULL THEN
     RAISE EXCEPTION 'new apps must start as unpublished drafts' USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
 END;
-$;
+$function$;
 CREATE TRIGGER apps_initial_state_guard
   BEFORE INSERT ON marketplace.apps
   FOR EACH ROW EXECUTE FUNCTION marketplace.guard_initial_app_state();
@@ -677,14 +677,14 @@ CREATE TRIGGER app_listing_revision_immutable_guard
   FOR EACH ROW EXECUTE FUNCTION marketplace.guard_listing_revision_immutable();
 
 CREATE OR REPLACE FUNCTION marketplace.guard_initial_listing_revision()
-RETURNS trigger LANGUAGE plpgsql AS $
+RETURNS trigger LANGUAGE plpgsql AS $function$
 BEGIN
   IF NEW.status <> 'draft' THEN
     RAISE EXCEPTION 'new listing revisions must start as drafts' USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
 END;
-$;
+$function$;
 CREATE TRIGGER app_listing_revision_initial_state_guard
   BEFORE INSERT ON marketplace.app_listing_revisions
   FOR EACH ROW EXECUTE FUNCTION marketplace.guard_initial_listing_revision();

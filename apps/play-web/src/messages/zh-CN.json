@@ -15,7 +15,13 @@
     "description": "探索实用应用与游戏，了解开发者和产品信息，做出更放心的选择。",
     "searchPlaceholder": "搜索应用、游戏或开发者",
     "searchAction": "搜索",
-    "trust": "开发者信息透明 · 应用信息清晰 · 真实用户体验"
+    "trust": "开发者信息透明 · 应用信息清晰 · 真实用户体验",
+    "publisherTitle": "开发者信息透明",
+    "publisherText": "清楚了解应用来源",
+    "versionsTitle": "版本历史",
+    "versionsText": "了解每一次更新",
+    "communityTitle": "真实体验",
+    "communityText": "有价值的社区反馈"
   },
   "categories": {
     "eyebrow": "按兴趣探索",
@@ -62,6 +68,7 @@
   },
   "categoriesPage": {
     "title": "探索应用分类",
-    "description": "根据你的需求浏览应用和游戏。"
+    "description": "根据你的需求浏览应用和游戏。",
+    "emptyState": "开发者入驻和应用审核完成后，这里将展示正式应用目录。"
   }
 }

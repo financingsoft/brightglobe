@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   check,
   index,
@@ -36,7 +37,7 @@ export const developers = marketplace.table("developers", {
   verificationStatus: varchar("verification_status", { length: 24 }).notNull().default("unverified"),
   status: varchar("status", { length: 24 }).notNull().default("pending"),
   createdByCanonicalUserId: uuid("created_by_canonical_user_id").notNull().references(() => canonicalUsers.id, { onDelete: "restrict" }),
-  aggregateVersion: integer("aggregate_version").notNull().default(1),
+  aggregateVersion: bigint("aggregate_version", { mode: "bigint" }).notNull().default(1n),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 }, (t) => [
@@ -119,7 +120,7 @@ export const apps = marketplace.table("apps", {
   appType: varchar("app_type", { length: 16 }).notNull(),
   status: varchar("status", { length: 20 }).notNull().default("draft"),
   slugLockedAt: timestamp("slug_locked_at", { withTimezone: true }),
-  aggregateVersion: integer("aggregate_version").notNull().default(1),
+  aggregateVersion: bigint("aggregate_version", { mode: "bigint" }).notNull().default(1),
   createdByCanonicalUserId: uuid("created_by_canonical_user_id").notNull().references(() => canonicalUsers.id, { onDelete: "restrict" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -229,7 +230,7 @@ export const appArtifacts = marketplace.table("app_artifacts", {
   artifactFormat: varchar("artifact_format", { length: 16 }).notNull(),
   storageObjectVersionId: uuid("storage_object_version_id").notNull(),
   sha256: varchar("sha256", { length: 64 }).notNull(),
-  sizeBytes: text("size_bytes").notNull(),
+  sizeBytes: bigint("size_bytes", { mode: "bigint" }).notNull(),
   detectedMime: varchar("detected_mime", { length: 120 }).notNull(),
   packageIdentifier: varchar("package_identifier", { length: 255 }),
   signerFingerprint: varchar("signer_fingerprint", { length: 255 }),
@@ -267,7 +268,7 @@ export const distributionSources = marketplace.table("distribution_sources", {
   check("distribution_sources_type_check", sql.raw("source_type IN ('official_store_link','verified_publisher_link','globe_hosted_verified')")),
   check("distribution_sources_verification_check", sql.raw("verification_status IN ('pending','verified','rejected','revoked')")),
   check("distribution_sources_status_check", sql.raw("status IN ('pending','active','withdrawn')")),
-  check("distribution_sources_url_check", sql.raw("(source_type = 'globe_hosted_verified' AND source_url IS NULL AND artifact_id IS NOT NULL) OR (source_type <> 'globe_hosted_verified' AND source_url ~ '^https://')")),
+  check("distribution_sources_url_check", sql.raw("(source_type = 'globe_hosted_verified' AND source_url IS NULL AND artifact_id IS NOT NULL) OR (source_type <> 'globe_hosted_verified' AND source_url IS NOT NULL AND source_url ~ '^https://')")),
   check("distribution_sources_approval_check", sql.raw("status <> 'active' OR (verification_status = 'verified' AND approved_at IS NOT NULL AND approved_by_canonical_user_id IS NOT NULL)"))
 ]);
 
@@ -329,8 +330,8 @@ export const reviewVotes = marketplace.table("review_votes", {
 
 export const appRatingAggregates = marketplace.table("app_rating_aggregates", {
   appId: uuid("app_id").primaryKey().references(() => apps.id, { onDelete: "restrict" }),
-  ratingCount: integer("rating_count").notNull().default(0),
-  ratingSum: integer("rating_sum").notNull().default(0),
+  ratingCount: bigint("rating_count", { mode: "bigint" }).notNull().default(0n),
+  ratingSum: bigint("rating_sum", { mode: "bigint" }).notNull().default(0n),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 }, (t) => [
   check("app_rating_aggregates_count_check", sql.raw("rating_count >= 0")),
@@ -399,7 +400,7 @@ export const domainOutbox = marketplace.table("domain_outbox", {
   check("domain_outbox_versions_check", sql.raw("schema_version = 1 AND aggregate_version > 0")),
   check("domain_outbox_attempt_count_check", sql.raw("attempt_count >= 0")),
   check("domain_outbox_tags_count_check", sql.raw("cardinality(invalidation_tags) BETWEEN 1 AND 50")),
-  check("domain_outbox_tags_format_check", sql.raw("array_position(invalidation_tags, NULL) IS NULL AND (SELECT count(DISTINCT tag) FROM unnest(invalidation_tags) AS tag) = cardinality(invalidation_tags) AND NOT EXISTS (SELECT 1 FROM unnest(invalidation_tags) AS tag WHERE tag !~ '^[a-z0-9:_-]{1,120}$')")),
+  check("domain_outbox_tags_format_check", sql.raw("marketplace.is_valid_invalidation_tags(invalidation_tags)"))
   check("domain_outbox_lease_check", sql.raw("(lease_owner IS NULL AND lease_expires_at IS NULL) OR (lease_owner IS NOT NULL AND lease_expires_at IS NOT NULL)"))
 ]);
 
@@ -421,7 +422,7 @@ export const projectionEventReceipts = marketplace.table("projection_event_recei
 export const projectionAggregateWatermarks = marketplace.table("projection_aggregate_watermarks", {
   aggregateType: varchar("aggregate_type", { length: 40 }).notNull(),
   aggregateId: uuid("aggregate_id").notNull(),
-  latestVersion: integer("latest_version").notNull(),
+  latestVersion: bigint("latest_version", { mode: "bigint" }).notNull(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 }, (t) => [

@@ -148,3 +148,23 @@ Do not reveal whether a hidden/draft/rejected resource exists.
 - Verify Neon scale-to-zero behavior and stale cache behavior during origin sleep/outage.
 
 This document does not authorize a Neon migration, Staging migration, Worker deployment, DNS change, R2 public access change or Production action.
+
+
+## 8. Physical projection tables (draft DDL)
+
+The API reads only two denormalized tables in the isolated `marketplace` schema:
+
+- `marketplace.public_app_detail_projections`: primary key `(app_slug, content_locale)`; stores one strict, sanitized JSON payload, positive `projection_version`, and `updated_at`.
+- `marketplace.public_app_review_projections`: primary key `(app_slug, content_locale, review_id)`; stores the published review JSON payload and immutable `created_at`. A composite foreign key ties each page to an existing app detail projection. A descending index on `(app_slug, content_locale, created_at, review_id)` supports bounded cursor pagination.
+
+The draft DDL is `marketplace-api/migrations/0001_public_read_projections.sql`. It is intentionally outside the existing BrightGlobe Drizzle migration chain because Marketplace migration ordering and the canonical identity schema have not passed the migration readiness gate. It has not been executed.
+
+The public Worker must use a dedicated Neon role (proposed name `brightglobe_play_public_reader`) with only `USAGE` on `marketplace` and `SELECT` on these two projection tables. The role must not read transactional source tables or write any data. Provision the role and credentials through the approved Neon secret workflow; never commit credentials. The Worker uses Neon HTTP queries and a request-independent stateless client, not a long-lived pool.
+
+A projection publisher is still required. It must consume approved publication/review outbox events, validate source state and privacy consent, sanitize external URLs/media, write versioned projections idempotently, then trigger targeted cache invalidation. Until that publisher and its replay/rebuild process exist, the read API will return 404 for absent projections and the marketplace must not be treated as populated.
+
+## 9. Runtime cache boundary
+
+The Worker emits `s-maxage=600` for app detail and `s-maxage=120` for review pages, with corresponding stale-while-revalidate windows. The Next.js server fetch revalidation must not exceed the matching API TTL. Cloudflare CDN Cache Rules/Tiered Cache, cache-key normalization, cache tags/purge automation, HIT/BYPASS and origin request-rate measurements are not configured or verified by this code-only change. Cache headers alone do not prove edge delivery.
+
+The API never accepts writes, never sets cookies, ignores user identity, and does not authorize downloads. Private/authenticated APIs remain outside this Worker contract.

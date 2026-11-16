@@ -1,0 +1,7 @@
+# Use a dedicated Neon role with SELECT-only access to the marketplace public projection tables.
+DATABASE_URL=postgresql://brightglobe_play_public_reader:replace-me@ep-example-pooler.us-east-2.aws.neon.tech/brightglobe?sslmode=require
+# Used only to sign and verify opaque review pagination cursors. Keep at least 32 random characters.
+PUBLIC_CURSOR_SECRET=replace-with-at-least-32-random-characters
+DEFAULT_LOCALE=en
+SUPPORTED_LOCALES=en,zh-CN
+ENVIRONMENT=development

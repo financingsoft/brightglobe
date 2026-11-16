@@ -7,7 +7,7 @@ import { defineConfig } from "drizzle-kit";
  * Do not point this config at Neon Staging for this draft.
  */
 export default defineConfig({
-  schema: ["./src/db/schema.ts", "./src/db/marketplace-schema.ts"],
+  schema: "./src/db/marketplace-schema.ts",
   out: "./drizzle-drafts/generated",
   dialect: "postgresql",
   dbCredentials: { url: process.env.DATABASE_URL ?? "" },

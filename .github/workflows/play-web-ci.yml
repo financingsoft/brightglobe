@@ -1,0 +1,42 @@
+name: Globe Play Web CI
+
+on:
+  pull_request:
+    paths:
+      - "apps/play-web/**"
+      - "docs/PLAY_ROUTE_POLICY_MANIFEST.json"
+      - ".github/workflows/play-web-ci.yml"
+  push:
+    branches: [main, "feat/**"]
+    paths:
+      - "apps/play-web/**"
+      - "docs/PLAY_ROUTE_POLICY_MANIFEST.json"
+      - ".github/workflows/play-web-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: play-web-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Globe Play Web Typecheck and Production Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/play-web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate locale catalogs
+        run: npm run validate:locales
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build

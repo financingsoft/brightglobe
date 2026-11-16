@@ -21,6 +21,14 @@ const nextConfig: NextConfig = {
         ]
       },
       {
+        source: "/:locale(en|zh-CN)/apps/:slug",
+        headers: [{ key: "Cache-Control", value: "public, s-maxage=600, stale-while-revalidate=1200" }]
+      },
+      {
+        source: "/:locale(en|zh-CN)/apps/:slug/reviews",
+        headers: [{ key: "Cache-Control", value: "public, s-maxage=120, stale-while-revalidate=240" }]
+      },
+      {
         source: "/:locale(en|zh-CN)/search",
         headers: [
           { key: "Cache-Control", value: "public, s-maxage=60, stale-while-revalidate=120" }

@@ -39,13 +39,13 @@ The Cloudflare Queue message contains only `eventId` and `schemaVersion`; it doe
 5. Takedown events revoke download authorization through the authoritative download API immediately; cache invalidation is not an authorization mechanism.
 
 Initial cache tags:
-- `play-app-{slug}`
-- `play-app-reviews-{slug}`
-- `play-developer-{slug}`
-- `play-category-{slug}`
-- `play-locale-{locale}`
+- `app:{slug}`
+- `app:{slug}:reviews`
+- `developer:{slug}`
+- `category:{slug}`
+- `locale:{locale}`
 
-Public API responses attach the applicable tags using Cloudflare's `Cache-Tag` response header. Purge by tag is an external Cloudflare API operation and requires a dedicated least-privilege Cache Purge credential held only by the projector. Do not purge an entire zone for a single app or review change.
+Public API responses attach the applicable tags using Cloudflare's `Cache-Tag` response header. The read Worker only emits tags; it does not hold a purge token or perform purge operations. Purge by tag is an external Cloudflare API operation and requires a dedicated least-privilege Cache Purge credential held only by the projector. Do not purge an entire zone for a single app or review change.
 
 ## 5. Database entities (logical, not authorized DDL)
 

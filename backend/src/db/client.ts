@@ -1,6 +1,7 @@
 import { Pool } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { schema } from "./schema.js";
+import { marketplaceSchema } from "./marketplace-schema.js";
 
 /**
  * Create request-scoped database resources for Cloudflare Workers.
@@ -13,7 +14,7 @@ export function createDatabase(connectionString: string) {
     max: 1,
     connectionTimeoutMillis: 10_000
   });
-  const db = drizzle({ client: pool, schema });
+  const db = drizzle({ client: pool, schema: { ...schema, ...marketplaceSchema } });
   return { db, pool };
 }
 

@@ -5,6 +5,9 @@ const failures = [];
 if (spec.openapi !== "3.1.0") failures.push("OpenAPI version must be 3.1.0.");
 if (!spec.paths?.["/api/v1/play/apps/{slug}"]?.get) failures.push("Missing public app detail GET operation.");
 if (!spec.paths?.["/api/v1/play/apps/{slug}/reviews"]?.get) failures.push("Missing public reviews GET operation.");
+if (!spec.components?.schemas?.PublicAppDetail) failures.push("Missing strict PublicAppDetail schema.");
+if (!spec.components?.schemas?.PublicReviewPage) failures.push("Missing strict PublicReviewPage schema.");
+if (!spec.components?.schemas?.PublicReview) failures.push("Missing strict PublicReview schema.");
 for (const [path, item] of Object.entries(spec.paths ?? {})) {
   for (const [method, operation] of Object.entries(item)) {
     if (method.toLowerCase() !== "get") failures.push("Public read API must not expose write method " + method.toUpperCase() + " on " + path + ".");

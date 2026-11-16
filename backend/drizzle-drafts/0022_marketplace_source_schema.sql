@@ -261,6 +261,52 @@ CREATE TRIGGER app_artifacts_android_apk_guard
   BEFORE INSERT ON marketplace.app_artifacts
   FOR EACH ROW EXECUTE FUNCTION marketplace.guard_android_apk_artifact();
 
+CREATE OR REPLACE FUNCTION marketplace.guard_artifact_mutation()
+RETURNS trigger LANGUAGE plpgsql AS $
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.scan_status <> 'pending' OR NEW.approval_status <> 'pending' THEN
+      RAISE EXCEPTION 'new artifacts must enter quarantine pending scan and approval' USING ERRCODE = '23514';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF (to_jsonb(NEW) - ARRAY['scan_status','approval_status'])
+     IS DISTINCT FROM
+     (to_jsonb(OLD) - ARRAY['scan_status','approval_status']) THEN
+    RAISE EXCEPTION 'artifact provenance and binary identity are immutable' USING ERRCODE = '23514';
+  END IF;
+  IF (NEW.scan_status <> 'clean' OR NEW.approval_status <> 'approved')
+     AND EXISTS (
+       SELECT 1 FROM marketplace.distribution_sources d
+       WHERE d.artifact_id = NEW.id AND d.source_type = 'globe_hosted_verified' AND d.status = 'active'
+     ) THEN
+    RAISE EXCEPTION 'withdraw active hosted distribution before revoking artifact eligibility' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$;
+CREATE TRIGGER app_artifacts_mutation_guard
+  BEFORE INSERT OR UPDATE ON marketplace.app_artifacts
+  FOR EACH ROW EXECUTE FUNCTION marketplace.guard_artifact_mutation();
+
+CREATE OR REPLACE FUNCTION marketplace.guard_app_version_distribution_state()
+RETURNS trigger LANGUAGE plpgsql AS $
+BEGIN
+  IF NEW.status <> 'approved' AND OLD.status = 'approved'
+     AND EXISTS (
+       SELECT 1 FROM marketplace.distribution_sources d
+       WHERE d.app_version_id = NEW.id AND d.status = 'active'
+     ) THEN
+    RAISE EXCEPTION 'withdraw active distribution sources before changing an approved version state'
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$;
+CREATE TRIGGER app_versions_distribution_state_guard
+  BEFORE UPDATE OF status ON marketplace.app_versions
+  FOR EACH ROW EXECUTE FUNCTION marketplace.guard_app_version_distribution_state();
+
 CREATE TABLE marketplace.distribution_sources (
   id uuid PRIMARY KEY,
   app_version_id uuid NOT NULL REFERENCES marketplace.app_versions(id) ON DELETE RESTRICT,
@@ -552,6 +598,19 @@ CREATE TRIGGER apps_publication_slug_guard
   BEFORE UPDATE ON marketplace.apps
   FOR EACH ROW EXECUTE FUNCTION marketplace.guard_app_publication_and_slug();
 
+CREATE OR REPLACE FUNCTION marketplace.guard_initial_app_state()
+RETURNS trigger LANGUAGE plpgsql AS $
+BEGIN
+  IF NEW.status <> 'draft' OR NEW.slug_locked_at IS NOT NULL OR NEW.published_at IS NOT NULL THEN
+    RAISE EXCEPTION 'new apps must start as unpublished drafts' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$;
+CREATE TRIGGER apps_initial_state_guard
+  BEFORE INSERT ON marketplace.apps
+  FOR EACH ROW EXECUTE FUNCTION marketplace.guard_initial_app_state();
+
 -- Submitted listing content and its child snapshot rows cannot be edited.
 CREATE OR REPLACE FUNCTION marketplace.guard_listing_revision_immutable()
 RETURNS trigger LANGUAGE plpgsql AS $$
@@ -574,6 +633,19 @@ $$;
 CREATE TRIGGER app_listing_revision_immutable_guard
   BEFORE UPDATE OR DELETE ON marketplace.app_listing_revisions
   FOR EACH ROW EXECUTE FUNCTION marketplace.guard_listing_revision_immutable();
+
+CREATE OR REPLACE FUNCTION marketplace.guard_initial_listing_revision()
+RETURNS trigger LANGUAGE plpgsql AS $
+BEGIN
+  IF NEW.status <> 'draft' THEN
+    RAISE EXCEPTION 'new listing revisions must start as drafts' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$;
+CREATE TRIGGER app_listing_revision_initial_state_guard
+  BEFORE INSERT ON marketplace.app_listing_revisions
+  FOR EACH ROW EXECUTE FUNCTION marketplace.guard_initial_listing_revision();
 
 CREATE OR REPLACE FUNCTION marketplace.guard_listing_revision_children()
 RETURNS trigger LANGUAGE plpgsql AS $$

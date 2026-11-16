@@ -124,7 +124,8 @@ CREATE TABLE marketplace.apps (
   CONSTRAINT apps_type_check CHECK (app_type IN ('app','game')),
   CONSTRAINT apps_status_check CHECK (status IN ('draft','published','suspended','archived')),
   CONSTRAINT apps_aggregate_version_check CHECK (aggregate_version > 0),
-  CONSTRAINT apps_slug_locked_check CHECK (slug_locked_at IS NULL OR published_at IS NOT NULL)
+  CONSTRAINT apps_slug_locked_check CHECK (slug_locked_at IS NULL OR published_at IS NOT NULL),
+  CONSTRAINT apps_published_state_check CHECK (status <> 'published' OR (slug_locked_at IS NOT NULL AND published_at IS NOT NULL))
 );
 CREATE UNIQUE INDEX apps_slug_uidx ON marketplace.apps(slug);
 CREATE INDEX apps_developer_status_created_idx ON marketplace.apps(developer_id, status, created_at);
@@ -244,6 +245,22 @@ CREATE TABLE marketplace.app_artifacts (
 );
 CREATE INDEX app_artifacts_scan_approval_idx ON marketplace.app_artifacts(scan_status, approval_status);
 
+CREATE OR REPLACE FUNCTION marketplace.guard_android_apk_artifact()
+RETURNS trigger LANGUAGE plpgsql AS $
+DECLARE
+  v_platform varchar(24);
+BEGIN
+  SELECT platform INTO v_platform FROM marketplace.app_versions WHERE id = NEW.app_version_id;
+  IF v_platform IS DISTINCT FROM 'android' THEN
+    RAISE EXCEPTION 'V1 hosted artifacts are limited to Android APKs' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$;
+CREATE TRIGGER app_artifacts_android_apk_guard
+  BEFORE INSERT ON marketplace.app_artifacts
+  FOR EACH ROW EXECUTE FUNCTION marketplace.guard_android_apk_artifact();
+
 CREATE TABLE marketplace.distribution_sources (
   id uuid PRIMARY KEY,
   app_version_id uuid NOT NULL REFERENCES marketplace.app_versions(id) ON DELETE RESTRICT,
@@ -287,11 +304,11 @@ CREATE TABLE marketplace.reviews (
   CONSTRAINT reviews_status_check CHECK (status IN ('pending','published','rejected','hidden','removed')),
   CONSTRAINT reviews_affiliation_check CHECK (publisher_affiliation IN ('none','employee','contractor','other')),
   CONSTRAINT reviews_aggregate_version_check CHECK (aggregate_version > 0),
-  CONSTRAINT reviews_one_unless_repost_allowed_uidx UNIQUE (app_id, canonical_user_id, repost_allowed_at)
+  CONSTRAINT reviews_aggregate_version_check CHECK (aggregate_version > 0),
+  CONSTRAINT reviews_published_pointer_check CHECK (status <> 'published' OR published_revision_id IS NOT NULL)
 );
--- The NULL-aware partial unique index is the actual concurrency guard: a new
--- review is blocked until a moderator explicitly sets repost_allowed_at.
-DROP INDEX marketplace.reviews_one_unless_repost_allowed_uidx;
+-- The partial unique index is the concurrency guard: repost requires an
+-- explicit moderation action setting repost_allowed_at on the old review.
 CREATE UNIQUE INDEX reviews_one_unless_repost_allowed_uidx
   ON marketplace.reviews(app_id, canonical_user_id) WHERE repost_allowed_at IS NULL;
 CREATE INDEX reviews_app_status_created_idx ON marketplace.reviews(app_id, status, created_at);
@@ -328,6 +345,38 @@ ALTER TABLE marketplace.reviews
   ADD CONSTRAINT reviews_pending_revision_fk
   FOREIGN KEY (pending_revision_id) REFERENCES marketplace.review_revisions(id)
   ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED;
+
+CREATE OR REPLACE FUNCTION marketplace.guard_listing_publication()
+RETURNS trigger LANGUAGE plpgsql AS $
+DECLARE
+  v_category_count integer;
+  v_invalid_categories integer;
+  v_platform_count integer;
+BEGIN
+  IF NEW.status = 'published' AND OLD.status IS DISTINCT FROM 'published' THEN
+    IF OLD.status <> 'approved' THEN
+      RAISE EXCEPTION 'only an approved listing revision may be published' USING ERRCODE = '23514';
+    END IF;
+    SELECT count(*), count(*) FILTER (WHERE c.status <> 'active')
+      INTO v_category_count, v_invalid_categories
+      FROM marketplace.app_listing_revision_categories rc
+      JOIN marketplace.categories c ON c.id = rc.category_id
+      WHERE rc.revision_id = NEW.id;
+    IF v_category_count < 1 OR v_category_count > 3 OR v_invalid_categories > 0 THEN
+      RAISE EXCEPTION 'published listing requires one to three active categories' USING ERRCODE = '23514';
+    END IF;
+    SELECT count(*) INTO v_platform_count
+      FROM marketplace.app_listing_platform_targets p WHERE p.revision_id = NEW.id;
+    IF v_platform_count < 1 THEN
+      RAISE EXCEPTION 'published listing requires at least one platform target' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$;
+CREATE TRIGGER app_listing_publication_guard
+  BEFORE UPDATE OF status ON marketplace.app_listing_revisions
+  FOR EACH ROW EXECUTE FUNCTION marketplace.guard_listing_publication();
 
 CREATE TABLE marketplace.review_votes (
   review_id uuid NOT NULL REFERENCES marketplace.reviews(id) ON DELETE RESTRICT,

@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
+  AnyPgColumn,
   bigint,
-  boolean,
   check,
   index,
   integer,
@@ -89,7 +89,7 @@ export const developerInvitations = marketplace.table("developer_invitations", {
 export const categories = marketplace.table("categories", {
   id: uuid("id").primaryKey(),
   slug: varchar("slug", { length: 80 }).notNull(),
-  parentId: uuid("parent_id"),
+  parentId: uuid("parent_id").references((): AnyPgColumn => categories.id, { onDelete: "restrict" }),
   status: varchar("status", { length: 16 }).notNull().default("active"),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -162,6 +162,7 @@ export const appListingRevisions = marketplace.table("app_listing_revisions", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 }, (t) => [
   uniqueIndex("app_listing_revisions_app_locale_revision_uidx").on(t.appId, t.contentLocale, t.revisionNumber),
+  uniqueIndex("app_listing_revisions_one_published_locale_uidx").on(t.appId, t.contentLocale).where(sql.raw("status = 'published'")),
   index("app_listing_revisions_app_locale_status_idx").on(t.appId, t.contentLocale, t.status),
   check("app_listing_revisions_number_check", sql.raw("revision_number > 0")),
   check("app_listing_revisions_status_check", sql.raw("status IN ('draft','submitted','in_review','approved','published','rejected','superseded')")),
@@ -279,8 +280,8 @@ export const reviews = marketplace.table("reviews", {
   canonicalUserId: uuid("canonical_user_id").notNull().references(() => canonicalUsers.id, { onDelete: "restrict" }),
   status: varchar("status", { length: 20 }).notNull().default("pending"),
   publisherAffiliation: varchar("publisher_affiliation", { length: 24 }).notNull().default("none"),
-  publishedRevisionId: uuid("published_revision_id"),
-  pendingRevisionId: uuid("pending_revision_id"),
+  publishedRevisionId: uuid("published_revision_id").references((): AnyPgColumn => reviewRevisions.id, { onDelete: "restrict" }),
+  pendingRevisionId: uuid("pending_revision_id").references((): AnyPgColumn => reviewRevisions.id, { onDelete: "restrict" }),
   repostAllowedAt: timestamp("repost_allowed_at", { withTimezone: true }),
   aggregateVersion: bigint("aggregate_version", { mode: "bigint" }).notNull().default(1n),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

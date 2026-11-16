@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, isNull, lte, or } from "drizzle-orm";
+import { and, count, desc, eq, gt, isNull, lte, or } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Database } from "../db/client.js";
 import type { BetterAuthInstance } from "../auth.js";
@@ -57,13 +57,15 @@ export function createCommunityRoutes(db: Database, auth: BetterAuthInstance) {
       }
     }
     if (!record) return context.json({ error: { code: "INVITATION_CODE_UNAVAILABLE", message: "Unable to issue an invitation code." } }, 503);
+    const [referralCount] = await db.select({ value: count() }).from(invitationAttributions)
+      .where(eq(invitationAttributions.inviterUserId, current.user.id));
     const referrals = await db.select({ id: invitationAttributions.id, status: invitationAttributions.status, createdAt: invitationAttributions.createdAt })
       .from(invitationAttributions).where(eq(invitationAttributions.inviterUserId, current.user.id))
       .orderBy(desc(invitationAttributions.createdAt)).limit(50);
     return context.json({
       code: record.code,
       status: record.status,
-      referralCount: referrals.length,
+      referralCount: referralCount?.value ?? 0,
       referrals: referrals.map((item) => ({ id: item.id, status: item.status, createdAt: item.createdAt.toISOString() })),
       rewardsEnabled: false
     });

@@ -238,11 +238,13 @@ try {
   await visibleText("发现原力").last().waitFor({ state: "visible", timeout: 10000 });
   await visibleText("发现原力").last().click();
   await waitForTasks();
-  await page.getByText("签到", { exact: true }).click();
-  await page.getByText("签到成功", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
-  await page.screenshot({ path: resolve(outputRoot, "check-in-dialog-375x667.png") });
-  await page.getByText("不用了", { exact: true }).click();
-  await waitForTasks();
+  // V1.0 must not simulate check-in or issue preview rewards. Guard the
+  // unavailable state instead of exercising the retired legacy check-in flow.
+  await visibleText("暂未开放").first().waitFor({ state: "visible", timeout: 10000 });
+  if (await page.getByText("签到成功", { exact: true }).count() > 0) {
+    throw new Error("Task preview must not expose a fabricated check-in success state");
+  }
+  await page.screenshot({ path: resolve(outputRoot, "tasks-unavailable-375x667.png") });
 
   const captureCategoryFromForce = async (label, categoryId, fileName, expectedHeading = label) => {
     await visibleText(label).last().click();

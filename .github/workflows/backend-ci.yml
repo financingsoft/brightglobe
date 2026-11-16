@@ -64,7 +64,9 @@ jobs:
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle-drafts/0022_marketplace_source_schema.behavior.sql
 
       - name: Marketplace Drizzle schema generation (draft only)
-        run: npm run db:generate:marketplace-draft
+        run: |
+          npm run db:generate:marketplace-draft
+          test -n "$(find drizzle-drafts/generated -type f -name '*.sql' -print -quit)"
 
       - name: Cloudflare Worker dry run
         run: npm run build

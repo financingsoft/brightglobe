@@ -48,6 +48,7 @@ test("public app detail returns a cacheable published projection without cookies
   assert.match(response.headers.get("Cache-Control") ?? "", /s-maxage=600/);
   assert.ok(response.headers.get("ETag"));
   assert.ok(response.headers.get("X-Request-Id"));
+  assert.equal(response.headers.get("Cache-Tag"), "app:sample-app,developer:sample-publisher,locale:en");
   assert.equal(response.headers.get("Set-Cookie"), null);
   const body = await response.json() as { data: { name: string }; meta: { schemaVersion: number } };
   assert.equal(body.data.name, "Sample App");
@@ -93,6 +94,7 @@ test("reviews are bounded, anonymous and use the shorter cache TTL", async () =>
   assert.equal(response.status, 200);
   assert.equal(requestedLimit, 21);
   assert.match(response.headers.get("Cache-Control") ?? "", /s-maxage=120/);
+  assert.equal(response.headers.get("Cache-Tag"), "app:sample-app,app:sample-app:reviews,locale:en");
   const body = await response.json() as { data: { pageInfo: { hasNextPage: boolean } } };
   assert.equal(body.data.pageInfo.hasNextPage, false);
 });

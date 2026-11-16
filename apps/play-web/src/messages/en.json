@@ -1,0 +1,67 @@
+{
+  "metadata": {
+    "title": "Globe Play — Discover apps worth keeping",
+    "description": "Discover useful apps and games from trusted publishers around the world."
+  },
+  "nav": {
+    "explore": "Explore",
+    "categories": "Categories",
+    "developers": "For developers",
+    "search": "Search apps and games"
+  },
+  "hero": {
+    "eyebrow": "A better place to discover software",
+    "title": "Find your next\nfavorite app.",
+    "description": "Explore useful apps and games, understand who makes them, and choose with confidence.",
+    "searchPlaceholder": "Search apps, games, or developers",
+    "searchAction": "Search",
+    "trust": "Publisher transparency · Clear app information · Real user experiences"
+  },
+  "categories": {
+    "eyebrow": "Explore by interest",
+    "title": "A world of apps, organized.",
+    "description": "Start with what you need. Find focused collections across the software you use every day.",
+    "productivity": "Productivity",
+    "creativity": "Creativity & Design",
+    "education": "Learning",
+    "finance": "Finance",
+    "health": "Health & Fitness",
+    "games": "Games",
+    "utilities": "Utilities",
+    "entertainment": "Entertainment"
+  },
+  "trust": {
+    "eyebrow": "Built around trust",
+    "title": "Know what you're installing.",
+    "description": "Clear publisher identity, version history, compatibility details, privacy information and useful community feedback belong together.",
+    "publisher": "Publisher transparency",
+    "publisherText": "Understand who publishes an app and how its listing is verified.",
+    "versions": "Version clarity",
+    "versionsText": "Review release history, platform support and update information.",
+    "community": "Useful feedback",
+    "communityText": "Read moderated, experience-based reviews — not paid ratings."
+  },
+  "developers": {
+    "eyebrow": "For people who build",
+    "title": "Your work deserves a great home.",
+    "description": "Create a publisher profile, manage localized listings and bring every release through a clear review process.",
+    "action": "Explore the developer platform"
+  },
+  "footer": {
+    "tagline": "Discover with confidence.",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "support": "Support"
+  },
+  "search": {
+    "title": "Search Globe Play",
+    "description": "Search public app and game listings.",
+    "placeholder": "What are you looking for?",
+    "action": "Search",
+    "note": "Search pages are not indexed. Individual app and category pages are designed for discovery."
+  },
+  "categoriesPage": {
+    "title": "Explore categories",
+    "description": "Browse apps and games by what you want to do."
+  }
+}

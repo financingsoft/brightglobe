@@ -104,9 +104,10 @@ The public read Worker remains SELECT-only on sanitized projection tables. It mu
 
 - Static table inventory test added to backend test suite.
 - Backend typecheck, unit tests and Worker dry-run must pass in PR CI.
-- The SQL candidate was applied successfully to an ephemeral PostgreSQL 16 service in Backend CI. Its assertion suite passed: 22 source tables, canonical-user foreign keys, no Better Auth public.user FK, partial review uniqueness, deferred owner invariant, append-only audit trigger and listing publication guard.
+- The SQL candidate was applied successfully to an ephemeral PostgreSQL 16 service in Backend CI. Static assertions passed: 22 source tables, canonical-user foreign keys, no Better Auth public.user FK, partial review uniqueness, deferred owner invariant, append-only audit trigger and listing publication guard.
+- Behavioral SQL assertions also passed: published slug immutability, one published listing revision per locale, one active review per user/app, pending-review edit preserves the published revision, review content immutability, three-category cap, Android-only APK artifacts, clean/approved hosted release gating, active-source withdrawal protection, append-only audit and unique outbox invalidation tags.
 - Backend CI also passed TypeScript typecheck, 95 unit tests, Marketplace Drizzle schema generation and Cloudflare Worker dry-run.
-- Business workflow/concurrency tests, migration replay/rollback strategy and actual role-level privilege tests remain pending.
+- Concurrent stress/race tests, verified-invitation email binding, the owner-transfer service transaction, migration replay/forward-recovery and actual role-level privilege tests remain pending.
 - No claim is made that the draft SQL has been applied to Neon.
 - Neon Staging has no marketplace schema/tables as of the read-only audit; migration remains a separate explicit approval gate.
 

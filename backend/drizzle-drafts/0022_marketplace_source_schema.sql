@@ -795,18 +795,20 @@ CREATE OR REPLACE FUNCTION marketplace.guard_hosted_apk_distribution()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   v_platform varchar(24);
+  v_version_status varchar(20);
   v_format varchar(16);
   v_scan varchar(16);
   v_approval varchar(16);
 BEGIN
   IF NEW.source_type = 'globe_hosted_verified' THEN
-    SELECT v.platform, a.artifact_format, a.scan_status, a.approval_status
-      INTO v_platform, v_format, v_scan, v_approval
+    SELECT v.platform, v.status, a.artifact_format, a.scan_status, a.approval_status
+      INTO v_platform, v_version_status, v_format, v_scan, v_approval
       FROM marketplace.app_versions v
       JOIN marketplace.app_artifacts a ON a.app_version_id = v.id
       WHERE v.id = NEW.app_version_id AND a.id = NEW.artifact_id;
-    IF v_platform IS DISTINCT FROM 'android' OR v_format IS DISTINCT FROM 'apk'
-       OR v_scan IS DISTINCT FROM 'clean' OR v_approval IS DISTINCT FROM 'approved' THEN
+    IF v_platform IS DISTINCT FROM 'android' OR v_version_status IS DISTINCT FROM 'approved'
+       OR v_format IS DISTINCT FROM 'apk' OR v_scan IS DISTINCT FROM 'clean'
+       OR v_approval IS DISTINCT FROM 'approved' THEN
       RAISE EXCEPTION 'Globe-hosted distribution requires an approved clean Android APK'
         USING ERRCODE = '23514';
     END IF;

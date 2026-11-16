@@ -73,7 +73,7 @@ function MissionGlyph({ id }: { id: MissionId }) {
 export default function TasksScreen() {
   const { locale } = useI18n();
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isPreviewAccount } = useAuth();
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
   const [publishedTasks, setPublishedTasks] = useState<CommunityTask[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
@@ -90,13 +90,13 @@ export default function TasksScreen() {
 
   useEffect(() => {
     let active = true;
-    if (!isAuthenticated) { setPublishedTasks([]); return () => { active = false; }; }
+    if (!isAuthenticated || isPreviewAccount) { setPublishedTasks([]); setTasksLoading(false); return () => { active = false; }; }
     setTasksLoading(true);
     getCommunityTasks().then((result) => { if (active) setPublishedTasks(result.items); })
       .catch((error: unknown) => { if (active) setTasksError(error instanceof Error ? error.message : t("暂时无法加载任务", "Unable to load missions")); })
       .finally(() => { if (active) setTasksLoading(false); });
     return () => { active = false; };
-  }, [isAuthenticated, locale]);
+  }, [isAuthenticated, isPreviewAccount, locale]);
 
   const categories: { id: CategoryId; label: string }[] = [
     { id: "shopping", label: t("购物", "Shopping") },

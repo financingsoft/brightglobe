@@ -68,13 +68,14 @@ export default function HomeScreen() {
 
   useEffect(() => {
     let active = true;
+    if (!isAuthenticated || isPreviewAccount) { setLatestAnnouncement(null); return () => { active = false; }; }
     getAnnouncements().then((result) => {
       if (active) setLatestAnnouncement(result.items[0] ?? null);
     }).catch(() => {
       if (active) setLatestAnnouncement(null);
     });
     return () => { active = false; };
-  }, [locale]);
+  }, [isAuthenticated, isPreviewAccount, locale]);
 
   const requireLiveAccount = (action: () => void) => {
     if (!isAuthenticated || isPreviewAccount) {

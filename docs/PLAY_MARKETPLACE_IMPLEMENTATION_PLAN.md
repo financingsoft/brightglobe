@@ -1,94 +1,117 @@
 # Globe Play Marketplace — Implementation Plan
 
-**Status:** Draft plan  
-**Revision:** 0.1 · 2026-11-17  
-**Parent contracts:** `PLAY_MARKETPLACE_PRODUCT_ARCHITECTURE_CONTRACT.md`, `PLAY_MARKETPLACE_DATA_CONTRACT.md`
+**Status:** Draft plan · Enterprise-ready V1 target  
+**Revision:** 0.2 · 2026-11-17  
+**Parent contracts:** Product, Data, Domain Architecture, Developer Platform, Release Lifecycle, Security & Trust, Discovery, Analytics, Admin Operations and Commerce Extension contracts.
 
 ## Guiding rule
 
-Build in small, reviewable increments on isolated feature branches. Start with Staging-only infrastructure and test data. Do not modify the existing `globe` Production Worker, run Production migrations, deploy Production, create a BG Mainnet mint, or issue real BG.
+V1 must deliver a trustworthy, complete marketplace operating loop, not a thin catalogue. Build as a modular monolith with explicit domain boundaries and a single dedicated `globe-play` Worker. Use isolated feature branches and Staging-only validation. Do not modify the existing `globe` Production Worker, run Production migrations, deploy Production, create a BG Mainnet mint or issue real BG.
 
-## Phase 0 — Contract and repository fit (current)
+## Phase 0 — Contract and repository fit
 
-- [x] Read BrightGlobe README, V1.0 app core contract, release gates, foundation contract, BD ledger contract, user-center contract, canonical identity contract and current Worker/database configuration.
-- [x] Confirm the existing Worker is Hono-based and route composition lives in `backend/src/app.ts`.
-- [x] Confirm the canonical identity model distinguishes UUIDv7 business IDs from Better Auth provider-local IDs.
-- [x] Confirm the existing Neon setup intentionally favors scale-to-zero and does not currently use Hyperdrive.
-- [ ] Review the current BG reward foundation Draft PR and agree the future marketplace event interface.
-- [ ] Review existing PRs and branch/CI state before implementation.
-- [ ] Approve product and data contracts.
+- [x] Initial product, data and architecture contracts created in PR #12.
+- [x] Expanded domain architecture and mature marketplace capability contracts added in this branch.
+- [ ] Reconcile every proposed table and FK with the actual Staging canonical identity schema.
+- [ ] Review existing PRs, CI and branch protection before implementation.
+- [ ] Approve product, security, data and release contracts.
+- [ ] Resolve Payload runtime/schema-isolation spike and package scanner selection.
+- [ ] Define V1 platform and geography scope (Android direct distribution only where legally supported; iOS official App Store/TestFlight default).
 
-## Phase 1 — Staging infrastructure decision
+## Phase 1 — Platform foundation and tenancy
 
 - [ ] Create a dedicated `globe-play` Worker configuration without changing `globe`.
-- [ ] Create an isolated `globe-play` Staging environment and unique Worker name.
-- [ ] Decide public host and API Gateway route; do not point production DNS until release approval.
-- [ ] Provision least-privilege marketplace database role on the existing Neon Staging branch, after confirming schema grants and current connection lifecycle.
-- [ ] Create no new Neon project unless existing project limits, isolation or operational risk require it.
-- [ ] Select R2 bucket/prefix and private quarantine policy; verify lifecycle and signed URL behavior.
-- [ ] Add environment validation and health endpoints; no secrets in source control.
+- [ ] Create an isolated Staging environment and unique Worker name.
+- [ ] Decide public host/API Gateway routing; do not change Production DNS.
+- [ ] Provision least-privilege marketplace database role on existing Neon Staging branch.
+- [ ] Define tenant isolation and canonical identity middleware.
+- [ ] Define OpenAPI generation, standard error envelope, request/correlation IDs, idempotency and rate limits.
+- [ ] Select R2 quarantine/approved-artifact separation and lifecycle rules.
+- [ ] Add environment validation, health/readiness endpoints and observability.
 
-## Phase 2 — Marketplace foundation
+## Phase 2 — Publisher, catalogue and developer console
 
-- [ ] Add Drizzle schema definitions under a dedicated marketplace schema namespace.
-- [ ] Add additive Staging migration for developer, app, category, version, distribution, media, review, moderation and audit tables.
-- [ ] Add canonical identity middleware and object-level ownership checks.
-- [ ] Implement public read APIs for categories, app listing, detail and published reviews.
-- [ ] Implement developer profile and draft app submission APIs.
-- [ ] Add unit tests for validation, slug uniqueness, ownership, state transitions, pagination and access control.
-- [ ] Add API integration tests against isolated Staging database.
-- [ ] Do not implement rewards in this phase.
+- [ ] Implement publisher organizations, memberships, invitations, roles and verification cases.
+- [ ] Implement app catalogue, localized listing revisions, taxonomy, media and compatibility metadata.
+- [ ] Implement developer console: app workspace, validation, submission snapshot, status, support and appeals.
+- [ ] Implement public catalogue, search, categories, collections, app details and developer profiles.
+- [ ] Implement user library: bookmarks, follows, download history and update subscriptions.
+- [ ] Add object-level authorization and tenant-isolation tests.
 
-## Phase 3 — Package safety and distribution
+## Phase 3 — Submission, review and release management
 
-- [ ] Implement private upload-to-quarantine flow.
-- [ ] Enforce upload limits, content sniffing, archive safety and package metadata extraction.
-- [ ] Integrate malware scanning through an asynchronous service/queue.
-- [ ] Verify package identifiers and signing certificate continuity.
-- [ ] Implement separate scanner callback identity and idempotent scan-result recording.
-- [ ] Implement privileged package approval and withdrawal.
-- [ ] Implement short-lived signed R2 downloads only for approved artifacts.
-- [ ] Add takedown, appeal, vulnerability disclosure and incident response procedures.
-- [ ] Keep iOS on official store/TestFlight links unless approved alternative distribution is proven.
+- [ ] Implement independent listing, submission, artifact and release state machines.
+- [ ] Implement reviewer queues, assignments, reason codes, changes requested, rejection and appeals.
+- [ ] Implement release tracks: internal preview, beta and production.
+- [ ] Implement immutable release history, staged rollout, pause/halt, withdrawal and rollback.
+- [ ] Enforce approval gates and expected-state/version checks on every transition.
+- [ ] Add transactional outbox and idempotent domain event handling.
 
-## Phase 4 — CMS and editorial experience
+## Phase 4 — Package safety and distribution
 
-- [ ] Run a Payload compatibility spike against current Next.js / Cloudflare runtime / Postgres adapter versions.
-- [ ] Confirm Payload schema isolation and migrations before using the shared Neon project.
-- [ ] Implement editorial collections: articles, guides, collections, categories, landing blocks and media.
-- [ ] Define separate editorial roles; CMS admin does not imply package approval or reward approval.
-- [ ] Connect CMS content to published marketplace apps by stable IDs/slugs.
-- [ ] If Cloudflare runtime compatibility is not reliable, deploy CMS on a conventional Node.js host; keep marketplace API on Workers.
+- [ ] Implement resumable private upload-to-quarantine.
+- [ ] Enforce upload size, MIME/magic-byte, archive safety and metadata extraction.
+- [ ] Integrate asynchronous malware scanning and scanner callback identity.
+- [ ] Verify package identifiers, publisher authority and signing-certificate continuity.
+- [ ] Implement separate security approval, artifact promotion and withdrawal.
+- [ ] Implement short-lived signed download authorization only for approved artifacts.
+- [ ] Implement emergency takedown, cache invalidation and incident response.
+- [ ] Keep iOS on official store/TestFlight unless an eligible alternative distribution path is separately approved.
 
-## Phase 5 — User experience and moderation
+## Phase 5 — Discovery, community and operations
 
-- [ ] Build mobile-first home, search, category, app detail, developer page and collection pages.
-- [ ] Build first-party experience reports, revision history, helpfulness voting and report flow.
-- [ ] Add review moderation queue, appeals and audit history.
-- [ ] Clearly label editorial, sponsored, developer-provided and user-generated content.
-- [ ] Add accessibility, localization, SEO and responsive tests.
+- [ ] Implement PostgreSQL FTS, locale-aware search, filters and explainable ranking.
+- [ ] Implement editorial collections and sponsored-label separation.
+- [ ] Implement first-party experience reports, rating, revision history, helpfulness votes and report flow.
+- [ ] Implement anti-spam/anti-manipulation controls and moderation/appeal workflows.
+- [ ] Implement dedicated admin operations console with separated reviewer/security/support roles.
+- [ ] Implement audit trails and support cases.
 
-## Phase 6 — Reward integration (separate approval required)
+## Phase 6 — Analytics, notifications and growth
 
-- [ ] Complete App Store / Google Play policy and jurisdiction-specific legal review for the exact contribution incentive.
-- [ ] Define eligible contribution classes, quality rubric, evidence, reviewer independence, budget and appeal.
-- [ ] Define a versioned, idempotent marketplace reward-event contract.
-- [ ] Integrate only with the existing approved BrightGlobe reward engine; never write marketplace code directly to a balance or ledger.
-- [ ] Confirm BG reward foundation has been reviewed, merged and tested before integration.
-- [ ] Keep external store ratings/reviews, positive sentiment, clicks, redirects, downloads and unverified installs permanently ineligible.
-- [ ] Keep rewards disabled by default with a server-side feature flag and zero budget until explicit approval.
+- [ ] Define versioned event schema, transactional outbox, Queue consumers and deduplication.
+- [ ] Implement bot filtering, privacy minimization and event retention.
+- [ ] Implement impressions, detail views, outbound clicks, download authorization and reliable completion metrics.
+- [ ] Show verified installs only where trusted evidence exists.
+- [ ] Implement developer and admin dashboards, exports and metric definitions.
+- [ ] Implement notification preferences, app update alerts, review responses and policy notices.
+- [ ] Implement SEO, sitemap, localized URLs, structured metadata and share/deep links.
 
-## Phase 7 — Release readiness
+## Phase 7 — CMS and editorial experience
 
-- [ ] CI: typecheck, lint, unit tests, integration tests, Worker dry-run and migration validation.
-- [ ] Staging: authenticated / unauthenticated API smoke tests, developer ownership tests, CMS publish tests, upload/scan/approve/download tests.
-- [ ] Security: authorization review, upload threat model, package verification, signed URL expiry, rate limits, audit and incident drills.
-- [ ] Product: mobile browser QA, accessibility, localization, SEO and editorial review.
-- [ ] Legal/policy: privacy, copyright, publisher authorization, distribution, store rules, user terms and reward rules.
+- [ ] Run Payload compatibility spike against current Next.js/runtime/Postgres adapter.
+- [ ] Confirm schema isolation and migration ownership.
+- [ ] Implement articles, guides, collections, landing blocks and editorial workflows.
+- [ ] Keep editorial permission separate from package/release/security approval.
+- [ ] If compatibility is unreliable, deploy CMS on a conventional Node.js runtime.
+
+## Phase 8 — Commerce and reward extensions (not V1 enabled)
+
+- [ ] Commerce remains disabled until seller-of-record, payments, tax, refunds, sanctions and regional platform rules are approved.
+- [ ] BG reward integration requires separate legal/platform approval and an approved event contract.
+- [ ] Marketplace must never maintain its own token ledger or write directly to BD/BG balances.
+- [ ] External store ratings/reviews, positive sentiment, clicks, redirects, downloads and unverified installs remain ineligible for rewards.
+
+## Phase 9 — Release readiness
+
+- [ ] CI: typecheck, lint, unit, integration, API contract, migration validation and security checks.
+- [ ] Staging E2E: publisher onboarding, tenant isolation, listing submit/review, upload/scan/approve, staged release, download, rollback and takedown.
+- [ ] Security: threat model, authorization review, upload tests, signer continuity, signed URL expiry, rate limits, audit and incident drills.
+- [ ] Product: mobile browser, accessibility, localization, SEO, search quality and empty/error states.
+- [ ] Analytics: event reconciliation, bot filtering, metric formula and privacy tests.
+- [ ] Legal/policy: privacy, copyright, publisher authorization, distribution, store rules, user terms and content policy.
 - [ ] Production: separate explicit approval for DNS, Worker deployment, database migration, R2 exposure and reward activation.
 
-## Definition of done for MVP
+## Definition of Done — Mature V1
 
-MVP means a trustworthy curated catalogue with public detail pages, verified developer submissions, approved distribution links/packages, editorial content, moderated first-party experience reports and auditable operations.
+V1 is complete only when:
+1. Users can discover, search, compare, save, follow, review and safely access apps across supported platforms.
+2. Developers can verify their publisher identity, manage teams, localize listings, submit apps and manage release tracks.
+3. Reviewers can process listing, package and release submissions with evidence, reason codes and appeals.
+4. Security controls protect upload, artifact provenance, signing identity, scanning and download authorization.
+5. Releases support controlled rollout, halt, withdrawal and auditable rollback.
+6. Operations can manage reports, takedowns, incidents, support and privileged access.
+7. Analytics distinguish impressions, clicks, download events and verified installs.
+8. Tenant isolation, privacy, accessibility, localization, observability, backup/restore and release gates pass.
 
-MVP does **not** require token rewards. Reward mechanics are a later gated capability and must not delay the core discovery marketplace.
+V1 does not require paid app checkout, developer payouts, BG rewards, advanced automated personalization or a dedicated search cluster. These are extension points, not launch blockers.

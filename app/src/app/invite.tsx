@@ -68,7 +68,7 @@ export default function InviteScreen() {
     return <AppScreen><View style={styles.header}><Pressable onPress={() => router.back()}><Text style={styles.backGlyph}>‹</Text></Pressable><Text style={styles.headerTitle}>{t("邀请码", "Invitation")}</Text><View style={styles.side} /></View><Text style={styles.notice}>{t("请登录真实账户后使用邀请功能。", "Sign in with a real account to use invitations.")}</Text><Pressable onPress={() => router.push("/login")} style={styles.action}><Text style={styles.actionText}>{t("登录", "Sign in")}</Text></Pressable></AppScreen>;
   }
 
-  const inviteUrl = overview ? `https://globeapps.com/invite?code=${overview.code}` : "";
+  const inviteUrl = overview ? `brightglobe://invite?code=${overview.code}` : "";
   return (
     <AppScreen>
       <View style={styles.header}>

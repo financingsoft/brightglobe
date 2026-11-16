@@ -14,6 +14,12 @@ function toBase64Url(bytes: Uint8Array): string {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  return copy.buffer;
+}
+
 function fromBase64Url(value: string): Uint8Array {
   const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
   const padded = base64 + "=".repeat((4 - base64.length % 4) % 4);
@@ -44,8 +50,8 @@ export async function decodeReviewCursor(value: string, secret: string): Promise
   const valid = await crypto.subtle.verify(
     "HMAC",
     await cursorKey(secret),
-    fromBase64Url(signature),
-    encoder.encode(payload)
+    toArrayBuffer(fromBase64Url(signature)),
+    toArrayBuffer(encoder.encode(payload))
   );
   if (!valid) throw new Error("Invalid cursor.");
   const parsed: unknown = JSON.parse(new TextDecoder().decode(fromBase64Url(payload)));

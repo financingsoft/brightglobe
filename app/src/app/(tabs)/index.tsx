@@ -12,6 +12,7 @@ import {
   getBdAccount,
   type BdAccountSnapshot
 } from "@/services/bd";
+import { getAnnouncements, type Announcement } from "@/services/community";
 
 export default function HomeScreen() {
   const { locale } = useI18n();

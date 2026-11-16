@@ -52,7 +52,7 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_trigger
     WHERE tgname = 'developer_owner_invariant_membership'
-      AND tgisconstraint
+      AND tgconstraint <> 0
       AND tgdeferrable
   ) THEN
     RAISE EXCEPTION 'missing deferred developer owner invariant trigger';

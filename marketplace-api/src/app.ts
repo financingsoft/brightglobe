@@ -142,14 +142,17 @@ export function createPublicReadApp(repository: PublicReadRepository, config: Pu
           error: { code: "PUBLIC_PROJECTION_UNAVAILABLE", message: "The public resource is temporarily unavailable.", requestId: id }
         }, 503, id);
       }
-      const parsedItems = page.items.slice(0, limit).map((item) => publicReviewSchema.safeParse(item.payload));
-      if (parsedItems.some((item) => !item.success)) {
-        console.error("[globe-play] Invalid public review projection", { requestId: id, slug });
-        return jsonResponse({
-          error: { code: "PUBLIC_PROJECTION_UNAVAILABLE", message: "The public resource is temporarily unavailable.", requestId: id }
-        }, 503, id);
+      const items: z.infer<typeof publicReviewSchema>[] = [];
+      for (const record of page.items.slice(0, limit)) {
+        const parsed = publicReviewSchema.safeParse(record.payload);
+        if (!parsed.success || parsed.data.id !== record.id || parsed.data.createdAt !== record.createdAt) {
+          console.error("[globe-play] Invalid public review projection", { requestId: id, slug });
+          return jsonResponse({
+            error: { code: "PUBLIC_PROJECTION_UNAVAILABLE", message: "The public resource is temporarily unavailable.", requestId: id }
+          }, 503, id);
+        }
+        items.push(parsed.data);
       }
-      const items = parsedItems.map((item) => (item as { success: true; data: z.infer<typeof publicReviewSchema> }).data);
       const hasNextPage = page.items.length > limit;
       const last = hasNextPage ? page.items[limit - 1] : undefined;
       const nextCursor = last ? await encodeReviewCursor({

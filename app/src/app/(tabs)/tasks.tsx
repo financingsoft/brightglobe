@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { AppScreen } from "@/components/ui";
 import { useI18n } from "@/i18n/locale";
 import { useAuth } from "@/auth/session";
+import { getCommunityTasks, type CommunityTask } from "@/services/community";
 
 type CategoryId = "shopping" | "games" | "entertainment" | "finance" | "wellness";
 
@@ -74,6 +75,9 @@ export default function TasksScreen() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
+  const [publishedTasks, setPublishedTasks] = useState<CommunityTask[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
+  const [tasksError, setTasksError] = useState<string | null>(null);
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
   const requireLogin = (action: () => void) => {
     if (!isAuthenticated) {
@@ -82,6 +86,17 @@ export default function TasksScreen() {
     }
     action();
   };
+
+
+  useEffect(() => {
+    let active = true;
+    if (!isAuthenticated) { setPublishedTasks([]); return () => { active = false; }; }
+    setTasksLoading(true);
+    getCommunityTasks().then((result) => { if (active) setPublishedTasks(result.items); })
+      .catch((error: unknown) => { if (active) setTasksError(error instanceof Error ? error.message : t("暂时无法加载任务", "Unable to load missions")); })
+      .finally(() => { if (active) setTasksLoading(false); });
+    return () => { active = false; };
+  }, [isAuthenticated, locale]);
 
   const categories: { id: CategoryId; label: string }[] = [
     { id: "shopping", label: t("购物", "Shopping") },
@@ -133,9 +148,9 @@ export default function TasksScreen() {
 
       <View style={styles.campaignBanner}>
         <View style={styles.campaignPlanet} />
-        <Text style={styles.campaignTitle}>{t("赶紧收取原力，加速获取黑钻", "Collect Contribution Power and accelerate your rewards")}</Text>
+        <Text style={styles.campaignTitle}>{t("发现社区贡献机会", "Discover ways to contribute")}</Text>
         <View style={styles.campaignPill}>
-          <Text style={styles.campaignPillText}>{t("原力越多，获取的黑钻会越多", "More Power means more community rewards")}</Text>
+          <Text style={styles.campaignPillText}>{t("任务内容由服务端发布；奖励功能尚未启用", "Missions are published by the server; rewards are not enabled")}</Text>
         </View>
       </View>
 
@@ -190,6 +205,11 @@ export default function TasksScreen() {
           </View>
         ))}
       </View>
+      <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>{t("已发布的社区任务", "Published community missions")}</Text></View>
+      {tasksLoading ? <Text style={styles.missionHint}>{t("正在加载…", "Loading…")}</Text> : null}
+      {tasksError ? <Text style={styles.missionHint}>{tasksError}</Text> : null}
+      {!tasksLoading && !tasksError && publishedTasks.length === 0 ? <Text style={styles.missionHint}>{t("目前没有已发布的任务。", "There are no published missions yet.")}</Text> : null}
+      {publishedTasks.map((task) => <View key={task.id} style={styles.missionRow}><View style={styles.missionIcon}><CategoryGlyph category="games" small /></View><View style={styles.missionCopy}><Text style={styles.missionTitle}>{task.title}</Text><Text style={styles.missionHint}>{task.summary}</Text></View><Text style={styles.missionReward}>{t("了解中", "Info")}</Text></View>)}
       <Text style={styles.bottomNote}>{t("我是有底线的", "You've reached the end")}</Text>
 
       <Modal visible={selectedMission !== null} transparent animationType="fade" onRequestClose={() => setSelectedMission(null)}>

@@ -120,7 +120,7 @@ export const apps = marketplace.table("apps", {
   appType: varchar("app_type", { length: 16 }).notNull(),
   status: varchar("status", { length: 20 }).notNull().default("draft"),
   slugLockedAt: timestamp("slug_locked_at", { withTimezone: true }),
-  aggregateVersion: bigint("aggregate_version", { mode: "bigint" }).notNull().default(1),
+  aggregateVersion: bigint("aggregate_version", { mode: "bigint" }).notNull().default(1n),
   createdByCanonicalUserId: uuid("created_by_canonical_user_id").notNull().references(() => canonicalUsers.id, { onDelete: "restrict" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -132,7 +132,8 @@ export const apps = marketplace.table("apps", {
   check("apps_type_check", sql.raw("app_type IN ('app','game')")),
   check("apps_status_check", sql.raw("status IN ('draft','published','suspended','archived')")),
   check("apps_aggregate_version_check", sql.raw("aggregate_version > 0")),
-  check("apps_slug_locked_check", sql.raw("slug_locked_at IS NULL OR published_at IS NOT NULL"))
+  check("apps_slug_locked_check", sql.raw("slug_locked_at IS NULL OR published_at IS NOT NULL")),
+  check("apps_published_state_check", sql.raw("status <> 'published' OR (slug_locked_at IS NOT NULL AND published_at IS NOT NULL)"))
 ]);
 
 export const appListingRevisions = marketplace.table("app_listing_revisions", {
@@ -244,7 +245,7 @@ export const appArtifacts = marketplace.table("app_artifacts", {
   index("app_artifacts_scan_approval_idx").on(t.scanStatus, t.approvalStatus),
   check("app_artifacts_format_check", sql.raw("artifact_format = 'apk'")),
   check("app_artifacts_sha_check", sql.raw("sha256 ~ '^[a-f0-9]{64}$'")),
-  check("app_artifacts_size_check", sql.raw("size_bytes ~ '^[1-9][0-9]*$'")),
+  check("app_artifacts_size_check", sql.raw("size_bytes > 0")),
   check("app_artifacts_mime_check", sql.raw("detected_mime = 'application/vnd.android.package-archive'")),
   check("app_artifacts_scan_status_check", sql.raw("scan_status IN ('pending','clean','suspicious','malicious','error')")),
   check("app_artifacts_approval_status_check", sql.raw("approval_status IN ('pending','approved','rejected','revoked')"))
@@ -291,7 +292,8 @@ export const reviews = marketplace.table("reviews", {
   index("reviews_user_created_idx").on(t.canonicalUserId, t.createdAt),
   check("reviews_status_check", sql.raw("status IN ('pending','published','rejected','hidden','removed')")),
   check("reviews_affiliation_check", sql.raw("publisher_affiliation IN ('none','employee','contractor','other')")),
-  check("reviews_aggregate_version_check", sql.raw("aggregate_version > 0"))
+  check("reviews_aggregate_version_check", sql.raw("aggregate_version > 0")),
+  check("reviews_published_pointer_check", sql.raw("status <> 'published' OR published_revision_id IS NOT NULL"))
 ]);
 
 export const reviewRevisions = marketplace.table("review_revisions", {

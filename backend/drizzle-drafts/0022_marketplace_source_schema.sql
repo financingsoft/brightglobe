@@ -246,7 +246,7 @@ CREATE TABLE marketplace.app_artifacts (
 CREATE INDEX app_artifacts_scan_approval_idx ON marketplace.app_artifacts(scan_status, approval_status);
 
 CREATE OR REPLACE FUNCTION marketplace.guard_android_apk_artifact()
-RETURNS trigger LANGUAGE plpgsql AS $
+RETURNS trigger LANGUAGE plpgsql AS $function$
 DECLARE
   v_platform varchar(24);
 BEGIN
@@ -256,7 +256,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$;
+$function$;
 CREATE TRIGGER app_artifacts_android_apk_guard
   BEFORE INSERT ON marketplace.app_artifacts
   FOR EACH ROW EXECUTE FUNCTION marketplace.guard_android_apk_artifact();
@@ -304,7 +304,6 @@ CREATE TABLE marketplace.reviews (
   CONSTRAINT reviews_status_check CHECK (status IN ('pending','published','rejected','hidden','removed')),
   CONSTRAINT reviews_affiliation_check CHECK (publisher_affiliation IN ('none','employee','contractor','other')),
   CONSTRAINT reviews_aggregate_version_check CHECK (aggregate_version > 0),
-  CONSTRAINT reviews_aggregate_version_check CHECK (aggregate_version > 0),
   CONSTRAINT reviews_published_pointer_check CHECK (status <> 'published' OR published_revision_id IS NOT NULL)
 );
 -- The partial unique index is the concurrency guard: repost requires an
@@ -347,7 +346,7 @@ ALTER TABLE marketplace.reviews
   ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED;
 
 CREATE OR REPLACE FUNCTION marketplace.guard_listing_publication()
-RETURNS trigger LANGUAGE plpgsql AS $
+RETURNS trigger LANGUAGE plpgsql AS $function$
 DECLARE
   v_category_count integer;
   v_invalid_categories integer;
@@ -373,7 +372,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$;
+$function$;
 CREATE TRIGGER app_listing_publication_guard
   BEFORE UPDATE OF status ON marketplace.app_listing_revisions
   FOR EACH ROW EXECUTE FUNCTION marketplace.guard_listing_publication();

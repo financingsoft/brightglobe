@@ -381,5 +381,5 @@ BEGIN
   END IF;
 
   RAISE NOTICE 'Marketplace V1 behavioral assertions passed.';
-END
+END;
 $behavior$;

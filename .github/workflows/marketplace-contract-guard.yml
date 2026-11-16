@@ -1,0 +1,40 @@
+name: Globe Play Contract Guard
+
+on:
+  pull_request:
+    branches: [main, "feat/**"]
+    paths:
+      - "AGENTS.md"
+      - "docs/PLAY_MARKETPLACE_*.md"
+      - "docs/PLAY_ROUTE_POLICY_MANIFEST.json"
+      - "scripts/validate-marketplace-contract.mjs"
+      - ".github/workflows/marketplace-contract-guard.yml"
+  push:
+    branches: [main, "feat/**"]
+    paths:
+      - "AGENTS.md"
+      - "docs/PLAY_MARKETPLACE_*.md"
+      - "docs/PLAY_ROUTE_POLICY_MANIFEST.json"
+      - "scripts/validate-marketplace-contract.mjs"
+      - ".github/workflows/marketplace-contract-guard.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: marketplace-contract-\${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    name: Validate Marketplace Contracts and Route Policies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate mandatory contracts and route cache/SEO policy
+        run: node scripts/validate-marketplace-contract.mjs

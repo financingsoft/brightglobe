@@ -101,7 +101,8 @@
         "category",
         "locale"
       ],
-      "notes": "Published app projection only."
+      "notes": "Published app projection only.",
+      "implementationStatus": "implemented-shell"
     },
     {
       "id": "app-reviews",
@@ -122,7 +123,8 @@
         "app:{slug}:rating",
         "locale"
       ],
-      "notes": "Index only after review quality/moderation thresholds; bounded pagination."
+      "notes": "Index only after review quality/moderation thresholds; bounded pagination.",
+      "implementationStatus": "implemented-shell"
     },
     {
       "id": "developer-profile",

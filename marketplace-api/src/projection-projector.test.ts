@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { processProjectionQueueMessage, type ProjectionEventStore, type ProjectionApplyResult } from "./projection-projector.js";
+import { processProjectionQueueBatch, processProjectionQueueMessage, type ProjectionEventStore, type ProjectionApplyResult } from "./projection-projector.js";
 import type { ProjectionOutboxEvent } from "./projection-events.js";
 
 const event: ProjectionOutboxEvent = {
@@ -82,7 +82,7 @@ test("applies projection then purges tags then marks invalidation complete", asy
   ]);
 });
 
-test("retries cache invalidation after projection commit without reapplying the projection", async () => {
+test("retries pending cache invalidation after the projection receipt has been committed", async () => {
   const h = createHarness();
   h.failPurge(true);
   await assert.rejects(() => processProjectionQueueMessage(message, h.store, h.invalidator), /purge temporarily unavailable/);
@@ -123,4 +123,37 @@ test("rejects malformed queue messages before reading the outbox", async () => {
   const h = createHarness();
   await assert.rejects(() => processProjectionQueueMessage({ ...message, unexpected: true }, h.store, h.invalidator), /Invalid projection Queue message/);
   assert.equal(h.calls.length, 0);
+});
+test("coalesces duplicate tags and splits purge requests at Cloudflare limits", async () => {
+  const second: ProjectionOutboxEvent = {
+    ...event,
+    eventId: "018f47b2-5c20-7a00-8000-000000000020",
+    aggregateVersion: 4,
+    aggregate: { ...event.aggregate, id: "018f47b2-5c20-7a00-8000-000000000002", slug: "second-app" },
+    invalidationTags: [
+      "app:second-app", "app:second-app:reviews", "app:second-app:rating", "developer:sample-publisher", "locale:en",
+      ...Array.from({ length: 45 }, (_, index) => "extra-" + index + ":second-app")
+    ],
+    projection: { ...event.projection, id: "018f47b2-5c20-7a00-8000-000000000002", slug: "second-app" }
+  };
+  const first = { ...event, invalidationTags: [
+    ...event.invalidationTags,
+    ...Array.from({ length: 45 }, (_, index) => "extra-" + index + ":sample-app")
+  ] };
+  const byId = new Map([[first.eventId, first], [second.eventId, second]]);
+  const calls: string[] = [];
+  const marked: string[] = [];
+  const store: ProjectionEventStore = {
+    async getOutboxEvent(id) { return byId.get(id) ?? null; },
+    async applyAtomically() { return { status: "applied", cacheInvalidationPending: true }; },
+    async markCacheInvalidationComplete(id) { marked.push(id); }
+  };
+  const invalidator = { async purge(tags: string[]) { calls.push(tags.join("|")); } };
+  const outcomes = await processProjectionQueueBatch([
+    { eventId: first.eventId, schemaVersion: 1 },
+    { eventId: second.eventId, schemaVersion: 1 }
+  ], store, invalidator);
+  assert.deepEqual(outcomes, ["applied", "applied"]);
+  assert.deepEqual(calls.map((call) => call.split("|").length), [100, 4]);
+  assert.deepEqual(marked, [first.eventId, second.eventId]);
 });

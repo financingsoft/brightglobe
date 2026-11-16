@@ -81,7 +81,8 @@ export const developerInvitations = marketplace.table("developer_invitations", {
   index("developer_invitations_developer_created_idx").on(t.developerId, t.createdAt),
   index("developer_invitations_email_created_idx").on(t.normalizedEmail, t.createdAt),
   check("developer_invitations_email_normalized_check", sql.raw("normalized_email = lower(btrim(normalized_email))")),
-  check("developer_invitations_token_hash_check", sql.raw("length(token_hash) = 64 AND token_hash ~ '^[a-f0-9]{64}
+  check("developer_invitations_token_hash_check", sql.raw("length(token_hash) = 64 AND token_hash ~ '^[a-f0-9]{64}$'")),
+  check("developer_invitations_role_check", sql.raw("role IN ('admin','release_manager','analyst','support_readonly')")),
   check("developer_invitations_expiry_check", sql.raw("expires_at > created_at")),
   check("developer_invitations_acceptance_check", sql.raw("(accepted_at IS NULL AND accepted_by_canonical_user_id IS NULL) OR (accepted_at IS NOT NULL AND accepted_by_canonical_user_id IS NOT NULL)"))
 ]);

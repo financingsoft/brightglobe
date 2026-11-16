@@ -17,7 +17,7 @@ Supported version-1 event types:
 - `review.projection.upsert.v1`
 - `review.projection.delete.v1`
 
-Every event has immutable `event_id`, `schema_version`, `aggregate_type/id`, monotonic `aggregate_version`, `occurred_at`, locale and a strict public projection payload where applicable. The event ID is the idempotency key. Aggregate version prevents older events overwriting newer projections.
+Every event has immutable `event_id`, `schema_version`, `aggregate_type/id`, monotonic `aggregate_version`, `occurred_at`, locale, a required `invalidation_tags` list and a strict public projection payload where applicable. The event ID is the idempotency key. Aggregate version prevents older events overwriting newer projections. Invalidation tags are unique, allowlisted-format identifiers (never URLs or arbitrary purge expressions), capped at 50 per event. App upserts include tags for the current app, locale, developer and categories, plus all previous developer/category relationships changed by the transaction. App deletes include the app/review/rating/locale tags and the prior developer/category relationships. Review events include the app detail, reviews, rating and locale tags. This before-and-after scope prevents stale category or publisher pages after relationship changes.
 
 The Cloudflare Queue message contains only `eventId` and `schemaVersion`; it does not duplicate the projection snapshot. The consumer loads the durable outbox event by ID. This keeps Queue messages small and allows safe retries.
 
@@ -25,7 +25,7 @@ The Cloudflare Queue message contains only `eventId` and `schemaVersion`; it doe
 
 - An outbox relay claims pending rows with a bounded lease and `FOR UPDATE SKIP LOCKED`, sends Queue messages, and marks rows dispatched only after Queue send succeeds.
 - A crash after Queue send but before marking dispatched can cause duplicate delivery. This is expected; consumers must be idempotent.
-- The consumer inserts an event receipt and updates the relevant projection in one database transaction. A unique receipt on `event_id` prevents duplicate application.
+- The consumer inserts an event receipt and updates the relevant projection in one database transaction. A unique receipt on `event_id` prevents duplicate application. The receipt also tracks whether cache invalidation is pending/completed; a duplicate delivery must resume a pending purge rather than silently skip it.
 - Projection writes are conditional on aggregate version. A stale event is acknowledged without overwriting newer state.
 - Failed messages retry with bounded exponential delay; exhausted messages go to a dedicated DLQ and alert. Replaying a DLQ message is safe.
 - Queue delivery is at-least-once, not exactly-once.
@@ -35,7 +35,7 @@ The Cloudflare Queue message contains only `eventId` and `schemaVersion`; it doe
 1. Validate the event envelope and strict public payload.
 2. Apply the projection update/delete and event receipt atomically.
 3. Only after the database transaction commits, invalidate targeted cache tags.
-4. A cache purge failure is recorded and retried independently; do not roll back a committed projection.
+4. A cache purge failure leaves the receipt in invalidation-pending state and causes message retry; the next delivery detects the duplicate projection write and retries the idempotent purge. Mark invalidation complete only after Cloudflare confirms success. Do not roll back a committed projection.
 5. Takedown events revoke download authorization through the authoritative download API immediately; cache invalidation is not an authorization mechanism.
 
 Initial cache tags:
@@ -53,7 +53,7 @@ Public API responses attach the applicable tags using Cloudflare's `Cache-Tag` r
 - `marketplace.projection_event_receipts`: event ID primary key, aggregate identity/version, applied outcome and processed timestamp.
 - Public app detail projection carries `projection_version`; review projection carries its own version. Deletion uses version tombstones or a monotonic aggregate watermark so delayed old upserts cannot resurrect removed content.
 
-Exact DDL, constraints, lock strategy, indexes, and source transaction integration must be reviewed against the actual Staging schema before migration. This proposal does not authorize any migration.
+The projector orchestration is implemented as a dependency-injected core, but the Neon adapter, exact DDL, constraints, lock strategy, indexes, and source transaction integration must be reviewed against the actual Staging schema before migration. The store adapter must atomically enforce aggregate-version watermarks, event receipts and pending invalidation state. This proposal does not authorize any migration.
 
 ## 6. Open decisions / explicit blockers
 
@@ -61,6 +61,7 @@ Exact DDL, constraints, lock strategy, indexes, and source transaction integrati
 - The publisher must prove that every public projection snapshot is generated from an approved immutable listing revision and currently approved distribution sources.
 - Review aggregation policy (rating eligibility, edited/removed review handling and locale scope) must be finalized before the projector recalculates rating summaries.
 - Cloudflare zone ID, purge token scope, cache-tag response behavior and retry/DLQ alert destination must be configured and tested in Staging.
+- The publisher must generate complete before-and-after invalidation tag sets; source-side event construction is not yet implemented.
 - Cache purge limits and cost must be measured; invalidation must be batched and coalesced during bulk edits.
 
 No database migration, Queue creation, Worker deployment, cache purge credential creation, DNS change or Production action is authorized by this proposal.

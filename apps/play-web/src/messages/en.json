@@ -15,7 +15,13 @@
     "description": "Explore useful apps and games, understand who makes them, and choose with confidence.",
     "searchPlaceholder": "Search apps, games, or developers",
     "searchAction": "Search",
-    "trust": "Publisher transparency · Clear app information · Real user experiences"
+    "trust": "Publisher transparency · Clear app information · Real user experiences",
+    "publisherTitle": "Publisher clarity",
+    "publisherText": "Know who made it",
+    "versionsTitle": "Version history",
+    "versionsText": "Understand every update",
+    "communityTitle": "Real experiences",
+    "communityText": "Useful community insight"
   },
   "categories": {
     "eyebrow": "Explore by interest",
@@ -62,6 +68,7 @@
   },
   "categoriesPage": {
     "title": "Explore categories",
-    "description": "Browse apps and games by what you want to do."
+    "description": "Browse apps and games by what you want to do.",
+    "emptyState": "App listings will appear here after publisher onboarding and review."
   }
 }

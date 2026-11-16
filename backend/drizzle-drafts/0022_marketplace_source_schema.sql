@@ -45,18 +45,18 @@ CREATE INDEX developers_status_created_idx ON marketplace.developers(status, cre
 CREATE TABLE marketplace.developer_memberships (
   developer_id uuid NOT NULL REFERENCES marketplace.developers(id) ON DELETE RESTRICT,
   canonical_user_id uuid NOT NULL REFERENCES public.canonical_users(id) ON DELETE RESTRICT,
-  role varchar(24) NOT NULL,
+  "role" varchar(24) NOT NULL,
   status varchar(16) NOT NULL DEFAULT 'invited',
   created_by_canonical_user_id uuid NOT NULL REFERENCES public.canonical_users(id) ON DELETE RESTRICT,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT developer_memberships_pk PRIMARY KEY (developer_id, canonical_user_id),
-  CONSTRAINT developer_memberships_role_check CHECK (role IN ('owner','admin','release_manager','analyst','support_readonly')),
+  CONSTRAINT developer_memberships_role_check CHECK ("role" IN ('owner','admin','release_manager','analyst','support_readonly')),
   CONSTRAINT developer_memberships_status_check CHECK (status IN ('invited','active','suspended','revoked'))
 );
 CREATE UNIQUE INDEX developer_memberships_one_active_owner_uidx
   ON marketplace.developer_memberships(developer_id)
-  WHERE role = 'owner' AND status = 'active';
+  WHERE "role" = 'owner' AND status = 'active';
 CREATE INDEX developer_memberships_user_status_idx
   ON marketplace.developer_memberships(canonical_user_id, status);
 
@@ -64,7 +64,7 @@ CREATE TABLE marketplace.developer_invitations (
   id uuid PRIMARY KEY,
   developer_id uuid NOT NULL REFERENCES marketplace.developers(id) ON DELETE RESTRICT,
   normalized_email varchar(320) NOT NULL,
-  role varchar(24) NOT NULL,
+  "role" varchar(24) NOT NULL,
   token_hash varchar(64) NOT NULL,
   invited_by_canonical_user_id uuid NOT NULL REFERENCES public.canonical_users(id) ON DELETE RESTRICT,
   accepted_by_canonical_user_id uuid REFERENCES public.canonical_users(id) ON DELETE RESTRICT,
@@ -74,7 +74,7 @@ CREATE TABLE marketplace.developer_invitations (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT developer_invitations_email_normalized_check CHECK (normalized_email = lower(btrim(normalized_email))),
   CONSTRAINT developer_invitations_token_hash_check CHECK (token_hash ~ '^[a-f0-9]{64}
-  CONSTRAINT developer_invitations_role_check CHECK (role IN ('admin','release_manager','analyst','support_readonly')),
+  CONSTRAINT developer_invitations_role_check CHECK ("role" IN ('admin','release_manager','analyst','support_readonly')),
   CONSTRAINT developer_invitations_expiry_check CHECK (expires_at > created_at),
   CONSTRAINT developer_invitations_acceptance_check CHECK (
     (accepted_at IS NULL AND accepted_by_canonical_user_id IS NULL) OR
@@ -597,7 +597,7 @@ BEGIN
   IF NOT FOUND OR v_status <> 'active' THEN RETURN NULL; END IF;
   SELECT count(*) INTO v_owner_count
     FROM marketplace.developer_memberships
-    WHERE developer_id = v_developer_id AND role = 'owner' AND status = 'active';
+    WHERE developer_id = v_developer_id AND "role" = 'owner' AND status = 'active';
   IF v_owner_count <> 1 THEN
     RAISE EXCEPTION 'active developer % must have exactly one active owner', v_developer_id
       USING ERRCODE = '23514';
@@ -876,7 +876,7 @@ $$;
 -- Intentionally no GRANT/REVOKE statements. Exact privileges require query-derived
 -- role design and explicit Staging approval after adapter SQL exists.
 ),
-  CONSTRAINT developer_invitations_role_check CHECK (role IN ('admin','release_manager','analyst','support_readonly')),
+  CONSTRAINT developer_invitations_role_check CHECK ("role" IN ('admin','release_manager','analyst','support_readonly')),
   CONSTRAINT developer_invitations_expiry_check CHECK (expires_at > created_at),
   CONSTRAINT developer_invitations_acceptance_check CHECK (
     (accepted_at IS NULL AND accepted_by_canonical_user_id IS NULL) OR
@@ -1358,7 +1358,7 @@ BEGIN
   IF NOT FOUND OR v_status <> 'active' THEN RETURN NULL; END IF;
   SELECT count(*) INTO v_owner_count
     FROM marketplace.developer_memberships
-    WHERE developer_id = v_developer_id AND role = 'owner' AND status = 'active';
+    WHERE developer_id = v_developer_id AND "role" = 'owner' AND status = 'active';
   IF v_owner_count <> 1 THEN
     RAISE EXCEPTION 'active developer % must have exactly one active owner', v_developer_id
       USING ERRCODE = '23514';

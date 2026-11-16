@@ -98,15 +98,15 @@ export default async function HomePage({
               <div className="globe-core" />
               <div className="float-card float-one">
                 <span className="float-icon">✓</span>
-                <span><strong>Publisher clarity</strong><small>Know who made it</small></span>
+                <span><strong>{t("hero.publisherTitle")}</strong><small>{t("hero.publisherText")}</small></span>
               </div>
               <div className="float-card float-two">
                 <span className="float-icon">↗</span>
-                <span><strong>Version history</strong><small>Understand every update</small></span>
+                <span><strong>{t("hero.versionsTitle")}</strong><small>{t("hero.versionsText")}</small></span>
               </div>
               <div className="float-card float-three">
                 <span className="float-icon">◎</span>
-                <span><strong>Real experiences</strong><small>Useful community insight</small></span>
+                <span><strong>{t("hero.communityTitle")}</strong><small>{t("hero.communityText")}</small></span>
               </div>
             </div>
           </div>
@@ -167,11 +167,7 @@ export default async function HomePage({
       <footer className="footer">
         <div className="container footer-inner">
           <div><strong style={{ color: "#475467" }}>Globe Play</strong> · {t("footer.tagline")}</div>
-          <nav className="footer-links" aria-label="Footer navigation">
-            <a href="/privacy">{t("footer.privacy")}</a>
-            <a href="/terms">{t("footer.terms")}</a>
-            <a href="/support">{t("footer.support")}</a>
-          </nav>
+          <div>© 2026 Globe Play</div>
         </div>
       </footer>
     </div>

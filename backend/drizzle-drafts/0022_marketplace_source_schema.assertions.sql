@@ -75,5 +75,5 @@ BEGIN
   END IF;
 
   RAISE NOTICE 'Marketplace V1 schema assertions passed.';
-END
+END;
 $assertions$;

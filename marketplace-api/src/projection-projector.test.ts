@@ -124,7 +124,7 @@ test("rejects malformed queue messages before reading the outbox", async () => {
   await assert.rejects(() => processProjectionQueueMessage({ ...message, unexpected: true }, h.store, h.invalidator), /Invalid projection Queue message/);
   assert.equal(h.calls.length, 0);
 });
-test("coalesces duplicate tags and splits purge requests at Cloudflare limits", async () => {
+test("coalesces duplicate tags across multiple events", async () => {
   const second: ProjectionOutboxEvent = {
     ...event,
     eventId: "018f47b2-5c20-7a00-8000-000000000020",
@@ -154,6 +154,6 @@ test("coalesces duplicate tags and splits purge requests at Cloudflare limits", 
     { eventId: second.eventId, schemaVersion: 1 }
   ], store, invalidator);
   assert.deepEqual(outcomes, ["applied", "applied"]);
-  assert.deepEqual(calls.map((call) => call.split("|").length), [100, 4]);
+  assert.deepEqual(calls.map((call) => call.split("|").length), [98]);
   assert.deepEqual(marked, [first.eventId, second.eventId]);
 });

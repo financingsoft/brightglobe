@@ -12,7 +12,7 @@ export async function generateMetadata({
   return {
     title: t("title"),
     description: t("description"),
-    alternates: { canonical: `/${locale}/categories` }
+    alternates: { canonical: `/${locale}/categories`, languages: { en: "/en/categories", "zh-CN": "/zh-CN/categories", "x-default": "/en/categories" } }
   };
 }
 
@@ -64,7 +64,7 @@ export default async function CategoriesPage({
             ))}
           </div>
           <p className="trust-line" style={{ marginTop: 24 }}>
-            {locale === "en" ? "App listings will appear here after publisher onboarding and review." : "开发者入驻和应用审核完成后，这里将展示正式应用目录。"}
+            {t("categoriesPage.emptyState")}
           </p>
         </div>
       </section>

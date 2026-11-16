@@ -49,11 +49,19 @@ export async function apiRequest<T>(
     if (walletSession) headers.set("Authorization", `Bearer ${walletSession.token}`);
   }
 
-  const response = await fetch(API_BASE_URL + normalizedPath, {
-    ...init,
-    headers,
-    credentials: Platform.OS === "web" ? "include" : "omit"
-  });
+  let response: Response;
+  try {
+    response = await fetch(API_BASE_URL + normalizedPath, {
+      ...init,
+      headers,
+      credentials: Platform.OS === "web" ? "include" : "omit"
+    });
+  } catch (error) {
+    const message = error instanceof Error && error.name === "AbortError"
+      ? "The request was cancelled."
+      : "Unable to reach BrightGlobe. Check your internet connection and try again.";
+    throw new ApiError(message, 0, error instanceof Error && error.name === "AbortError" ? "REQUEST_ABORTED" : "NETWORK_ERROR");
+  }
 
   if (!response.ok) {
     let body: ApiErrorBody = {};

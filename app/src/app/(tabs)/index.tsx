@@ -12,6 +12,7 @@ import {
   getBdAccount,
   type BdAccountSnapshot
 } from "@/services/bd";
+import { getAnnouncements, type Announcement } from "@/services/community";
 
 export default function HomeScreen() {
   const { locale } = useI18n();
@@ -29,6 +30,7 @@ export default function HomeScreen() {
   const [claiming, setClaiming] = useState(false);
   const [claimMessage, setClaimMessage] = useState<string | null>(null);
   const [accountError, setAccountError] = useState<string | null>(null);
+  const [latestAnnouncement, setLatestAnnouncement] = useState<Announcement | null>(null);
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
 
   useEffect(() => {
@@ -62,6 +64,18 @@ export default function HomeScreen() {
 
     return () => { active = false; };
   }, [isHomeFocused, isAuthenticated, isPreviewAccount, authMethod, user?.id, locale]);
+
+
+  useEffect(() => {
+    let active = true;
+    if (!isAuthenticated || isPreviewAccount) { setLatestAnnouncement(null); return () => { active = false; }; }
+    getAnnouncements().then((result) => {
+      if (active) setLatestAnnouncement(result.items[0] ?? null);
+    }).catch(() => {
+      if (active) setLatestAnnouncement(null);
+    });
+    return () => { active = false; };
+  }, [isAuthenticated, isPreviewAccount, locale]);
 
   const requireLiveAccount = (action: () => void) => {
     if (!isAuthenticated || isPreviewAccount) {
@@ -244,7 +258,7 @@ export default function HomeScreen() {
         <View style={styles.announcementCopy}>
           <Text style={styles.announcementEyebrow}>{t("星球公告", "PLANET NEWS")}</Text>
           <Text style={styles.announcementTitle}>
-            {t("星球秉持共建精神中，欢迎试用并留下宝贵建议", "BrightGlobe is built together. Try the app and share your feedback.")}
+            {latestAnnouncement?.title ?? t("暂无已发布公告", "No published announcements yet")}
           </Text>
         </View>
         <Pressable

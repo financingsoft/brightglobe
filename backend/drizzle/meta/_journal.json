@@ -134,6 +134,13 @@
       "when": 1794787200000,
       "tag": "0019_chain_indexer_opening_balances",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794873600000,
+      "tag": "0020_community_foundation",
+      "breakpoints": true
     }
   ]
 }

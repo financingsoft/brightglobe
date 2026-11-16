@@ -440,4 +440,80 @@ export const bdLedgerEntries = pgTable("bd_ledger_entries", {
   check("bd_ledger_entries_nonzero_check", sql`${table.deltaBaseUnits} <> 0`)
 ]);
 
-export const schema = { user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };
+
+
+/** V1 community foundation: catalogues and attribution only; no reward grants. */
+export const communityTasks = pgTable("community_tasks", {
+  id: uuid("id").primaryKey(),
+  slug: varchar("slug", { length: 80 }).notNull().unique(),
+  title: varchar("title", { length: 120 }).notNull(),
+  summary: varchar("summary", { length: 500 }).notNull().default(""),
+  category: varchar("category", { length: 32 }).notNull(),
+  status: varchar("status", { length: 16 }).notNull().default("draft"),
+  startsAt: timestamp("starts_at", { withTimezone: true }),
+  endsAt: timestamp("ends_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  index("community_tasks_status_category_idx").on(table.status, table.category),
+  check("community_tasks_status_check", sql`${table.status} IN ('draft', 'published', 'paused', 'archived')`),
+  check("community_tasks_window_check", sql`${table.endsAt} IS NULL OR ${table.startsAt} IS NULL OR ${table.endsAt} > ${table.startsAt}`)
+]);
+
+export const invitationCodes = pgTable("invitation_codes", {
+  id: uuid("id").primaryKey(),
+  inviterUserId: text("inviter_user_id").notNull().references(() => user.id, { onDelete: "restrict" }).unique(),
+  code: varchar("code", { length: 16 }).notNull().unique(),
+  status: varchar("status", { length: 16 }).notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  check("invitation_codes_status_check", sql`${table.status} IN ('active', 'disabled')`)
+]);
+
+export const invitationAttributions = pgTable("invitation_attributions", {
+  id: uuid("id").primaryKey(),
+  inviterUserId: text("inviter_user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
+  inviteeUserId: text("invitee_user_id").notNull().references(() => user.id, { onDelete: "restrict" }).unique(),
+  invitationCodeId: uuid("invitation_code_id").notNull().references(() => invitationCodes.id, { onDelete: "restrict" }),
+  status: varchar("status", { length: 16 }).notNull().default("attributed"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  index("invitation_attributions_inviter_created_idx").on(table.inviterUserId, table.createdAt),
+  check("invitation_attributions_status_check", sql`${table.status} IN ('attributed', 'review', 'rejected')`),
+  check("invitation_attributions_no_self_check", sql`${table.inviterUserId} <> ${table.inviteeUserId}`)
+]);
+
+export const communityAnnouncements = pgTable("community_announcements", {
+  id: uuid("id").primaryKey(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  title: varchar("title", { length: 160 }).notNull(),
+  summary: varchar("summary", { length: 500 }).notNull().default(""),
+  body: text("body").notNull(),
+  locale: varchar("locale", { length: 16 }).notNull().default("en-US"),
+  status: varchar("status", { length: 16 }).notNull().default("draft"),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  index("community_announcements_status_published_idx").on(table.status, table.publishedAt),
+  check("community_announcements_status_check", sql`${table.status} IN ('draft', 'published', 'archived')`)
+]);
+
+export const communityEvents = pgTable("community_events", {
+  id: uuid("id").primaryKey(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  title: varchar("title", { length: 160 }).notNull(),
+  summary: varchar("summary", { length: 500 }).notNull().default(""),
+  body: text("body").notNull().default(""),
+  status: varchar("status", { length: 16 }).notNull().default("draft"),
+  startsAt: timestamp("starts_at", { withTimezone: true }),
+  endsAt: timestamp("ends_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  index("community_events_status_start_idx").on(table.status, table.startsAt),
+  check("community_events_status_check", sql`${table.status} IN ('draft', 'published', 'cancelled', 'completed')`),
+  check("community_events_window_check", sql`${table.endsAt} IS NULL OR ${table.startsAt} IS NULL OR ${table.endsAt} > ${table.startsAt}`)
+]);
+
+export const schema = { communityTasks, invitationCodes, invitationAttributions, communityAnnouncements, communityEvents, user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };

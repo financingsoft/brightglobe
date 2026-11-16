@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Alert, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { AppScreen } from "@/components/ui";
 import { useI18n } from "@/i18n/locale";
 import { useAuth } from "@/auth/session";
+import { getCommunityTasks, type CommunityTask } from "@/services/community";
 
 type CategoryId = "shopping" | "games" | "entertainment" | "finance" | "wellness";
 
@@ -72,10 +73,11 @@ function MissionGlyph({ id }: { id: MissionId }) {
 export default function TasksScreen() {
   const { locale } = useI18n();
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
-  const [showCheckin, setShowCheckin] = useState(false);
-  const [checkedIn, setCheckedIn] = useState(false);
+  const { isAuthenticated, isPreviewAccount } = useAuth();
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
+  const [publishedTasks, setPublishedTasks] = useState<CommunityTask[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
+  const [tasksError, setTasksError] = useState<string | null>(null);
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
   const requireLogin = (action: () => void) => {
     if (!isAuthenticated) {
@@ -84,6 +86,17 @@ export default function TasksScreen() {
     }
     action();
   };
+
+
+  useEffect(() => {
+    let active = true;
+    if (!isAuthenticated || isPreviewAccount) { setPublishedTasks([]); setTasksLoading(false); return () => { active = false; }; }
+    setTasksLoading(true);
+    getCommunityTasks().then((result) => { if (active) setPublishedTasks(result.items); })
+      .catch((error: unknown) => { if (active) setTasksError(error instanceof Error ? error.message : t("暂时无法加载任务", "Unable to load missions")); })
+      .finally(() => { if (active) setTasksLoading(false); });
+    return () => { active = false; };
+  }, [isAuthenticated, isPreviewAccount, locale]);
 
   const categories: { id: CategoryId; label: string }[] = [
     { id: "shopping", label: t("购物", "Shopping") },
@@ -94,12 +107,12 @@ export default function TasksScreen() {
   ];
 
   const missions: Mission[] = [
-    { id: "shopping", title: t("购物任务", "Shopping missions"), hint: t("完成指定任务获取原力", "Complete selected missions to earn Power"), reward: t("每日1~5原力", "1–5 Power daily") },
-    { id: "games", title: t("游戏任务", "Game missions"), hint: t("参与游戏活动获取原力", "Join game activities to earn Power"), reward: t("每日3~8原力", "3–8 Power daily") },
-    { id: "reading", title: t("小说阅读", "Read selected novels"), hint: t("浏览精选小说内容", "Explore selected novels"), reward: t("每日3~8原力", "3–8 Power daily") },
-    { id: "news", title: t("看新闻", "Read the news"), hint: t("了解最新时事动态", "Keep up with current topics"), reward: t("每日1~3原力", "1–3 Power daily") },
-    { id: "invite", title: t("邀请好友", "Invite friends"), hint: t("+10原力/被邀请人", "+10 Power per accepted invite"), reward: t("+10~500原力", "+10–500 Power") },
-    { id: "follow", title: t("关注微信公众号", "Follow the official account"), hint: t("关注获取最新动态", "Follow official updates"), reward: t("+2原力", "+2 Power") }
+    { id: "shopping", title: t("购物任务", "Shopping missions"), hint: t("相关任务服务接入后开放", "Available when the mission service is connected"), reward: t("暂未开放", "Not available yet") },
+    { id: "games", title: t("游戏任务", "Game missions"), hint: t("相关任务服务接入后开放", "Available when the mission service is connected"), reward: t("暂未开放", "Not available yet") },
+    { id: "reading", title: t("小说阅读", "Read selected novels"), hint: t("内容入口筹备中", "Content entry is being prepared"), reward: t("暂未开放", "Not available yet") },
+    { id: "news", title: t("看新闻", "Read the news"), hint: t("内容入口筹备中", "Content entry is being prepared"), reward: t("暂未开放", "Not available yet") },
+    { id: "invite", title: t("邀请好友", "Invite friends"), hint: t("邀请系统接入后开放", "Available when the invitation service is connected"), reward: t("暂未开放", "Not available yet") },
+    { id: "follow", title: t("关注微信公众号", "Follow the official account"), hint: t("官方账号任务暂未接入", "Official account missions are not connected yet"), reward: t("暂未开放", "Not available yet") }
   ];
 
   return (
@@ -111,32 +124,33 @@ export default function TasksScreen() {
         </Pressable>
       </View>
       <Text style={styles.pageSubtitle}>
-        {t("贡献越多原力越多，黑钻生长越快", "The more you contribute, the faster your rewards grow")}
+        {t("探索社区功能；任务与贡献记录将在服务接入并通过发布审核后开放", "Explore the community. Missions and contribution records will open after their services and release approvals are ready.")}
       </Text>
 
       <View style={styles.forceSummary}>
         <View>
           <View style={styles.forceValueLine}>
-            <Text style={styles.forceValue}>534</Text>
+            <Text style={styles.forceValue}>—</Text>
             <Text style={styles.forceUnit}>{t("原力值", "Power")}</Text>
           </View>
         </View>
         <Pressable
           accessibilityRole="button"
-          onPress={() => requireLogin(() => setShowCheckin(true))}
-          style={({ pressed }) => [styles.checkinButton, checkedIn && styles.checkinButtonDone, pressed && styles.pressed]}
+          onPress={() => Alert.alert(
+            t("功能暂未开放", "Not available yet"),
+            t("签到服务尚未接入。当前不会产生原力或黑钻奖励。", "The check-in service is not connected. No Contribution Power or BD reward will be issued.")
+          )}
+          style={styles.checkinButton}
         >
-          <Text style={[styles.checkinText, checkedIn && styles.checkinTextDone]}>
-            {checkedIn ? t("已签到", "Checked in") : t("签到", "Check in")}
-          </Text>
+          <Text style={styles.checkinText}>{t("暂未开放", "Coming soon")}</Text>
         </Pressable>
       </View>
 
       <View style={styles.campaignBanner}>
         <View style={styles.campaignPlanet} />
-        <Text style={styles.campaignTitle}>{t("赶紧收取原力，加速获取黑钻", "Collect Contribution Power and accelerate your rewards")}</Text>
+        <Text style={styles.campaignTitle}>{t("发现社区贡献机会", "Discover ways to contribute")}</Text>
         <View style={styles.campaignPill}>
-          <Text style={styles.campaignPillText}>{t("原力越多，获取的黑钻会越多", "More Power means more community rewards")}</Text>
+          <Text style={styles.campaignPillText}>{t("任务内容由服务端发布；奖励功能尚未启用", "Missions are published by the server; rewards are not enabled")}</Text>
         </View>
       </View>
 
@@ -191,36 +205,12 @@ export default function TasksScreen() {
           </View>
         ))}
       </View>
+      <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>{t("已发布的社区任务", "Published community missions")}</Text></View>
+      {tasksLoading ? <Text style={styles.missionHint}>{t("正在加载…", "Loading…")}</Text> : null}
+      {tasksError ? <Text style={styles.missionHint}>{tasksError}</Text> : null}
+      {!tasksLoading && !tasksError && publishedTasks.length === 0 ? <Text style={styles.missionHint}>{t("目前没有已发布的任务。", "There are no published missions yet.")}</Text> : null}
+      {publishedTasks.map((task) => <View key={task.id} style={styles.missionRow}><View style={styles.missionIcon}><CategoryGlyph category="games" small /></View><View style={styles.missionCopy}><Text style={styles.missionTitle}>{task.title}</Text><Text style={styles.missionHint}>{task.summary}</Text></View><Text style={styles.missionReward}>{t("了解中", "Info")}</Text></View>)}
       <Text style={styles.bottomNote}>{t("我是有底线的", "You've reached the end")}</Text>
-
-      <Modal visible={showCheckin} transparent animationType="fade" onRequestClose={() => setShowCheckin(false)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.checkinDialog}>
-            <Pressable onPress={() => setShowCheckin(false)} style={styles.closeButton}>
-              <Text style={styles.closeGlyph}>×</Text>
-            </Pressable>
-            <Text style={styles.dialogTitle}>{t("签到成功", "Check-in complete")}</Text>
-            <Text style={styles.dialogReward}>+3 {t("魔法原力", "Magic Power")}</Text>
-            <View style={styles.dialogPicture}>
-              <View style={styles.pictureSun} />
-              <View style={styles.pictureMountainBack} />
-              <View style={styles.pictureMountainFront} />
-            </View>
-            <Text style={styles.dialogDescription}>
-              {t("送你1次宇宙探索的机会", "You have one chance to explore the universe")}
-            </Text>
-            <View style={styles.dialogActions}>
-              <Pressable onPress={() => { setCheckedIn(true); setShowCheckin(false); }} style={styles.dialogButton}>
-                <Text style={styles.dialogButtonText}>{t("不用了", "Not now")}</Text>
-              </Pressable>
-              <Pressable onPress={() => { setCheckedIn(true); setShowCheckin(false); router.push({ pathname: "/category", params: { category: "games" } }); }} style={styles.dialogButton}>
-                <Text style={styles.dialogButtonText}>{t("去探索", "Explore")}</Text>
-              </Pressable>
-            </View>
-            <Text style={styles.previewNote}>{t("本地预览状态，不会增加真实账户数值", "Local preview only; no live account value is credited")}</Text>
-          </View>
-        </View>
-      </Modal>
 
       <Modal visible={selectedMission !== null} transparent animationType="fade" onRequestClose={() => setSelectedMission(null)}>
         <View style={styles.modalBackdrop}>

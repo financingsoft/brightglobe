@@ -238,11 +238,13 @@ try {
   await visibleText("发现原力").last().waitFor({ state: "visible", timeout: 10000 });
   await visibleText("发现原力").last().click();
   await waitForTasks();
-  await page.getByText("签到", { exact: true }).click();
-  await page.getByText("签到成功", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
-  await page.screenshot({ path: resolve(outputRoot, "check-in-dialog-375x667.png") });
-  await page.getByText("不用了", { exact: true }).click();
-  await waitForTasks();
+  // V1.0 must not simulate check-in or issue preview rewards. Guard the
+  // unavailable state instead of exercising the retired legacy check-in flow.
+  await visibleText("暂未开放").first().waitFor({ state: "visible", timeout: 10000 });
+  if (await page.getByText("签到成功", { exact: true }).count() > 0) {
+    throw new Error("Task preview must not expose a fabricated check-in success state");
+  }
+  await page.screenshot({ path: resolve(outputRoot, "tasks-unavailable-375x667.png") });
 
   const captureCategoryFromForce = async (label, categoryId, fileName, expectedHeading = label) => {
     await visibleText(label).last().click();
@@ -304,17 +306,15 @@ try {
   await tapInAppBack();
   await waitForTasks();
 
-  // Follow the Home announcement entry to its list and detail screens.
+  // Preview accounts intentionally do not fetch or fabricate published content.
+  // Verify the honest empty state and list navigation instead of expecting seeded copy.
   await page.getByText("首页", { exact: true }).last().click();
-  await page.getByText("星球秉持共建精神中，欢迎试用并留下宝贵建议", { exact: false }).waitFor({ state: "visible", timeout: 10000 });
+  await visibleText("暂无已发布公告").waitFor({ state: "visible", timeout: 10000 });
   await page.getByRole("button", { name: "查看公告列表", exact: true }).click();
   await waitForPath("/announcements");
   await visibleText("星球公告").last().waitFor({ state: "visible", timeout: 10000 });
-  await page.screenshot({ path: resolve(outputRoot, "announcements-from-home-375x667.png") });
-  await page.getByRole("button", { name: "查看公告详情", exact: true }).first().click();
-  await waitForPath("/announcement-detail");
-  await page.getByText("公告详情", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
-  await page.screenshot({ path: resolve(outputRoot, "announcement-detail-from-home-375x667.png") });
+  await visibleText("暂无已发布的公告或活动。").waitFor({ state: "visible", timeout: 10000 });
+  await page.screenshot({ path: resolve(outputRoot, "announcements-empty-from-home-375x667.png") });
 
   if (consoleErrors.length > 0) {
     throw new Error(`Browser runtime errors:\n${consoleErrors.join("\n")}`);

@@ -237,6 +237,51 @@
       "cacheKey": [],
       "invalidationTags": [],
       "notes": "Privileged operations; never shared cache."
+    },
+    {
+      "id": "app-detail-api",
+      "pattern": "/api/v1/play/apps/{slug}",
+      "surface": "marketplace-api",
+      "access": "public",
+      "cache": "public-edge",
+      "ttlSeconds": 600,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [
+        "slug",
+        "locale"
+      ],
+      "invalidationTags": [
+        "app:{slug}",
+        "developer",
+        "category",
+        "locale"
+      ],
+      "notes": "Anonymous published-only app detail projection; no user/session variation.",
+      "implementationStatus": "implemented"
+    },
+    {
+      "id": "app-reviews-api",
+      "pattern": "/api/v1/play/apps/{slug}/reviews",
+      "surface": "marketplace-api",
+      "access": "public",
+      "cache": "public-edge",
+      "ttlSeconds": 120,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [
+        "slug",
+        "locale",
+        "cursor",
+        "limit"
+      ],
+      "invalidationTags": [
+        "app:{slug}:reviews",
+        "app:{slug}:rating",
+        "locale"
+      ],
+      "notes": "Anonymous published-only review projection with bounded signed cursor pagination.",
+      "implementationStatus": "implemented"
     }
   ]
 }

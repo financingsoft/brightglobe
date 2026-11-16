@@ -11,6 +11,7 @@ DECLARE
   v_version_withdrawal_rejected boolean := false;
   v_audit_mutation_rejected boolean := false;
   v_duplicate_tags_rejected boolean := false;
+  v_malformed_invitation_token_rejected boolean := false;
 BEGIN
   INSERT INTO public.canonical_users(id) VALUES
     ('00000000-0000-4000-8000-000000000001'),
@@ -40,6 +41,23 @@ BEGIN
   UPDATE marketplace.developers
   SET status = 'active', verification_status = 'verified'
   WHERE id = '10000000-0000-4000-8000-000000000001';
+
+  BEGIN
+    INSERT INTO marketplace.developer_invitations(
+      id, developer_id, normalized_email, "role", token_hash,
+      invited_by_canonical_user_id, expires_at
+    ) VALUES (
+      '11000000-0000-4000-8000-000000000001',
+      '10000000-0000-4000-8000-000000000001',
+      'invitee@example.com', 'admin', repeat('a', 64) || 'x',
+      '00000000-0000-4000-8000-000000000001', now() + interval '7 days'
+    );
+  EXCEPTION WHEN check_violation THEN
+    v_malformed_invitation_token_rejected := true;
+  END;
+  IF NOT v_malformed_invitation_token_rejected THEN
+    RAISE EXCEPTION 'malformed invitation token hash was accepted';
+  END IF;
 
   INSERT INTO marketplace.categories(id, slug, status, sort_order) VALUES
     ('20000000-0000-4000-8000-000000000001', 'ci-productivity', 'active', 1),

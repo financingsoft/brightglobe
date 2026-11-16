@@ -38,6 +38,12 @@ The Cloudflare Queue message contains only `eventId` and `schemaVersion`; it doe
 4. A cache purge failure leaves the receipt in invalidation-pending state and causes message retry; the next delivery detects the duplicate projection write and retries the idempotent purge. Mark invalidation complete only after Cloudflare confirms success. Do not roll back a committed projection.
 5. Takedown events revoke download authorization through the authoritative download API immediately; cache invalidation is not an authorization mechanism.
 
+Batch invalidation requirements:
+- Process a bounded Queue batch and coalesce duplicate tags across all pending events; do not call the purge API once per event.
+- Cloudflare accepts at most 100 tags in one purge API request. Split larger coalesced sets into chunks of at most 100.
+- Mark receipts complete only after every chunk has been accepted. If any chunk fails, leave all involved receipts pending; retrying successful chunks is safe because purge is idempotent.
+- The Cloudflare adapter must honor account/plan rate limits and retry 429 responses with backoff. Bulk changes should be coalesced and throttled to avoid exhausting purge request buckets.
+
 Initial cache tags:
 - `app:{slug}`
 - `app:{slug}:reviews`
@@ -53,7 +59,7 @@ Public API responses attach the applicable tags using Cloudflare's `Cache-Tag` r
 - `marketplace.projection_event_receipts`: event ID primary key, aggregate identity/version, applied outcome and processed timestamp.
 - Public app detail projection carries `projection_version`; review projection carries its own version. Deletion uses version tombstones or a monotonic aggregate watermark so delayed old upserts cannot resurrect removed content.
 
-The projector orchestration is implemented as a dependency-injected core, but the Neon adapter, exact DDL, constraints, lock strategy, indexes, and source transaction integration must be reviewed against the actual Staging schema before migration. The store adapter must atomically enforce aggregate-version watermarks, event receipts and pending invalidation state. This proposal does not authorize any migration.
+The projector orchestration is implemented as a dependency-injected, batch-aware core that coalesces tags and chunks purge requests at 100 tags. The Neon adapter, exact DDL, constraints, lock strategy, indexes, and source transaction integration must be reviewed against the actual Staging schema before migration. The store adapter must atomically enforce aggregate-version watermarks, event receipts and pending invalidation state. This proposal does not authorize any migration.
 
 ## 6. Open decisions / explicit blockers
 

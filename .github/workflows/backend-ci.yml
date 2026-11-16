@@ -40,5 +40,8 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Marketplace Drizzle schema generation (draft only)
+        run: npm run db:generate:marketplace-draft
+
       - name: Cloudflare Worker dry run
         run: npm run build

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync, existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 
 const root = process.cwd();
@@ -80,6 +81,30 @@ if (manifest) {
   }
   for (const id of ["home","app-detail","app-reviews","search","account","library","developer-console","admin-console"]) {
     if (!ids.has(id)) fail.push("Required route missing: " + id);
+  }
+}
+
+// Enforce route-policy manifest updates whenever Next.js route implementation changes.
+// BASE_REF is supplied by GitHub Actions. Local runs without it still perform static checks.
+const baseRef = process.env.BASE_REF;
+if (baseRef && baseRef !== "0000000000000000000000000000000000000000") {
+  try {
+    const range = process.env.EVENT_NAME === "pull_request"
+      ? `${baseRef}...HEAD`
+      : `${baseRef}..HEAD`;
+    const changed = execFileSync("git", ["diff", "--name-only", range], { encoding: "utf8" })
+      .split("\n").map((p) => p.trim()).filter(Boolean);
+    const routeFiles = changed.filter((p) =>
+      /^apps\/play-web\/(?:src\/)?(?:app|pages)\/.+\.(?:tsx?|jsx?)$/.test(p)
+    );
+    if (routeFiles.length > 0 && !changed.includes("docs/PLAY_ROUTE_POLICY_MANIFEST.json")) {
+      fail.push(
+        "Globe Play route implementation changed without updating docs/PLAY_ROUTE_POLICY_MANIFEST.json: " +
+        routeFiles.join(", ")
+      );
+    }
+  } catch (error) {
+    fail.push("Unable to inspect changed files for route-policy enforcement: " + error.message);
   }
 }
 

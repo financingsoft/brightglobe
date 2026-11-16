@@ -516,4 +516,120 @@ export const communityEvents = pgTable("community_events", {
   check("community_events_window_check", sql`${table.endsAt} IS NULL OR ${table.startsAt} IS NULL OR ${table.endsAt} > ${table.startsAt}`)
 ]);
 
-export const schema = { communityTasks, invitationCodes, invitationAttributions, communityAnnouncements, communityEvents, user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };
+/** V1.1 BG rewards: policy and payout records only; no signer secrets are stored here. */
+export const rewardPrograms = pgTable("reward_programs", {
+  id: uuid("id").primaryKey(),
+  assetId: uuid("asset_id").notNull().references(() => assetRegistry.id, { onDelete: "restrict" }),
+  programKey: varchar("program_key", { length: 64 }).notNull(),
+  actionType: varchar("action_type", { length: 32 }).notNull(),
+  ruleVersion: integer("rule_version").notNull(),
+  status: varchar("status", { length: 16 }).notNull().default("draft"),
+  rewardBaseUnits: bigint("reward_base_units", { mode: "bigint" }).notNull(),
+  perUserLimit: integer("per_user_limit").notNull().default(1),
+  budgetBaseUnits: bigint("budget_base_units", { mode: "bigint" }).notNull(),
+  reservedBaseUnits: bigint("reserved_base_units", { mode: "bigint" }).notNull().default(0n),
+  paidBaseUnits: bigint("paid_base_units", { mode: "bigint" }).notNull().default(0n),
+  startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+  endsAt: timestamp("ends_at", { withTimezone: true }),
+  approvedBy: varchar("approved_by", { length: 128 }),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("reward_programs_key_version_uidx").on(table.programKey, table.ruleVersion),
+  uniqueIndex("reward_programs_one_active_key_uidx").on(table.programKey).where(sql`${table.status} = 'active'`),
+  index("reward_programs_asset_status_idx").on(table.assetId, table.status),
+  check("reward_programs_action_check", sql`${table.actionType} IN ('daily_collection', 'task_completion', 'invitation', 'campaign')`),
+  check("reward_programs_status_check", sql`${table.status} IN ('draft', 'active', 'paused', 'retired')`),
+  check("reward_programs_version_limit_check", sql`${table.ruleVersion} > 0 AND ${table.perUserLimit} > 0`),
+  check("reward_programs_amount_check", sql`${table.rewardBaseUnits} > 0 AND ${table.budgetBaseUnits} > 0`),
+  check("reward_programs_budget_usage_check", sql`${table.reservedBaseUnits} >= 0 AND ${table.paidBaseUnits} >= 0 AND ${table.reservedBaseUnits} + ${table.paidBaseUnits} <= ${table.budgetBaseUnits}`),
+  check("reward_programs_window_check", sql`${table.endsAt} IS NULL OR ${table.endsAt} > ${table.startsAt}`)
+]);
+
+export const rewardEvents = pgTable("reward_events", {
+  id: uuid("id").primaryKey(),
+  programId: uuid("program_id").notNull().references(() => rewardPrograms.id, { onDelete: "restrict" }),
+  canonicalUserId: uuid("canonical_user_id").notNull().references(() => canonicalUsers.id, { onDelete: "restrict" }),
+  actionType: varchar("action_type", { length: 32 }).notNull(),
+  evidenceRef: varchar("evidence_ref", { length: 256 }),
+  idempotencyKey: varchar("idempotency_key", { length: 160 }).notNull().unique(),
+  amountBaseUnits: bigint("amount_base_units", { mode: "bigint" }).notNull(),
+  status: varchar("status", { length: 16 }).notNull().default("reserved"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  index("reward_events_user_created_idx").on(table.canonicalUserId, table.createdAt),
+  index("reward_events_program_status_idx").on(table.programId, table.status),
+  check("reward_events_action_check", sql`${table.actionType} IN ('daily_collection', 'task_completion', 'invitation', 'campaign')`),
+  check("reward_events_status_check", sql`${table.status} IN ('reserved', 'submitted', 'confirmed', 'finalized', 'paid', 'rejected', 'failed', 'expired', 'quarantined', 'cancelled')`),
+  check("reward_events_amount_check", sql`${table.amountBaseUnits} > 0`)
+]);
+
+export const rewardPayoutIntents = pgTable("reward_payout_intents", {
+  id: uuid("id").primaryKey(),
+  rewardEventId: uuid("reward_event_id").notNull().references(() => rewardEvents.id, { onDelete: "restrict" }).unique(),
+  network: varchar("network", { length: 24 }).notNull(),
+  mintAddress: varchar("mint_address", { length: 44 }).notNull(),
+  sourceTokenAccount: varchar("source_token_account", { length: 44 }).notNull(),
+  destinationWallet: varchar("destination_wallet", { length: 44 }).notNull(),
+  destinationTokenAccount: varchar("destination_token_account", { length: 44 }).notNull(),
+  amountBaseUnits: bigint("amount_base_units", { mode: "bigint" }).notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("queued"),
+  chainSignature: varchar("chain_signature", { length: 128 }),
+  chainSlot: bigint("chain_slot", { mode: "bigint" }),
+  lastErrorCode: varchar("last_error_code", { length: 64 }),
+  retryAfter: timestamp("retry_after", { withTimezone: true }),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  finalizedAt: timestamp("finalized_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("reward_payout_intents_signature_uidx").on(table.chainSignature).where(sql`${table.chainSignature} IS NOT NULL`),
+  index("reward_payout_intents_status_created_idx").on(table.status, table.createdAt),
+  check("reward_payout_intents_network_check", sql`${table.network} IN ('devnet', 'mainnet-beta')`),
+  check("reward_payout_intents_status_check", sql`${table.status} IN ('queued', 'signing', 'signed', 'submitted', 'confirmed', 'finalized', 'paid', 'failed', 'quarantined', 'cancelled')`),
+  check("reward_payout_intents_amount_check", sql`${table.amountBaseUnits} > 0`),
+  check("reward_payout_intents_finalized_check", sql`${table.status} NOT IN ('finalized', 'paid') OR (${table.chainSignature} IS NOT NULL AND ${table.chainSlot} IS NOT NULL AND ${table.finalizedAt} IS NOT NULL)`)
+]);
+
+export const treasuryAccounts = pgTable("treasury_accounts", {
+  id: uuid("id").primaryKey(),
+  assetId: uuid("asset_id").notNull().references(() => assetRegistry.id, { onDelete: "restrict" }),
+  network: varchar("network", { length: 24 }).notNull(),
+  mintAddress: varchar("mint_address", { length: 44 }),
+  treasuryWalletAddress: varchar("treasury_wallet_address", { length: 44 }),
+  tokenAccountAddress: varchar("token_account_address", { length: 44 }),
+  feePayerAddress: varchar("fee_payer_address", { length: 44 }),
+  signerProvider: varchar("signer_provider", { length: 32 }).notNull().default("unconfigured"),
+  signerKeyReference: varchar("signer_key_reference", { length: 256 }),
+  hotWalletCapBaseUnits: bigint("hot_wallet_cap_base_units", { mode: "bigint" }).notNull().default(0n),
+  status: varchar("status", { length: 16 }).notNull().default("draft"),
+  lastReconciledAt: timestamp("last_reconciled_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("treasury_accounts_asset_network_uidx").on(table.assetId, table.network),
+  check("treasury_accounts_network_check", sql`${table.network} IN ('devnet', 'mainnet-beta')`),
+  check("treasury_accounts_signer_provider_check", sql`${table.signerProvider} IN ('unconfigured', 'devnet_local', 'kms', 'hsm', 'external')`),
+  check("treasury_accounts_status_check", sql`${table.status} IN ('draft', 'active', 'paused', 'retired')`),
+  check("treasury_accounts_cap_check", sql`${table.hotWalletCapBaseUnits} >= 0`),
+  check("treasury_accounts_active_config_check", sql`${table.status} <> 'active' OR (${table.mintAddress} IS NOT NULL AND ${table.tokenAccountAddress} IS NOT NULL AND ${table.signerProvider} <> 'unconfigured')`)
+]);
+
+export const rewardAuditEvents = pgTable("reward_audit_events", {
+  id: uuid("id").primaryKey(),
+  actorType: varchar("actor_type", { length: 24 }).notNull(),
+  actorId: varchar("actor_id", { length: 128 }),
+  action: varchar("action", { length: 64 }).notNull(),
+  targetType: varchar("target_type", { length: 64 }).notNull(),
+  targetId: varchar("target_id", { length: 128 }),
+  reason: varchar("reason", { length: 500 }).notNull(),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  index("reward_audit_events_target_created_idx").on(table.targetType, table.targetId, table.createdAt),
+  check("reward_audit_events_actor_check", sql`${table.actorType} IN ('system', 'operator', 'service')`)
+]);
+
+export const schema = { rewardPrograms, rewardEvents, rewardPayoutIntents, treasuryAccounts, rewardAuditEvents, communityTasks, invitationCodes, invitationAttributions, communityAnnouncements, communityEvents, user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };

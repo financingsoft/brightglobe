@@ -78,3 +78,31 @@ test("queue message contains only event reference, not projection payload", () =
     projection: app
   }).success, false);
 });
+test("rejects incomplete invalidation scope", () => {
+  const parsed = projectionOutboxEventSchema.safeParse({
+    eventId: "018f47b2-5c20-7a00-8000-000000000010",
+    schemaVersion: 1,
+    aggregateVersion: 3,
+    occurredAt: "2026-11-10T12:00:00.000Z",
+    eventType: "app.projection.upsert.v1",
+    aggregate: { type: "app", id: app.id, slug: app.slug },
+    locale: "en",
+    invalidationTags: ["app:sample-app", "locale:en"],
+    projection: app
+  });
+  assert.equal(parsed.success, false);
+});
+
+test("accepts app deletion with historical relationship invalidation tags", () => {
+  const parsed = projectionOutboxEventSchema.safeParse({
+    eventId: "018f47b2-5c20-7a00-8000-000000000011",
+    schemaVersion: 1,
+    aggregateVersion: 4,
+    occurredAt: "2026-11-10T13:00:00.000Z",
+    eventType: "app.projection.delete.v1",
+    aggregate: { type: "app", id: app.id, slug: app.slug },
+    locale: "en",
+    invalidationTags: ["app:sample-app", "app:sample-app:reviews", "app:sample-app:rating", "developer:sample-publisher", "category:productivity", "locale:en"]
+  });
+  assert.equal(parsed.success, true);
+});

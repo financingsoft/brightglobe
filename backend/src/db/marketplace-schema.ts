@@ -281,7 +281,7 @@ export const reviews = marketplace.table("reviews", {
   publishedRevisionId: uuid("published_revision_id"),
   pendingRevisionId: uuid("pending_revision_id"),
   repostAllowedAt: timestamp("repost_allowed_at", { withTimezone: true }),
-  aggregateVersion: integer("aggregate_version").notNull().default(1),
+  aggregateVersion: bigint("aggregate_version", { mode: "bigint" }).notNull().default(1n),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   publishedAt: timestamp("published_at", { withTimezone: true })
@@ -382,7 +382,7 @@ export const domainOutbox = marketplace.table("domain_outbox", {
   schemaVersion: integer("schema_version").notNull(),
   aggregateType: varchar("aggregate_type", { length: 40 }).notNull(),
   aggregateId: uuid("aggregate_id").notNull(),
-  aggregateVersion: integer("aggregate_version").notNull(),
+  aggregateVersion: bigint("aggregate_version", { mode: "bigint" }).notNull(),
   payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
   invalidationTags: text("invalidation_tags").array().notNull(),
   occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
@@ -400,7 +400,7 @@ export const domainOutbox = marketplace.table("domain_outbox", {
   check("domain_outbox_versions_check", sql.raw("schema_version = 1 AND aggregate_version > 0")),
   check("domain_outbox_attempt_count_check", sql.raw("attempt_count >= 0")),
   check("domain_outbox_tags_count_check", sql.raw("cardinality(invalidation_tags) BETWEEN 1 AND 50")),
-  check("domain_outbox_tags_format_check", sql.raw("marketplace.is_valid_invalidation_tags(invalidation_tags)"))
+  check("domain_outbox_tags_format_check", sql.raw("marketplace.is_valid_invalidation_tags(invalidation_tags)")),
   check("domain_outbox_lease_check", sql.raw("(lease_owner IS NULL AND lease_expires_at IS NULL) OR (lease_owner IS NOT NULL AND lease_expires_at IS NOT NULL)"))
 ]);
 
@@ -408,7 +408,7 @@ export const projectionEventReceipts = marketplace.table("projection_event_recei
   eventId: uuid("event_id").primaryKey().references(() => domainOutbox.eventId, { onDelete: "restrict" }),
   aggregateType: varchar("aggregate_type", { length: 40 }).notNull(),
   aggregateId: uuid("aggregate_id").notNull(),
-  aggregateVersion: integer("aggregate_version").notNull(),
+  aggregateVersion: bigint("aggregate_version", { mode: "bigint" }).notNull(),
   outcome: varchar("outcome", { length: 16 }).notNull(),
   invalidationState: varchar("invalidation_state", { length: 16 }).notNull(),
   appliedAt: timestamp("applied_at", { withTimezone: true }).notNull().defaultNow(),

@@ -73,12 +73,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-async function readEnvelope<T>(path: string): Promise<T | null> {
+async function readEnvelope<T>(path: string, revalidateSeconds = 600): Promise<T | null> {
   if (!origin) return null;
   try {
     const response = await fetch(new URL(path, origin), {
       headers: { accept: "application/json" },
-      next: { revalidate: 600 }
+      next: { revalidate: revalidateSeconds }
     });
     if (response.status === 404) return null;
     if (!response.ok) return null;
@@ -97,5 +97,5 @@ export function getPublicApp(slug: string, locale: PublicLocale) {
 
 export function getPublicReviews(slug: string, locale: PublicLocale) {
   const path = `/api/v1/play/apps/${encodeURIComponent(slug)}/reviews?locale=${encodeURIComponent(locale)}&limit=20`;
-  return readEnvelope<PublicReviewPage>(path);
+  return readEnvelope<PublicReviewPage>(path, 120);
 }

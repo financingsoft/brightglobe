@@ -37,7 +37,7 @@ export const developers = marketplace.table("developers", {
   verificationStatus: varchar("verification_status", { length: 24 }).notNull().default("unverified"),
   status: varchar("status", { length: 24 }).notNull().default("pending"),
   createdByCanonicalUserId: uuid("created_by_canonical_user_id").notNull().references(() => canonicalUsers.id, { onDelete: "restrict" }),
-  aggregateVersion: bigint("aggregate_version", { mode: "bigint" }).notNull().default(1n),
+  aggregateVersion: bigint("aggregate_version", { mode: "number" }).notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 }, (t) => [
@@ -120,7 +120,7 @@ export const apps = marketplace.table("apps", {
   appType: varchar("app_type", { length: 16 }).notNull(),
   status: varchar("status", { length: 20 }).notNull().default("draft"),
   slugLockedAt: timestamp("slug_locked_at", { withTimezone: true }),
-  aggregateVersion: bigint("aggregate_version", { mode: "bigint" }).notNull().default(1n),
+  aggregateVersion: bigint("aggregate_version", { mode: "number" }).notNull().default(1),
   createdByCanonicalUserId: uuid("created_by_canonical_user_id").notNull().references(() => canonicalUsers.id, { onDelete: "restrict" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -232,7 +232,7 @@ export const appArtifacts = marketplace.table("app_artifacts", {
   artifactFormat: varchar("artifact_format", { length: 16 }).notNull(),
   storageObjectVersionId: uuid("storage_object_version_id").notNull(),
   sha256: varchar("sha256", { length: 64 }).notNull(),
-  sizeBytes: bigint("size_bytes", { mode: "bigint" }).notNull(),
+  sizeBytes: bigint("size_bytes", { mode: "number" }).notNull(),
   detectedMime: varchar("detected_mime", { length: 120 }).notNull(),
   packageIdentifier: varchar("package_identifier", { length: 255 }),
   signerFingerprint: varchar("signer_fingerprint", { length: 255 }),
@@ -283,7 +283,7 @@ export const reviews = marketplace.table("reviews", {
   publishedRevisionId: uuid("published_revision_id").references((): AnyPgColumn => reviewRevisions.id, { onDelete: "restrict" }),
   pendingRevisionId: uuid("pending_revision_id").references((): AnyPgColumn => reviewRevisions.id, { onDelete: "restrict" }),
   repostAllowedAt: timestamp("repost_allowed_at", { withTimezone: true }),
-  aggregateVersion: bigint("aggregate_version", { mode: "bigint" }).notNull().default(1n),
+  aggregateVersion: bigint("aggregate_version", { mode: "number" }).notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   publishedAt: timestamp("published_at", { withTimezone: true })
@@ -333,8 +333,8 @@ export const reviewVotes = marketplace.table("review_votes", {
 
 export const appRatingAggregates = marketplace.table("app_rating_aggregates", {
   appId: uuid("app_id").primaryKey().references(() => apps.id, { onDelete: "restrict" }),
-  ratingCount: bigint("rating_count", { mode: "bigint" }).notNull().default(0n),
-  ratingSum: bigint("rating_sum", { mode: "bigint" }).notNull().default(0n),
+  ratingCount: bigint("rating_count", { mode: "number" }).notNull().default(0),
+  ratingSum: bigint("rating_sum", { mode: "number" }).notNull().default(0),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 }, (t) => [
   check("app_rating_aggregates_count_check", sql.raw("rating_count >= 0")),
@@ -385,7 +385,7 @@ export const domainOutbox = marketplace.table("domain_outbox", {
   schemaVersion: integer("schema_version").notNull(),
   aggregateType: varchar("aggregate_type", { length: 40 }).notNull(),
   aggregateId: uuid("aggregate_id").notNull(),
-  aggregateVersion: bigint("aggregate_version", { mode: "bigint" }).notNull(),
+  aggregateVersion: bigint("aggregate_version", { mode: "number" }).notNull(),
   payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
   invalidationTags: text("invalidation_tags").array().notNull(),
   occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
@@ -411,7 +411,7 @@ export const projectionEventReceipts = marketplace.table("projection_event_recei
   eventId: uuid("event_id").primaryKey().references(() => domainOutbox.eventId, { onDelete: "restrict" }),
   aggregateType: varchar("aggregate_type", { length: 40 }).notNull(),
   aggregateId: uuid("aggregate_id").notNull(),
-  aggregateVersion: bigint("aggregate_version", { mode: "bigint" }).notNull(),
+  aggregateVersion: bigint("aggregate_version", { mode: "number" }).notNull(),
   outcome: varchar("outcome", { length: 16 }).notNull(),
   invalidationState: varchar("invalidation_state", { length: 16 }).notNull(),
   appliedAt: timestamp("applied_at", { withTimezone: true }).notNull().defaultNow(),
@@ -425,7 +425,7 @@ export const projectionEventReceipts = marketplace.table("projection_event_recei
 export const projectionAggregateWatermarks = marketplace.table("projection_aggregate_watermarks", {
   aggregateType: varchar("aggregate_type", { length: 40 }).notNull(),
   aggregateId: uuid("aggregate_id").notNull(),
-  latestVersion: bigint("latest_version", { mode: "bigint" }).notNull(),
+  latestVersion: bigint("latest_version", { mode: "number" }).notNull(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 }, (t) => [

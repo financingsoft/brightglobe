@@ -45,7 +45,7 @@ export const projectionOutboxEventSchema = z.discriminatedUnion("eventType", [
     invalidationTags: invalidationTagsSchema
   }).strict()
 ]).superRefine((event, context) => {
-  const appSlug = event.eventType.startsWith("app.") ? event.aggregate.slug : event.aggregate.appSlug;
+  const appSlug = event.eventType === "app.projection.upsert.v1" || event.eventType === "app.projection.delete.v1" ? event.aggregate.slug : event.aggregate.appSlug;
   const requiredTags = ["app:" + appSlug, "app:" + appSlug + ":reviews", "app:" + appSlug + ":rating", "locale:" + event.locale];
   for (const tag of requiredTags) {
     if (!event.invalidationTags.includes(tag)) context.addIssue({ code: "custom", message: "Required cache invalidation tag is missing: " + tag });

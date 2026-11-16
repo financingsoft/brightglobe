@@ -75,7 +75,6 @@ CREATE TABLE marketplace.developer_invitations (
   CONSTRAINT developer_invitations_email_normalized_check CHECK (normalized_email = lower(btrim(normalized_email))),
   CONSTRAINT developer_invitations_token_hash_check CHECK (length(token_hash) = 64 AND token_hash ~ '^[a-f0-9]{64}'),
   CONSTRAINT developer_invitations_role_check CHECK ("role" IN ('admin','release_manager','analyst','support_readonly')),
-  CONSTRAINT developer_invitations_role_check CHECK ("role" IN ('admin','release_manager','analyst','support_readonly')),
   CONSTRAINT developer_invitations_expiry_check CHECK (expires_at > created_at),
   CONSTRAINT developer_invitations_acceptance_check CHECK (
     (accepted_at IS NULL AND accepted_by_canonical_user_id IS NULL) OR

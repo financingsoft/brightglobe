@@ -31,6 +31,7 @@ test("accepts a sanitized app projection event with matching identity", () => {
     eventType: "app.projection.upsert.v1",
     aggregate: { type: "app", id: app.id, slug: app.slug },
     locale: "en",
+    invalidationTags: ["app:sample-app", "app:sample-app:reviews", "app:sample-app:rating", "developer:sample-publisher", "locale:en"],
     projection: app
   });
   assert.equal(parsed.success, true);
@@ -45,6 +46,7 @@ test("rejects an app projection whose slug or locale differs from its event enve
     eventType: "app.projection.upsert.v1",
     aggregate: { type: "app", id: app.id, slug: "different-app" },
     locale: "zh-CN",
+    invalidationTags: ["app:sample-app", "app:sample-app:reviews", "app:sample-app:rating", "developer:sample-publisher", "locale:zh-CN"],
     projection: app
   });
   assert.equal(parsed.success, false);
@@ -59,6 +61,7 @@ test("rejects private fields in a public projection event", () => {
     eventType: "app.projection.upsert.v1",
     aggregate: { type: "app", id: app.id, slug: app.slug },
     locale: "en",
+    invalidationTags: ["app:sample-app", "app:sample-app:reviews", "app:sample-app:rating", "developer:sample-publisher", "locale:en"],
     projection: { ...app, ownerEmail: "private@example.test" }
   });
   assert.equal(parsed.success, false);

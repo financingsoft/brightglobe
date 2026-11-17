@@ -85,7 +85,15 @@ test("Marketplace app draft transactions enforce tenant access, localization and
     ));
     assert.equal(zhRevision?.name, "示例游戏 2");
 
-    await pool.query("UPDATE marketplace.app_listing_revisions SET status = 'published', published_at = now() WHERE app_id = $1 AND content_locale = 'en' AND status = 'draft'", [created.id]);
+    const categoryId = createUuidV7();
+    await pool.query("INSERT INTO marketplace.categories (id, slug, status) VALUES ($1, $2, 'active')", [categoryId, "test-category-" + categoryId.slice(-8)]);
+    const [enRevision] = await db.select().from(appListingRevisions).where(and(
+      eq(appListingRevisions.appId, created.id), eq(appListingRevisions.contentLocale, "en")
+    ));
+    assert.ok(enRevision);
+    await pool.query("INSERT INTO marketplace.app_listing_revision_categories (revision_id, category_id) VALUES ($1, $2)", [enRevision.id, categoryId]);
+    await pool.query("UPDATE marketplace.app_listing_revisions SET status = 'approved', reviewed_at = now() WHERE id = $1", [enRevision.id]);
+    await pool.query("UPDATE marketplace.app_listing_revisions SET status = 'published', published_at = now() WHERE id = $1", [enRevision.id]);
     await pool.query("UPDATE marketplace.apps SET status = 'published', slug_locked_at = now(), published_at = now() WHERE id = $1", [created.id]);
     await assert.rejects(
       () => updateMarketplaceAppDraft(db, {

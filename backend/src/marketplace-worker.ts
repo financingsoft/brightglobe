@@ -15,6 +15,7 @@ import { createDeveloperPrivateApp, type DeveloperRateLimitBinding } from "./mar
 
 interface MarketplacePrivateBindings extends WorkerBindings {
   DEVELOPER_PORTAL_ORIGINS?: string;
+  DEVELOPER_API_PATH_PREFIX?: string;
   DEVELOPER_INVITATION_LINK_ORIGIN?: string;
   DEVELOPER_INVITATION_RESEND_API_KEY?: string;
   DEVELOPER_INVITATION_EMAIL_FROM?: string;
@@ -24,11 +25,15 @@ interface MarketplacePrivateBindings extends WorkerBindings {
 function readPrivateConfiguration(bindings: MarketplacePrivateBindings) {
   const env = parseEnvironment(bindings);
   const allowedOrigins = parseOrigins(bindings.DEVELOPER_PORTAL_ORIGINS ?? "");
+  const apiPathPrefix = bindings.DEVELOPER_API_PATH_PREFIX?.trim() ?? "";
   const linkOriginValue = bindings.DEVELOPER_INVITATION_LINK_ORIGIN?.trim() ?? "";
   const apiKey = bindings.DEVELOPER_INVITATION_RESEND_API_KEY?.trim() ?? "";
   const from = bindings.DEVELOPER_INVITATION_EMAIL_FROM?.trim() ?? "";
 
   if (allowedOrigins.length === 0) throw new Error("DEVELOPER_PORTAL_ORIGINS is required.");
+  if (!/^\/[a-z0-9/_-]+$/.test(apiPathPrefix) || apiPathPrefix.endsWith("/") || apiPathPrefix.includes("//") || apiPathPrefix.includes("..")) {
+    throw new Error("DEVELOPER_API_PATH_PREFIX must be a normalized absolute path prefix.");
+  }
   if (!linkOriginValue || !apiKey || !from) {
     throw new Error("Developer invitation email configuration is incomplete.");
   }
@@ -51,6 +56,7 @@ function readPrivateConfiguration(bindings: MarketplacePrivateBindings) {
   return {
     env,
     allowedOrigins,
+    apiPathPrefix,
     linkOrigin: linkOrigin.origin,
     resendApiKey: apiKey,
     emailFrom: from,
@@ -117,8 +123,21 @@ const worker = {
         rateLimiter: configuration.rateLimiter
       });
 
+      // The private Worker is routed behind the existing API hostname so the
+      // host-only Better Auth cookie for api.globeapps.com is sent by browsers.
+      // Cloudflare route creation is a separate approval/deployment step.
+      const incomingUrl = new URL(request.url);
+      const prefix = configuration.apiPathPrefix;
+      if (incomingUrl.pathname !== prefix && !incomingUrl.pathname.startsWith(prefix + "/")) {
+        return Response.json({
+          error: { code: "NOT_FOUND", message: "The requested endpoint does not exist." }
+        }, { status: 404, headers: { "Cache-Control": "private, no-store, max-age=0" } });
+      }
+      incomingUrl.pathname = incomingUrl.pathname.slice(prefix.length) || "/";
+      const rewrittenRequest = new Request(incomingUrl.toString(), request);
+
       // The Neon pool and Better Auth adapter are request-scoped in Workers.
-      return await app.fetch(request);
+      return await app.fetch(rewrittenRequest);
     } catch (error) {
       console.error("[globe-play-private] Request failed", {
         errorType: error instanceof Error ? error.name : "unknown"

@@ -61,7 +61,8 @@ export function createDeveloperPrivateApp(options: DeveloperPrivateAppOptions) {
 
   app.use("*", async (context, next) => {
     const method = context.req.method.toUpperCase();
-    if (method !== "POST" && method !== "DELETE") {
+    const isDeveloperRead = method === "GET" && context.req.path.startsWith("/api/v1/play/");
+    if (method !== "POST" && method !== "DELETE" && !isDeveloperRead) {
       await next();
       return;
     }
@@ -70,7 +71,7 @@ export function createDeveloperPrivateApp(options: DeveloperPrivateAppOptions) {
       ? context.req.header("X-Request-Id")!
       : crypto.randomUUID();
     const origin = context.req.header("Origin");
-    if (!origin || !origins.has(origin)) {
+    if (method !== "GET" && (!origin || !origins.has(origin))) {
       return privateError("ORIGIN_NOT_ALLOWED", "The request origin is not allowed.", 403, requestId);
     }
 

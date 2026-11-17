@@ -655,4 +655,80 @@ export const rewardAuditEvents = pgTable("reward_audit_events", {
   check("reward_audit_events_actor_check", sql`${table.actorType} IN ('system', 'operator', 'service')`)
 ]);
 
-export const schema = { rewardPrograms, rewardEvents, rewardPayoutIntents, treasuryAccounts, rewardAuditEvents, communityTasks, invitationCodes, invitationAttributions, communityAnnouncements, communityEvents, user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };
+
+/** Immutable server-verified evidence and human review records for BG task rewards. */
+export const bgTaskEvidenceRecords = pgTable("bg_task_evidence_records", {
+  id: uuid("id").primaryKey(),
+  canonicalUserId: uuid("canonical_user_id").notNull().references(() => canonicalUsers.id, { onDelete: "restrict" }),
+  taskId: varchar("task_id", { length: 64 }).notNull(),
+  taskVersion: integer("task_version").notNull(),
+  verifierKey: varchar("verifier_key", { length: 64 }).notNull(),
+  source: varchar("source", { length: 64 }).notNull(),
+  issuer: varchar("issuer", { length: 32 }).notNull(),
+  sourceEvidenceId: varchar("source_evidence_id", { length: 128 }).notNull(),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+  digestSha256: varchar("digest_sha256", { length: 64 }).notNull(),
+  idempotencyKey: varchar("idempotency_key", { length: 160 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("pending_review"),
+  consumedRewardEventId: uuid("consumed_reward_event_id").references(() => rewardEvents.id, { onDelete: "restrict" }),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("bg_task_evidence_idempotency_uidx").on(table.idempotencyKey),
+  uniqueIndex("bg_task_evidence_source_replay_uidx").on(table.issuer, table.source, table.sourceEvidenceId),
+  uniqueIndex("bg_task_evidence_consumed_reward_uidx").on(table.consumedRewardEventId).where(sql`${table.consumedRewardEventId} IS NOT NULL`),
+  index("bg_task_evidence_user_task_status_idx").on(table.canonicalUserId, table.taskId, table.status, table.submittedAt),
+  check("bg_task_evidence_task_version_check", sql`${table.taskVersion} > 0`),
+  check("bg_task_evidence_issuer_check", sql`${table.issuer} IN ('brightglobe-server', 'trusted-provider')`),
+  check("bg_task_evidence_digest_check", sql.raw("digest_sha256 ~ '^[a-f0-9]{64}$'")),
+  check("bg_task_evidence_status_check", sql`${table.status} IN ('pending_review', 'approved', 'rejected', 'appealed', 'consumed')`),
+  check("bg_task_evidence_consumed_check", sql`(${table.status} = 'consumed' AND ${table.consumedRewardEventId} IS NOT NULL) OR (${table.status} <> 'consumed' AND ${table.consumedRewardEventId} IS NULL)`)
+]);
+
+export const bgTaskAppeals = pgTable("bg_task_appeals", {
+  id: uuid("id").primaryKey(),
+  evidenceId: uuid("evidence_id").notNull().references(() => bgTaskEvidenceRecords.id, { onDelete: "restrict" }).unique(),
+  appellantUserId: uuid("appellant_user_id").notNull().references(() => canonicalUsers.id, { onDelete: "restrict" }),
+  reason: varchar("reason", { length: 2000 }).notNull(),
+  status: varchar("status", { length: 16 }).notNull().default("open"),
+  resolvedBy: uuid("resolved_by").references(() => canonicalUsers.id, { onDelete: "restrict" }),
+  resolutionReason: varchar("resolution_reason", { length: 1000 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true })
+}, (table) => [
+  index("bg_task_appeals_status_created_idx").on(table.status, table.createdAt),
+  check("bg_task_appeals_reason_check", sql`length(trim(${table.reason})) > 0`),
+  check("bg_task_appeals_status_check", sql`${table.status} IN ('open', 'resolved')`),
+  check("bg_task_appeals_resolution_check", sql`(${table.status} = 'open' AND ${table.resolvedBy} IS NULL AND ${table.resolvedAt} IS NULL) OR (${table.status} = 'resolved' AND ${table.resolvedBy} IS NOT NULL AND ${table.resolvedAt} IS NOT NULL AND ${table.resolutionReason} IS NOT NULL)`)
+]);
+
+export const bgTaskReviewDecisions = pgTable("bg_task_review_decisions", {
+  id: uuid("id").primaryKey(),
+  evidenceId: uuid("evidence_id").notNull().references(() => bgTaskEvidenceRecords.id, { onDelete: "restrict" }),
+  decisionType: varchar("decision_type", { length: 16 }).notNull(),
+  decision: varchar("decision", { length: 16 }).notNull(),
+  reviewerId: uuid("reviewer_id").notNull().references(() => canonicalUsers.id, { onDelete: "restrict" }),
+  reason: varchar("reason", { length: 1000 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("bg_task_review_decisions_once_uidx").on(table.evidenceId, table.decisionType),
+  index("bg_task_review_decisions_reviewer_created_idx").on(table.reviewerId, table.createdAt),
+  check("bg_task_review_decision_type_check", sql`${table.decisionType} IN ('initial', 'appeal')`),
+  check("bg_task_review_decision_check", sql`${table.decision} IN ('approved', 'rejected')`),
+  check("bg_task_review_reason_check", sql`length(trim(${table.reason})) > 0`)
+]);
+
+export const bgTaskAuditEvents = pgTable("bg_task_audit_events", {
+  id: uuid("id").primaryKey(),
+  evidenceId: uuid("evidence_id").notNull().references(() => bgTaskEvidenceRecords.id, { onDelete: "restrict" }),
+  actorType: varchar("actor_type", { length: 16 }).notNull(),
+  actorId: varchar("actor_id", { length: 128 }),
+  action: varchar("action", { length: 64 }).notNull(),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  index("bg_task_audit_evidence_created_idx").on(table.evidenceId, table.createdAt),
+  check("bg_task_audit_actor_check", sql`${table.actorType} IN ('service', 'user', 'operator')`)
+]);
+
+export const schema = { rewardPrograms, rewardEvents, rewardPayoutIntents, treasuryAccounts, rewardAuditEvents, bgTaskEvidenceRecords, bgTaskAppeals, bgTaskReviewDecisions, bgTaskAuditEvents, communityTasks, invitationCodes, invitationAttributions, communityAnnouncements, communityEvents, user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };

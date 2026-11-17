@@ -9,7 +9,11 @@ const expected = [
   ["/api/v1/play/developers/{developerId}/invitations", "post", "201"],
   ["/api/v1/play/developers/{developerId}/owner-transfer", "post", "201"],
   ["/api/v1/play/invitations/accept", "post", "200"],
-  ["/api/v1/play/developers/{developerId}/invitations/{invitationId}", "delete", "200"]
+  ["/api/v1/play/developers/{developerId}/invitations/{invitationId}", "delete", "200"],
+  ["/api/v1/play/developers/{developerId}/apps", "get", "200"],
+  ["/api/v1/play/developers/{developerId}/apps", "post", "201"],
+  ["/api/v1/play/developers/{developerId}/apps/{appId}", "get", "200"],
+  ["/api/v1/play/developers/{developerId}/apps/{appId}/localizations/{locale}", "patch", "200"]
 ];
 if (spec.openapi !== "3.1.0") failures.push("Private developer OpenAPI version must be 3.1.0.");
 for (const [path, method, successStatus] of expected) {

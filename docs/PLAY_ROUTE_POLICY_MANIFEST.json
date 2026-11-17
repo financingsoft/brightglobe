@@ -395,6 +395,62 @@
       "invalidationTags": [],
       "notes": "Accept a single-use invitation token read from the URL fragment, then remove it from browser history before POST.",
       "implementationStatus": "implemented-shell"
+    },
+    {
+      "id": "developer-app-list-api",
+      "pattern": "/api/v1/play/developers/{developerId}/apps",
+      "surface": "marketplace-api",
+      "access": "authenticated",
+      "cache": "private-no-store",
+      "ttlSeconds": 0,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [],
+      "invalidationTags": [],
+      "notes": "Lists apps and latest localized draft states visible to an active organization member.",
+      "implementationStatus": "implemented-module"
+    },
+    {
+      "id": "developer-app-create-api",
+      "pattern": "/api/v1/play/developers/{developerId}/apps",
+      "surface": "marketplace-api",
+      "access": "authenticated",
+      "cache": "private-no-store",
+      "ttlSeconds": 0,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [],
+      "invalidationTags": [],
+      "notes": "Creates an app/game draft with independently editable locale drafts, platform targets and up to three platform-owned categories.",
+      "implementationStatus": "implemented-module"
+    },
+    {
+      "id": "developer-app-detail-api",
+      "pattern": "/api/v1/play/developers/{developerId}/apps/{appId}",
+      "surface": "marketplace-api",
+      "access": "authenticated",
+      "cache": "private-no-store",
+      "ttlSeconds": 0,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [],
+      "invalidationTags": [],
+      "notes": "Returns tenant-scoped app draft metadata and localized revision state.",
+      "implementationStatus": "implemented-module"
+    },
+    {
+      "id": "developer-app-localization-update-api",
+      "pattern": "/api/v1/play/developers/{developerId}/apps/{appId}/localizations/{locale}",
+      "surface": "marketplace-api",
+      "access": "authenticated",
+      "cache": "private-no-store",
+      "ttlSeconds": 0,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [],
+      "invalidationTags": [],
+      "notes": "Updates only an editable draft localization; submitted or published revisions cannot be modified.",
+      "implementationStatus": "implemented-module"
     }
   ]
 }

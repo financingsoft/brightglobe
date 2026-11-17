@@ -67,6 +67,7 @@ jobs:
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle-drafts/0022_marketplace_source_schema.behavior.sql
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle-drafts/0023_marketplace_private_worker_role_grants.sql
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle-drafts/0023_marketplace_private_worker_role_grants.assertions.sql
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'SET ROLE brightglobe_play_developer_app; BEGIN; SELECT id FROM marketplace.developers FOR UPDATE; SELECT developer_id FROM marketplace.developer_memberships FOR UPDATE; SELECT id FROM marketplace.developer_invitations FOR UPDATE; ROLLBACK;'
 
       - name: Unit and PostgreSQL integration tests
         env:

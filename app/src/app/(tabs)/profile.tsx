@@ -38,7 +38,7 @@ function ProfileGlyph({ kind }: { kind: ProfileIconKind }) {
 export default function ProfileScreen() {
   const { locale } = useI18n();
   const router = useRouter();
-  const { isAuthenticated, isPreviewAccount, user, profile } = useAuth();
+  const { isAuthenticated, isPreviewAccount, authMethod, user, profile } = useAuth();
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
   const [bdAccount, setBdAccount] = useState<BdAccountSnapshot | null>(null);
   const [bdLoading, setBdLoading] = useState(false);
@@ -48,7 +48,7 @@ export default function ProfileScreen() {
     useCallback(() => {
       let active = true;
 
-      if (!isAuthenticated || isPreviewAccount) {
+      if (!isAuthenticated || isPreviewAccount || authMethod === "wallet") {
         setBdAccount(null);
         setBdLoading(false);
         setBdUnavailable(false);
@@ -75,7 +75,7 @@ export default function ProfileScreen() {
       return () => {
         active = false;
       };
-    }, [isAuthenticated, isPreviewAccount])
+    }, [isAuthenticated, isPreviewAccount, authMethod, user?.id])
   );
 
   const bdAccountValue = bdLoading
@@ -87,7 +87,9 @@ export default function ProfileScreen() {
     ? t("预览账户不显示真实余额", "No live balance in preview")
     : !isAuthenticated
       ? t("登录后查看账户余额", "Sign in to view your balance")
-      : bdLoading
+      : authMethod === "wallet"
+        ? t("钱包身份与黑钻账户隔离", "Wallet identity is separate from the BD account")
+        : bdLoading
         ? t("正在同步账户", "Syncing account")
         : bdUnavailable
           ? t("暂时无法读取账户", "Account temporarily unavailable")

@@ -46,6 +46,7 @@ export default function HomeScreen() {
       return () => { active = false; };
     }
 
+    setAccount(null);
     setAccountLoading(true);
     setAccountError(null);
     getBdAccount()
@@ -54,6 +55,7 @@ export default function HomeScreen() {
       })
       .catch((error: unknown) => {
         if (!active) return;
+        setAccount(null);
         setAccountError(error instanceof Error
           ? error.message
           : t("暂时无法读取黑钻账户。", "Unable to load the BD account."));

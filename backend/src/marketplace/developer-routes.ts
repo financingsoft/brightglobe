@@ -62,6 +62,7 @@ export interface DeveloperWorkspaceRecord {
     role: string;
     expiresAt: Date;
     createdAt: Date;
+    canRevoke: boolean;
   }>;
 }
 
@@ -265,9 +266,12 @@ export function createDeveloperRoutes(dependencies: DeveloperRouteDependencies) 
             createdAt: member.createdAt.toISOString()
           })),
           invitations: workspace.invitations.map((invitation) => ({
-            ...invitation,
+            id: invitation.id,
+            email: invitation.email,
+            role: invitation.role,
             expiresAt: invitation.expiresAt.toISOString(),
-            createdAt: invitation.createdAt.toISOString()
+            createdAt: invitation.createdAt.toISOString(),
+            canRevoke: invitation.canRevoke
           }))
         }
       }, 200, requestId);

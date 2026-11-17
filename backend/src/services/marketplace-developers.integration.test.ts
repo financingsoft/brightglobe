@@ -106,6 +106,32 @@ test("Marketplace developer transactions preserve tenant, invitation and owner i
       );
       const otherOrganizations = await listDeveloperOrganizations(db, otherUserId);
       assert.deepEqual(otherOrganizations.map((item) => item.id), [otherOrganization.id]);
+
+      const analystId = await addCanonicalUser();
+      const analystInvite = await createDeveloperInvitation(db, {
+        developerId: organization.id,
+        actorCanonicalUserId: ownerId,
+        email: "workspace-analyst@example.com",
+        role: "analyst"
+      });
+      await acceptDeveloperInvitation(db, {
+        rawToken: analystInvite.rawToken,
+        canonicalUserId: analystId,
+        verifiedEmail: "workspace-analyst@example.com"
+      });
+      await createDeveloperInvitation(db, {
+        developerId: organization.id,
+        actorCanonicalUserId: ownerId,
+        email: "private-pending@example.com",
+        role: "support_readonly"
+      });
+      const analystWorkspace = await getDeveloperWorkspace(db, {
+        developerId: organization.id,
+        actorCanonicalUserId: analystId
+      });
+      assert.equal(analystWorkspace.organization.role, "analyst");
+      assert.equal(analystWorkspace.members.length, 2);
+      assert.deepEqual(analystWorkspace.invitations, []);
     });
 
     await t.test("invitation stores only a SHA-256 token hash and binds acceptance to verified email", async () => {

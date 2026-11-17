@@ -51,7 +51,7 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Validate Marketplace SQL draft on ephemeral PostgreSQL
+      - name: Validate BG reward migrations and Marketplace SQL draft on ephemeral PostgreSQL
         env:
           LOCAL_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/brightglobe_ci
         run: |

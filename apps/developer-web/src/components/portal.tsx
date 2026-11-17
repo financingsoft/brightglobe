@@ -35,6 +35,7 @@ type Workspace = {
     role: string;
     expiresAt: string;
     createdAt: string;
+    canRevoke: boolean;
   }>;
 };
 
@@ -339,7 +340,7 @@ export function OrganizationWorkspace({ developerId }: { developerId: string }) 
                   </section>
                   {canManage ? <section className="card">
                     <div className="card-head"><div><h2>Pending invitations</h2><p className="muted">Only organization Owners and Admins can see invitee email addresses.</p></div></div>
-                    {workspace.invitations.length ? <div className="list">{workspace.invitations.map((invitation) => <div className="list-item" key={invitation.id}><div><div className="item-title">{invitation.email}</div><div className="item-meta">{invitation.role.replace(/_/g, " ")} · expires {new Date(invitation.expiresAt).toLocaleDateString()}</div></div><button className="btn danger small" disabled={busy} onClick={() => void revokeInvitation(invitation.id)}>Revoke</button></div>)}</div> : <div className="empty">There are no pending invitations.</div>}
+                    {workspace.invitations.length ? <div className="list">{workspace.invitations.map((invitation) => <div className="list-item" key={invitation.id}><div><div className="item-title">{invitation.email}</div><div className="item-meta">{invitation.role.replace(/_/g, " ")} · expires {new Date(invitation.expiresAt).toLocaleDateString()}</div></div>{invitation.canRevoke ? <button className="btn danger small" disabled={busy} onClick={() => void revokeInvitation(invitation.id)}>Revoke</button> : <span className="pill gray">Awaiting recipient</span>}</div>)}</div> : <div className="empty">There are no pending invitations.</div>}
                   </section> : null}
                   {role === "owner" ? <section className="card">
                     <h2>Transfer ownership</h2><p className="muted">The recipient must sign in with the invited verified email and explicitly accept. You remain Owner until that happens.</p>

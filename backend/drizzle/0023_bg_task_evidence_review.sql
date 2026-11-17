@@ -285,3 +285,126 @@ CREATE TRIGGER "bg_task_evidence_insert_audit"
 CREATE TRIGGER "bg_task_appeals_no_delete"
   BEFORE DELETE ON "bg_task_appeals"
   FOR EACH ROW EXECUTE FUNCTION prevent_bg_task_append_only_mutation();
+
+--> statement-breakpoint
+CREATE OR REPLACE FUNCTION guard_bg_task_evidence_update() RETURNS trigger AS $bg$
+DECLARE
+  reward_user uuid;
+  reward_action varchar(32);
+  reward_evidence varchar(256);
+  valid_decision boolean;
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'BG task evidence is immutable and cannot be deleted';
+  END IF;
+  IF NEW."id" IS DISTINCT FROM OLD."id"
+    OR NEW."canonical_user_id" IS DISTINCT FROM OLD."canonical_user_id"
+    OR NEW."task_id" IS DISTINCT FROM OLD."task_id"
+    OR NEW."task_version" IS DISTINCT FROM OLD."task_version"
+    OR NEW."verifier_key" IS DISTINCT FROM OLD."verifier_key"
+    OR NEW."source" IS DISTINCT FROM OLD."source"
+    OR NEW."issuer" IS DISTINCT FROM OLD."issuer"
+    OR NEW."source_evidence_id" IS DISTINCT FROM OLD."source_evidence_id"
+    OR NEW."occurred_at" IS DISTINCT FROM OLD."occurred_at"
+    OR NEW."digest_sha256" IS DISTINCT FROM OLD."digest_sha256"
+    OR NEW."idempotency_key" IS DISTINCT FROM OLD."idempotency_key"
+    OR NEW."submitted_at" IS DISTINCT FROM OLD."submitted_at"
+  THEN
+    RAISE EXCEPTION 'BG task evidence identity and source proof are immutable';
+  END IF;
+  IF NEW."status" IS DISTINCT FROM OLD."status" THEN
+    IF OLD."status" = 'pending_review' AND NEW."status" IN ('approved', 'rejected') THEN
+      SELECT EXISTS (
+        SELECT 1 FROM "bg_task_review_decisions"
+        WHERE "evidence_id" = NEW."id" AND "decision_type" = 'initial' AND "decision" = NEW."status"
+      ) INTO valid_decision;
+      IF NOT valid_decision THEN RAISE EXCEPTION 'BG task evidence review decision is required'; END IF;
+    ELSIF OLD."status" = 'rejected' AND NEW."status" = 'appealed' THEN
+      IF NOT EXISTS (SELECT 1 FROM "bg_task_appeals" WHERE "evidence_id" = NEW."id" AND "status" = 'open') THEN
+        RAISE EXCEPTION 'An open appeal is required for this transition';
+      END IF;
+    ELSIF OLD."status" = 'appealed' AND NEW."status" IN ('approved', 'rejected') THEN
+      SELECT EXISTS (
+        SELECT 1 FROM "bg_task_review_decisions"
+        WHERE "evidence_id" = NEW."id" AND "decision_type" = 'appeal' AND "decision" = NEW."status"
+      ) INTO valid_decision;
+      IF NOT valid_decision THEN RAISE EXCEPTION 'Independent appeal decision is required'; END IF;
+    ELSIF OLD."status" = 'approved' AND NEW."status" = 'consumed' THEN
+      SELECT "canonical_user_id", "action_type", "evidence_ref"
+        INTO reward_user, reward_action, reward_evidence
+        FROM "reward_events" WHERE "id" = NEW."consumed_reward_event_id";
+      IF reward_user IS DISTINCT FROM NEW."canonical_user_id"
+        OR reward_action IS DISTINCT FROM 'task_completion'
+        OR reward_evidence IS DISTINCT FROM ('bg-task-evidence:' || NEW."id"::text)
+      THEN
+        RAISE EXCEPTION 'Consumed BG task evidence must reference its matching task reward event';
+      END IF;
+    ELSE
+      RAISE EXCEPTION 'Invalid BG task evidence state transition: % -> %', OLD."status", NEW."status";
+    END IF;
+  END IF;
+  NEW."updated_at" = now();
+  RETURN NEW;
+END;
+$bg$ LANGUAGE plpgsql;
+--> statement-breakpoint
+CREATE OR REPLACE FUNCTION guard_bg_task_appeal_update() RETURNS trigger AS $bg$
+BEGIN
+  IF NEW."id" IS DISTINCT FROM OLD."id"
+    OR NEW."evidence_id" IS DISTINCT FROM OLD."evidence_id"
+    OR NEW."appellant_user_id" IS DISTINCT FROM OLD."appellant_user_id"
+    OR NEW."reason" IS DISTINCT FROM OLD."reason"
+    OR NEW."created_at" IS DISTINCT FROM OLD."created_at"
+    OR OLD."status" <> 'open'
+    OR NEW."status" <> 'resolved'
+    OR NEW."resolved_by" IS NULL
+    OR NEW."resolved_at" IS NULL
+    OR NEW."resolution_reason" IS NULL
+    OR length(trim(NEW."resolution_reason")) = 0
+    OR NOT EXISTS (
+      SELECT 1 FROM "bg_task_review_decisions"
+      WHERE "evidence_id" = NEW."evidence_id"
+        AND "decision_type" = 'appeal'
+        AND "reviewer_id" = NEW."resolved_by"
+        AND "reason" = NEW."resolution_reason"
+    )
+  THEN
+    RAISE EXCEPTION 'BG task appeal may only be resolved by its recorded independent appeal decision';
+  END IF;
+  RETURN NEW;
+END;
+$bg$ LANGUAGE plpgsql;
+--> statement-breakpoint
+CREATE OR REPLACE FUNCTION guard_bg_task_appeal_insert() RETURNS trigger AS $bg$
+DECLARE
+  evidence_user uuid;
+  evidence_status varchar(20);
+BEGIN
+  SELECT "canonical_user_id", "status" INTO evidence_user, evidence_status
+    FROM "bg_task_evidence_records" WHERE "id" = NEW."evidence_id" FOR UPDATE;
+  IF evidence_user IS DISTINCT FROM NEW."appellant_user_id" OR evidence_status IS DISTINCT FROM 'rejected' THEN
+    RAISE EXCEPTION 'Only the task owner may appeal a rejected BG task evidence record';
+  END IF;
+  RETURN NEW;
+END;
+$bg$ LANGUAGE plpgsql;
+--> statement-breakpoint
+DROP TRIGGER "bg_task_appeal_insert_guard" ON "bg_task_appeals";
+--> statement-breakpoint
+CREATE TRIGGER "bg_task_appeal_insert_guard"
+  AFTER INSERT ON "bg_task_appeals"
+  FOR EACH ROW EXECUTE FUNCTION guard_bg_task_appeal_insert();
+--> statement-breakpoint
+CREATE OR REPLACE FUNCTION transition_bg_task_appeal_to_appealed() RETURNS trigger AS $bg$
+BEGIN
+  UPDATE "bg_task_evidence_records" SET "status" = 'appealed' WHERE "id" = NEW."evidence_id";
+  INSERT INTO "bg_task_audit_events" ("id", "evidence_id", "actor_type", "actor_id", "action", "metadata", "created_at")
+    VALUES (gen_random_uuid(), NEW."evidence_id", 'user', NEW."appellant_user_id"::text,
+      'task.evidence.appealed', jsonb_build_object('appealId', NEW."id"), NEW."created_at");
+  RETURN NEW;
+END;
+$bg$ LANGUAGE plpgsql;
+--> statement-breakpoint
+CREATE TRIGGER "bg_task_appeal_transition"
+  AFTER INSERT ON "bg_task_appeals"
+  FOR EACH ROW EXECUTE FUNCTION transition_bg_task_appeal_to_appealed();

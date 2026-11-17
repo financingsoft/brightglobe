@@ -73,6 +73,8 @@ export interface DeveloperRouteDependencies {
   resolveIdentity(request: Request): Promise<DeveloperRequestIdentity | null>;
   transactions: DeveloperTransactionService;
   invitationDelivery: DeveloperInvitationDelivery;
+  /** Cloudflare Rate Limiting binding; absent only in isolated unit tests. */
+  rateLimit?(keys: string[]): Promise<boolean>;
 }
 
 const organizationSchema = z.object({
@@ -139,6 +141,28 @@ async function readIdentity(
   return dependencies.resolveIdentity(request);
 }
 
+async function enforceRateLimit(
+  context: Context,
+  dependencies: DeveloperRouteDependencies,
+  identity: DeveloperRequestIdentity,
+  developerId?: string
+): Promise<Response | null> {
+  if (!dependencies.rateLimit) return null;
+  const keys = ["user:" + identity.canonicalUserId + ":developer-write"];
+  if (developerId) keys.push("organization:" + developerId + ":developer-write");
+  try {
+    const allowed = await dependencies.rateLimit(keys);
+    if (!allowed) return respond(context, {
+      error: { code: "RATE_LIMITED", message: "Too many developer-platform requests. Try again later." }
+    }, 429);
+    return null;
+  } catch {
+    return respond(context, {
+      error: { code: "RATE_LIMIT_UNAVAILABLE", message: "The developer platform is temporarily unavailable." }
+    }, 503);
+  }
+}
+
 export function createDeveloperRoutes(dependencies: DeveloperRouteDependencies) {
   const routes = new Hono();
 
@@ -155,6 +179,8 @@ export function createDeveloperRoutes(dependencies: DeveloperRouteDependencies) 
     try {
       const identity = await readIdentity(dependencies, context.req.raw);
       if (!identity) return respond(context, { error: { code: "UNAUTHORIZED", message: "A valid BrightGlobe session is required." } }, 401, requestId);
+      const limited = await enforceRateLimit(context, dependencies, identity);
+      if (limited) return limited;
       const parsed = organizationSchema.safeParse(await context.req.json().catch(() => null));
       if (!parsed.success) return respond(context, { error: { code: "INVALID_REQUEST", message: "The developer organization details are invalid." } }, 400, requestId);
       const organization = await dependencies.transactions.createOrganization({
@@ -186,6 +212,8 @@ export function createDeveloperRoutes(dependencies: DeveloperRouteDependencies) 
     if (!identity) return respond(context, { error: { code: "UNAUTHORIZED", message: "A valid BrightGlobe session is required." } }, 401, requestId);
     const developerId = context.req.param("developerId");
     if (!uuidSchema.safeParse(developerId).success) return respond(context, { error: { code: "INVALID_DEVELOPER_ID", message: "The developer ID is invalid." } }, 400, requestId);
+    const limited = await enforceRateLimit(context, dependencies, identity, developerId);
+    if (limited) return limited;
     const parsed = invitationSchema.safeParse(await context.req.json().catch(() => null));
     if (!parsed.success) return respond(context, { error: { code: "INVALID_REQUEST", message: "The invitation details are invalid." } }, 400, requestId);
 
@@ -235,6 +263,8 @@ export function createDeveloperRoutes(dependencies: DeveloperRouteDependencies) 
     if (!identity.verifiedEmail) return respond(context, { error: { code: "VERIFIED_EMAIL_REQUIRED", message: "A verified email session is required to initiate an ownership transfer." } }, 403, requestId);
     const developerId = context.req.param("developerId");
     if (!uuidSchema.safeParse(developerId).success) return respond(context, { error: { code: "INVALID_DEVELOPER_ID", message: "The developer ID is invalid." } }, 400, requestId);
+    const limited = await enforceRateLimit(context, dependencies, identity, developerId);
+    if (limited) return limited;
     const parsed = ownerTransferSchema.safeParse(await context.req.json().catch(() => null));
     if (!parsed.success) return respond(context, { error: { code: "INVALID_REQUEST", message: "The owner transfer details are invalid." } }, 400, requestId);
 
@@ -247,7 +277,7 @@ export function createDeveloperRoutes(dependencies: DeveloperRouteDependencies) 
       try {
         await dependencies.invitationDelivery.send({
           recipientEmail: parsed.data.email,
-          organizationName: developerId,
+          organizationName: created.organizationName,
           role: "owner",
           rawToken: created.rawToken,
           expiresAt: created.expiresAt,
@@ -282,6 +312,8 @@ export function createDeveloperRoutes(dependencies: DeveloperRouteDependencies) 
     const identity = await readIdentity(dependencies, context.req.raw).catch(() => null);
     if (!identity) return respond(context, { error: { code: "UNAUTHORIZED", message: "A valid BrightGlobe session is required." } }, 401, requestId);
     if (!identity.verifiedEmail) return respond(context, { error: { code: "VERIFIED_EMAIL_REQUIRED", message: "A verified email session is required to accept this invitation." } }, 403, requestId);
+    const limited = await enforceRateLimit(context, dependencies, identity);
+    if (limited) return limited;
     const parsed = acceptInvitationSchema.safeParse(await context.req.json().catch(() => null));
     if (!parsed.success) return respond(context, { error: { code: "INVALID_REQUEST", message: "The invitation token is invalid." } }, 400, requestId);
     try {
@@ -305,6 +337,8 @@ export function createDeveloperRoutes(dependencies: DeveloperRouteDependencies) 
     if (!identity) return respond(context, { error: { code: "UNAUTHORIZED", message: "A valid BrightGlobe session is required." } }, 401, requestId);
     const developerId = context.req.param("developerId");
     const invitationId = context.req.param("invitationId");
+    const limited = await enforceRateLimit(context, dependencies, identity, developerId);
+    if (limited) return limited;
     if (!uuidSchema.safeParse(developerId).success || !uuidSchema.safeParse(invitationId).success) {
       return respond(context, { error: { code: "INVALID_RESOURCE_ID", message: "The resource ID is invalid." } }, 400, requestId);
     }

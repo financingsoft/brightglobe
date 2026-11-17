@@ -40,8 +40,19 @@ function createApp(options: {
     invitationDelivery: { send: async () => undefined },
     rateLimit: async () => true
   };
+  const appDependencies = {
+    resolveIdentity: async () => ({ canonicalUserId: user.canonicalUserId }),
+    apps: {
+      listApps: async () => [],
+      getApp: async () => ({ id: developerId }),
+      createApp: async () => ({ id: developerId }),
+      updateAppDraft: async () => ({ id: developerId })
+    },
+    rateLimit: async () => true
+  };
   const app = createDeveloperPrivateApp({
     dependencies,
+    appDependencies,
     allowedOrigins: ["https://test.globeapps.com"],
     rateLimiter: { limit: async () => ({ success: options.rateAllowed !== false }) }
   });

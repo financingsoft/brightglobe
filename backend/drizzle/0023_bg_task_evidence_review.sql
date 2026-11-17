@@ -244,3 +244,44 @@ CREATE TRIGGER "bg_task_review_decisions_append_only"
 CREATE TRIGGER "bg_task_audit_events_append_only"
   BEFORE UPDATE OR DELETE ON "bg_task_audit_events"
   FOR EACH ROW EXECUTE FUNCTION prevent_bg_task_append_only_mutation();
+
+--> statement-breakpoint
+CREATE OR REPLACE FUNCTION guard_bg_task_evidence_insert() RETURNS trigger AS $bg$
+BEGIN
+  IF NEW."status" <> 'pending_review' OR NEW."consumed_reward_event_id" IS NOT NULL THEN
+    RAISE EXCEPTION 'New BG task evidence must begin pending_review and unconsumed';
+  END IF;
+  IF length(trim(NEW."task_id")) = 0 OR NEW."task_id" !~ '^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,63}$'
+    OR length(trim(NEW."verifier_key")) = 0
+    OR length(trim(NEW."source")) = 0
+    OR length(trim(NEW."source_evidence_id")) = 0
+    OR length(trim(NEW."idempotency_key")) = 0
+  THEN
+    RAISE EXCEPTION 'BG task evidence identifiers are malformed';
+  END IF;
+  RETURN NEW;
+END;
+$bg$ LANGUAGE plpgsql;
+--> statement-breakpoint
+CREATE TRIGGER "bg_task_evidence_insert_guard"
+  BEFORE INSERT ON "bg_task_evidence_records"
+  FOR EACH ROW EXECUTE FUNCTION guard_bg_task_evidence_insert();
+--> statement-breakpoint
+CREATE OR REPLACE FUNCTION audit_bg_task_evidence_insert() RETURNS trigger AS $bg$
+BEGIN
+  INSERT INTO "bg_task_audit_events" ("id", "evidence_id", "actor_type", "actor_id", "action", "metadata", "created_at")
+    VALUES (gen_random_uuid(), NEW."id", 'service', NEW."canonical_user_id"::text,
+      'task.evidence.received',
+      jsonb_build_object('taskId', NEW."task_id", 'taskVersion', NEW."task_version", 'source', NEW."source", 'issuer', NEW."issuer", 'digestSha256', NEW."digest_sha256"),
+      NEW."submitted_at");
+  RETURN NEW;
+END;
+$bg$ LANGUAGE plpgsql;
+--> statement-breakpoint
+CREATE TRIGGER "bg_task_evidence_insert_audit"
+  AFTER INSERT ON "bg_task_evidence_records"
+  FOR EACH ROW EXECUTE FUNCTION audit_bg_task_evidence_insert();
+--> statement-breakpoint
+CREATE TRIGGER "bg_task_appeals_no_delete"
+  BEFORE DELETE ON "bg_task_appeals"
+  FOR EACH ROW EXECUTE FUNCTION prevent_bg_task_append_only_mutation();

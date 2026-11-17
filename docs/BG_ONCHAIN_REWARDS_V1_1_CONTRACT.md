@@ -127,6 +127,17 @@ Add dedicated reward and treasury records (names may be adjusted to repository c
 - role, status, max_balance_base_units, max_single_payout_base_units
 - created_at, updated_at
 
+
+### BG task evidence and review persistence
+
+- `bg_task_evidence_records` stores immutable server-verified source identity, canonical user, task/version, verifier, source/issuer, source evidence ID, occurrence time and SHA-256 digest. It stores a digest and source reference, not arbitrary client payloads or secrets.
+- A global unique constraint on (issuer, source, source evidence ID) prevents the same provider event from being replayed across different users. A separate idempotency key makes retries stable.
+- Evidence begins in `pending_review`; only valid transitions are allowed: `pending_review -> approved/rejected`, `rejected -> appealed`, `appealed -> approved/rejected`, and `approved -> consumed`.
+- `bg_task_review_decisions` and `bg_task_audit_events` are append-only. A reviewer cannot review their own evidence, and an appeal must be decided by someone other than the initial reviewer.
+- `bg_task_appeals` records one immutable appeal submission and a single audited resolution. The task owner may appeal only their own rejected evidence.
+- Evidence can become `consumed` only when it references a matching `task_completion` reward event for the same canonical user and evidence ID. The later reservation service must update evidence consumption and create the reward event/payout intent in one database transaction.
+- These tables are persistence primitives only. They do not enable a claim endpoint, approve any task source, activate a verifier, or grant rewards. Source adapters and reservation integration remain separate gates.
+
 ### `bg_reward_audit_events`
 - id, actor_type, actor_id, action, target_type, target_id
 - reason, before_state, after_state, created_at

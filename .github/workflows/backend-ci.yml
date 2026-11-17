@@ -73,3 +73,6 @@ jobs:
 
       - name: Globe Play private Worker dry run
         run: npm run build:marketplace
+
+      - name: Globe Play private Worker dry run
+        run: npm run build:marketplace

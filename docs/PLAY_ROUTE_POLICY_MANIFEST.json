@@ -451,6 +451,34 @@
       "invalidationTags": [],
       "notes": "Active Globe-owned category taxonomy localized for the requested locale; developers may select categories but cannot mutate taxonomy.",
       "implementationStatus": "implemented-module"
+    },
+    {
+      "id": "developer-app-create-page",
+      "pattern": "/organizations/{developerId}/apps/new",
+      "surface": "developer-console",
+      "access": "authenticated",
+      "cache": "private-no-store",
+      "ttlSeconds": 0,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [],
+      "invalidationTags": [],
+      "notes": "Authenticated tenant-scoped App/Game draft creation form with independent locale listings and platform-owned category selection.",
+      "implementationStatus": "implemented-shell"
+    },
+    {
+      "id": "developer-app-workspace-page",
+      "pattern": "/organizations/{developerId}/apps/{appId}",
+      "surface": "developer-console",
+      "access": "authenticated",
+      "cache": "private-no-store",
+      "ttlSeconds": 0,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [],
+      "invalidationTags": [],
+      "notes": "Authenticated tenant-scoped app workspace for viewing and editing eligible draft localization revisions.",
+      "implementationStatus": "implemented-shell"
     }
   ]
 }

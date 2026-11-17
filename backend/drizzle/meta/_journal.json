@@ -141,6 +141,13 @@
       "when": 1794873600000,
       "tag": "0020_community_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794942000000,
+      "tag": "0021_bg_reward_foundation",
+      "breakpoints": true
     }
   ]
 }

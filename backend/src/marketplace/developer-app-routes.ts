@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { AppPlatform, AppLocalizationInput } from "../services/marketplace-apps.js";
 
 export interface DeveloperAppTransactionService {
+  listCategories(input: { developerId: string; actorCanonicalUserId: string; locale: string }): Promise<unknown[]>;
   listApps(input: { developerId: string; actorCanonicalUserId: string }): Promise<unknown[]>;
   getApp(input: { developerId: string; appId: string; actorCanonicalUserId: string }): Promise<unknown>;
   createApp(input: {
@@ -89,6 +90,28 @@ async function limited(context: Context, dependencies: DeveloperAppRouteDependen
 
 export function createDeveloperAppRoutes(dependencies: DeveloperAppRouteDependencies) {
   const routes = new Hono();
+
+  routes.get("/developers/:developerId/categories", async (context) => {
+    const developerId = context.req.param("developerId");
+    if (!uuid.safeParse(developerId).success) return respond(context, { error: { code: "NOT_FOUND", message: "Developer organization was not found." } }, 404);
+    const actor = await identity(context, dependencies);
+    if (!actor) return respond(context, { error: { code: "UNAUTHORIZED", message: "A valid BrightGlobe session is required." } }, 401);
+    const rate = await limited(context, dependencies, actor.canonicalUserId, developerId, "read");
+    if (rate) return rate;
+    const locale = context.req.query("locale") ?? "en";
+    if (!/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/.test(locale) || locale.length > 35) {
+      return respond(context, { error: { code: "INVALID_INPUT", message: "A valid locale is required." } }, 400);
+    }
+    try {
+      return respond(context, { data: await dependencies.apps.listCategories({
+        developerId, actorCanonicalUserId: actor.canonicalUserId, locale
+      }) });
+    } catch (error) {
+      const mapped = mapError(error);
+      if (mapped) return respond(context, { error: { code: mapped.code, message: mapped.message } }, mapped.status);
+      return respond(context, { error: { code: "INTERNAL_SERVER_ERROR", message: "The category catalogue could not be loaded." } }, 500);
+    }
+  });
 
   routes.get("/developers/:developerId/apps", async (context) => {
     const developerId = context.req.param("developerId");

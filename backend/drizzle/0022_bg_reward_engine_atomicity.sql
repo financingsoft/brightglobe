@@ -62,17 +62,17 @@ CREATE TRIGGER "reward_program_rule_immutable"
   FOR EACH ROW EXECUTE FUNCTION prevent_reward_program_rule_mutation();
 
 --> statement-breakpoint
-CREATE OR REPLACE FUNCTION prevent_reward_program_delete() RETURNS trigger AS $
+CREATE OR REPLACE FUNCTION prevent_reward_program_delete() RETURNS trigger AS $bg$
 BEGIN
   RAISE EXCEPTION 'Reward program versions are retained for audit; retire instead of deleting';
 END;
-$ LANGUAGE plpgsql;
+$bg$ LANGUAGE plpgsql;
 --> statement-breakpoint
 CREATE TRIGGER "reward_program_no_delete"
   BEFORE DELETE ON "reward_programs"
   FOR EACH ROW EXECUTE FUNCTION prevent_reward_program_delete();
 --> statement-breakpoint
-CREATE OR REPLACE FUNCTION prevent_reward_event_mutation() RETURNS trigger AS $
+CREATE OR REPLACE FUNCTION prevent_reward_event_mutation() RETURNS trigger AS $bg$
 BEGIN
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'Reward events are immutable; use an audited state transition';
@@ -93,7 +93,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$bg$ LANGUAGE plpgsql;
 --> statement-breakpoint
 CREATE TRIGGER "reward_event_immutable"
   BEFORE UPDATE OR DELETE ON "reward_events"

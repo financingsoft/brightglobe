@@ -680,8 +680,7 @@ export const bgTaskEvidenceRecords = pgTable("bg_task_evidence_records", {
   index("bg_task_evidence_user_task_status_idx").on(table.canonicalUserId, table.taskId, table.status, table.submittedAt),
   check("bg_task_evidence_task_version_check", sql`${table.taskVersion} > 0`),
   check("bg_task_evidence_issuer_check", sql`${table.issuer} IN ('brightglobe-server', 'trusted-provider')`),
-  check("bg_task_evidence_digest_check", sql`${table.digestSha256} ~ '^[a-f0-9]{64} communityTasks, invitationCodes, invitationAttributions, communityAnnouncements, communityEvents, user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };
-`),
+  check("bg_task_evidence_digest_check", sql.raw("digest_sha256 ~ '^[a-f0-9]{64}$'")),
   check("bg_task_evidence_status_check", sql`${table.status} IN ('pending_review', 'approved', 'rejected', 'appealed', 'consumed')`),
   check("bg_task_evidence_consumed_check", sql`(${table.status} = 'consumed' AND ${table.consumedRewardEventId} IS NOT NULL) OR (${table.status} <> 'consumed' AND ${table.consumedRewardEventId} IS NULL)`)
 ]);

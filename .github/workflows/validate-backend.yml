@@ -43,7 +43,6 @@ jobs:
     env:
       NODE_ENV: test
       DATABASE_URL: postgresql://brightglobe:brightglobe_test@localhost:5432/brightglobe
-      LOCAL_DATABASE_URL: postgresql://brightglobe:brightglobe_test@localhost:5432/brightglobe
       BETTER_AUTH_URL: http://localhost:4000
       BETTER_AUTH_SECRET: test-only-secret-that-is-at-least-thirty-two-characters
     steps:
@@ -67,8 +66,10 @@ jobs:
         working-directory: backend
         run: npm run db:migrate
 
-      - name: Unit and PostgreSQL integration tests
+      - name: Unit and BG PostgreSQL integration tests
         working-directory: backend
+        env:
+          BG_REWARD_TEST_DATABASE_URL: postgresql://brightglobe:brightglobe_test@localhost:5432/brightglobe
         run: npm test
 
       - name: Build Cloudflare Worker (dry run)

@@ -32,18 +32,35 @@ A deeper source review refines the implementation gap:
 
 Therefore, do not create duplicate outbox/receipt/watermark DDL as the next task. The missing work is the approved source-side publication transaction and event builder, plus separate least-privilege relay/projector execution, durable adapters and Queue/purge operations. Keep the existing private developer role isolated.
 
+## 1B. Existing-contract reconciliation (verified 2026-11-17)
+
+The proposals below must refine existing contracts, not silently replace them. The repository's Marketplace master contract is itself marked Draft / mandatory review baseline; detailed contracts also carry Draft or Proposed status. Their requirements are the current engineering baseline, but any product-level change still requires explicit contract approval.
+
+| Area | Existing contract already says | Correct treatment in this proposal |
+|---|---|---|
+| Catalogue list (P3) | `PLAY_MARKETPLACE_DATA_CONTRACT.md` already lists `GET /api/v1/play/apps` and its query/category/platform/app_type/locale/sort/cursor filters. | This is not a decision about whether the endpoint exists. It is a missing detailed public request/response, cache-key and pagination schema. |
+| Categories (P4) | The data contract already lists `GET /api/v1/play/categories`; the route manifest already reserves a public category-detail page. | Keep category index as an existing API inventory item. Specify its response contract and decide whether category detail is metadata-plus-list or reuses the catalogue endpoint. |
+| Search (P5) | The discovery contract selects PostgreSQL full-text search plus indexed filters as V1 baseline; Chinese/Japanese segmentation and analyzers must be tested. Typo tolerance is only “where feasible”. | Do not introduce a new search engine or promise typo tolerance. Define the API envelope, bounded query/filter semantics, deterministic ranking/tie-breaker and locale analyzer acceptance tests on the existing baseline. |
+| Editorial collections (P6) | The data contract assigns editorial collections and editorial content to Payload CMS; Marketplace owns app/publisher/release truth. | This ownership is already established. Only define safe composition of CMS collection metadata with currently published Marketplace app cards. Do not create a second collection source of truth. |
+| Before/after invalidation (P2) | The Projection Pipeline Contract already requires previous and current publisher/category tags on app events, including prior relationships for delete/takedown. | This is implementation conformance, not a new product decision. The event schema/source builder must prove it; do not weaken the existing rule to current relationships only. |
+| Event delivery and purge (P8) | The Projection Pipeline Contract already defines leased `SKIP LOCKED` relay, at-least-once Queue delivery, atomic projection+receipt, retryable pending purge, bounded batch coalescing and chunks of at most 100 tags per purge request. | Implement the defined semantics in concrete adapters. Keep the separate distinction between the SQL draft's per-event tag cap (50) and Cloudflare purge request chunk cap (100). |
+| Rating tags (P1) | Event schema requires app rating invalidation; detailed API and pipeline tag lists omit it; route manifest includes rating for review routes but not app-detail API. | This is a real cross-contract inconsistency. Align event tags, app-detail/reviews response headers and route policy so every representation containing a rating emits the rating tag. |
+| SSR error behavior (P7) | Public API contract defines a 404 envelope; master contract prohibits soft-404 and requires accurate status codes. | Define the web data-access result mapping so only an upstream public 404 becomes `notFound()`; outages, invalid responses and missing configuration remain distinguishable failures. |
+
+Important boundary: the master contract requires public reads to use derived, versioned projections and prohibits Neon per-page-view aggregation. Nothing in this reconciliation authorizes bypassing that architecture, querying transactional tables for catalogue pages, adding a search cluster, or giving the public Worker write/purge permissions.
+
 ## 2. Decision proposal summary
 
 | ID | Proposal | Why it must be settled before implementation |
 |---|---|---|
 | P1 | Canonical cache-tag vocabulary and rating invalidation | Current event schema requires `app:{slug}:rating`, but API responses and the detailed public-read contract omit it |
-| P2 | Before/after relationship invalidation data | Current event validation checks current publisher/category tags only; relationship moves need old and new tags |
-| P3 | Public catalogue list API | Data contract requires app listing; public-read contract has no request/response schema |
-| P4 | Category read API | Category routes are in the route manifest, but public API schemas/endpoints and category detail UI are absent |
-| P5 | Search API | Search page is a shell; ranking contract defines principles but not API request/response/cursor contract |
-| P6 | Collection API boundary | V1 includes editorial collections, but API ownership and projection boundary need explicit definition |
+| P2 | Enforce existing before/after relationship invalidation rule | Projection contract already requires old and new publisher/category tags; event schema/source builder must prove conformance |
+| P3 | Detailed public catalogue list contract | Data contract already inventories GET /apps; public-read contract lacks detailed request/response/cache schema |
+| P4 | Category index/detail response contract | Data contract inventories GET /categories; category detail API shape and UI composition remain unspecified |
+| P5 | Search API contract on the existing PostgreSQL FTS baseline | Discovery contract already selects PostgreSQL FTS; public request/response/cursor semantics remain unspecified |
+| P6 | Safe CMS-to-Marketplace collection composition | Payload CMS already owns editorial collections; public composition must resolve only currently published app projections |
 | P7 | Error and cache semantics for SSR | Web helper currently collapses 404, API outage and missing configuration to `null` |
-| P8 | Projection event/receipt atomicity and purge retry ownership | Core orchestration is present, but durable adapters and batch retry semantics need an exact interface contract |
+| P8 | Implement existing projection/receipt/purge semantics in durable adapters | Projection contract already specifies delivery and retry rules; concrete adapters and Staging proof are missing |
 
 ## 3. P1 — Canonical cache tags and rating invalidation
 
@@ -74,13 +91,13 @@ Every mutation event should carry the union of tags that cover all representatio
 The projection contract requires both previous and current developer/category relationships when an app changes publisher or category. The current event schema can validate current relationships from the new projection but cannot prove previous relationships are included.
 
 Proposed rule:
-- For app upsert events, include `previousRelationships` (nullable for first publication) containing prior developer slug and prior category slugs from the transaction's locked pre-update state.
+- For app upsert events, satisfy the existing Projection Pipeline Contract by carrying the prior developer/category relationships from the transaction's locked pre-update state. A versioned `previousRelationships` field is the proposed representation (nullable for first publication).
 - Derive invalidation tags from the union of prior and new relationships, plus app, rating, reviews and locale tags.
 - For delete/takedown, include the last published developer/category relationships, not relationships from an unpublished draft.
 - Validate exact canonical tag construction and uniqueness. The event payload must remain sanitized; no user identity, private publisher evidence or internal moderation data.
 - The source transaction is authoritative for before/after values. Do not infer old relationships in the Queue consumer from the already-updated projection.
 
-Alternative if a schema change is undesirable: a versioned, trusted source-side `invalidationTags` builder can receive old and new relationship records and produce a strictly allowlisted list. The proposal prefers explicit previous relationships in the event for auditability and replay.
+An alternative representation is a versioned, trusted source-side `invalidationTags` builder that receives old and new relationship records and produces the complete allowlisted list. Whichever representation is selected must preserve the already-written before/after requirement and be replayable.
 
 ## 5. P3 — Public catalogue list API
 
@@ -123,21 +140,21 @@ Proposed V1:
 - Search is public, anonymous and noindex.
 - Query is required, trimmed, Unicode-normalized and bounded by a documented min/max length.
 - Search fields follow the discovery contract: localized app name, subtitle/tagline, description, developer name, category and curated keywords.
-- PostgreSQL full-text search is the initial source only after locale-specific analyzers/tokenization are selected and tested. Chinese/Japanese behavior must not be claimed until verified.
+- PostgreSQL full-text search plus indexed filters remains the V1 baseline. Locale-specific analyzers/tokenization must be selected and tested; Chinese/Japanese behavior must not be claimed until verified.
 - Ranking combines text relevance with approved quality/freshness signals; sponsored inventory is separate and visibly labelled.
 - No raw click-only ranking, no publisher self-dealing, no untrusted engagement.
 - Filters and cursor are bounded and included in the cache key after canonical normalization.
 - Short edge TTL (initial target 30–60 seconds) with no unbounded arbitrary query parameters.
 - Response includes ranking/version metadata sufficient for debugging, but does not expose internal abuse/risk signals.
 
-Before implementation, define supported locale analyzer behavior and a deterministic tie-breaker. Typo tolerance/synonyms may be staged if not available in the first launch, but the UI must not pretend they exist.
+Before implementation, define supported locale analyzer behavior and a deterministic tie-breaker. Typo tolerance and synonyms remain “where feasible” under the existing discovery contract; they may be staged if unavailable at launch, and the UI must not pretend they exist.
 
 ## 8. P6 — Editorial collections
 
 V1 product architecture includes featured/editorial collections and CMS owns editorial content, not marketplace app ownership or package verification.
 
 Proposed ownership:
-- Payload CMS remains source of truth for collection title, description, locale, hero media, schedule, region targeting, ordering and editorial approval/publication state.
+- Payload CMS remains the existing source of truth for collection title, description, locale, hero media, schedule, region targeting, ordering and editorial approval/publication state.
 - Stable app references in a collection resolve to published marketplace app projections at read time/build time; unpublished or withdrawn apps are omitted.
 - Public collection response is composed from approved CMS collection data plus public app list-card projections. Never allow CMS to override app ownership, version approval, download authorization or trust state.
 - If this composition cannot be implemented safely in V1, defer public collection API/routes rather than introducing a second catalogue source of truth.

@@ -10,13 +10,17 @@ not the public `globe-play` read Worker and is not the existing BrightGlobe
 - Staging name: `globe-play-private-staging`
 - Entry: `src/marketplace-worker.ts`
 - Config: `wrangler.marketplace.jsonc`
-- API prefix: `/api/v1/play`
+- Internal API prefix: `/api/v1/play`
+- Staging external prefix: `https://api.globeapps.com/staging/play-private`
+- Production external prefix: `https://api.globeapps.com/play-private`
 - Public catalogue GET endpoints are not mounted here.
 - The public read Worker must continue to use only
   `brightglobe_play_public_reader`.
 
 ## Runtime boundaries
 
+- The Worker is intentionally not exposed on a `workers.dev` hostname. It must be routed behind the existing `api.globeapps.com` hostname and its configured path prefix. This preserves the host-only Better Auth session cookie; a separate `workers.dev` origin would not receive that cookie.
+- Cloudflare route binding is a separate approval step. The Worker strips `DEVELOPER_API_PATH_PREFIX` before dispatching to the internal Hono routes.
 - The Worker uses Better Auth `getSession` and the shared
   `resolveCanonicalAuth` implementation. Client-supplied user IDs are ignored.
 - Canonical BrightGlobe UUIDv7 is the only Marketplace user identity.
@@ -54,6 +58,7 @@ not the public `globe-play` read Worker and is not the existing BrightGlobe
 - `DEVELOPER_INVITATION_RESEND_API_KEY`: dedicated Resend API key.
 - `DEVELOPER_INVITATION_EMAIL_FROM`: verified sender.
 - `DEVELOPER_PORTAL_ORIGINS`: exact HTTPS origin allowlist.
+- `DEVELOPER_API_PATH_PREFIX`: normalized path prefix routed to this Worker.
 - `DEVELOPER_INVITATION_LINK_ORIGIN`: one of the allowlisted portal origins.
 - `DEVELOPER_RATE_LIMITER`: Cloudflare Rate Limiting binding. It is intentionally
   not assigned a fabricated namespace ID in this draft.
@@ -61,7 +66,7 @@ not the public `globe-play` read Worker and is not the existing BrightGlobe
 ## Explicitly not done
 
 No role creation, grants, Neon migration, secret provisioning, Rate Limiting
-namespace creation, Worker creation/deploy, DNS, route binding, R2/cache
-configuration, Production action or PR merge has been performed. The Worker
+namespace creation, Worker creation/deploy, DNS or Cloudflare route binding,
+R2/cache configuration, Production action or PR merge has been performed. The Worker
 returns configuration-unavailable until every required binding and secret is
 provided.

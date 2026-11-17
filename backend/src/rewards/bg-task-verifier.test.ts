@@ -107,6 +107,18 @@ test("rejects future, stale and malformed evidence", async () => {
   }
 });
 
+test("rejects malformed runtime adapter results instead of throwing or accepting them", async () => {
+  for (const malformed of [undefined, false, "evidence", 42]) {
+    const badVerifier = verifier({
+      verify: async () => malformed as unknown as BgTaskEvidence
+    });
+    await assert.rejects(
+      () => verifyBgTaskCompletion(new BgTaskVerifierRegistry([badVerifier]), request, now),
+      (error: unknown) => error instanceof BgTaskVerifierError && error.code === "EVIDENCE_INVALID"
+    );
+  }
+});
+
 test("does not convert verifier outages into successful or rejected task evidence", async () => {
   await assert.rejects(
     () => verifyBgTaskCompletion(

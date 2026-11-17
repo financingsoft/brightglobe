@@ -282,6 +282,76 @@
       ],
       "notes": "Anonymous published-only review projection with bounded signed cursor pagination.",
       "implementationStatus": "implemented"
+    },
+    {
+      "id": "developer-organization-create-api",
+      "pattern": "POST /api/v1/play/developers",
+      "surface": "marketplace-api",
+      "access": "authenticated",
+      "cache": "private-no-store",
+      "ttlSeconds": 0,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [],
+      "invalidationTags": [],
+      "notes": "Creates a pending publisher organization and its initial owner; private mutation response.",
+      "implementationStatus": "implemented-module"
+    },
+    {
+      "id": "developer-invitation-create-api",
+      "pattern": "POST /api/v1/play/developers/{developerId}/invitations",
+      "surface": "marketplace-api",
+      "access": "authenticated",
+      "cache": "private-no-store",
+      "ttlSeconds": 0,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [],
+      "invalidationTags": [],
+      "notes": "Creates a tenant-scoped membership invitation and sends it to the normalized target email; role authorization is enforced by the transaction service.",
+      "implementationStatus": "implemented-module"
+    },
+    {
+      "id": "developer-owner-transfer-api",
+      "pattern": "POST /api/v1/play/developers/{developerId}/owner-transfer",
+      "surface": "marketplace-api",
+      "access": "authenticated",
+      "cache": "private-no-store",
+      "ttlSeconds": 0,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [],
+      "invalidationTags": [],
+      "notes": "Current owner initiates a verified-email owner transfer; recipient must explicitly accept.",
+      "implementationStatus": "implemented-module"
+    },
+    {
+      "id": "developer-invitation-accept-api",
+      "pattern": "POST /api/v1/play/invitations/accept",
+      "surface": "marketplace-api",
+      "access": "authenticated",
+      "cache": "private-no-store",
+      "ttlSeconds": 0,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [],
+      "invalidationTags": [],
+      "notes": "Accepts a single-use token in the POST body, never in the URL; requires a verified email session.",
+      "implementationStatus": "implemented-module"
+    },
+    {
+      "id": "developer-invitation-revoke-api",
+      "pattern": "DELETE /api/v1/play/developers/{developerId}/invitations/{invitationId}",
+      "surface": "marketplace-api",
+      "access": "authenticated",
+      "cache": "private-no-store",
+      "ttlSeconds": 0,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [],
+      "invalidationTags": [],
+      "notes": "Revokes a pending tenant-scoped invitation; owner-transfer revocation is restricted to the initiating owner.",
+      "implementationStatus": "implemented-module"
     }
   ]
 }

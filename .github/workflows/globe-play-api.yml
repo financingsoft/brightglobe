@@ -36,8 +36,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Validate OpenAPI contract
+      - name: Validate public read OpenAPI contract
         run: node scripts/validate-openapi.mjs
+      - name: Validate private developer OpenAPI contract
+        run: node scripts/validate-developer-openapi.mjs
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Run unit tests

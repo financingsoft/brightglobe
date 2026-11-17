@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import type { DeveloperRouteDependencies } from "../../../marketplace-api/src/developer-routes.js";
-import { createDeveloperRoutes } from "../../../marketplace-api/src/developer-routes.js";
+import type { DeveloperRouteDependencies } from "./developer-routes.js";
+import { createDeveloperRoutes } from "./developer-routes.js";
 
 export interface DeveloperRateLimitBinding {
   limit(input: { key: string }): Promise<{ success: boolean }>;

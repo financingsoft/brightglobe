@@ -592,6 +592,7 @@ export async function getDeveloperWorkspace(
         id: developerInvitations.id,
         email: developerInvitations.normalizedEmail,
         role: developerInvitations.role,
+        invitedByCanonicalUserId: developerInvitations.invitedByCanonicalUserId,
         expiresAt: developerInvitations.expiresAt,
         createdAt: developerInvitations.createdAt
       })
@@ -605,5 +606,15 @@ export async function getDeveloperWorkspace(
         .orderBy(asc(developerInvitations.createdAt))
     : [];
 
-  return { organization, members, invitations };
+  const visibleInvitations = invitations.map((invitation) => ({
+    id: invitation.id,
+    email: invitation.email,
+    role: invitation.role,
+    expiresAt: invitation.expiresAt,
+    createdAt: invitation.createdAt,
+    canRevoke: invitation.role !== "owner" ||
+      (organization.role === "owner" && invitation.invitedByCanonicalUserId === input.actorCanonicalUserId)
+  }));
+
+  return { organization, members, invitations: visibleInvitations };
 }

@@ -40,6 +40,14 @@ not the public `globe-play` read Worker and is not the existing BrightGlobe
   fails closed.
 - All responses are private/no-store. No route is eligible for CDN caching.
 
+## Developer workspace read API
+
+The private API includes two authenticated read operations:
+- `GET /api/v1/play/developers`: lists only organizations where the current canonical user has an active membership.
+- `GET /api/v1/play/developers/:developerId`: returns the workspace only after an active tenant-membership check. Inaccessible IDs return the same 404 as missing organizations.
+
+Workspace members can see active member display names and roles. Only Owner/Admin receives pending invitation email addresses. The private DB role receives column-level SELECT on `public.canonical_user_profiles(canonical_user_id, display_name)`; it does not receive profile email, bio or locale access. Edge-IP and canonical-user/organization read limits apply. All responses remain private no-store.
+
 ## Local validation
 
 1. Install backend dependencies from `backend/`.

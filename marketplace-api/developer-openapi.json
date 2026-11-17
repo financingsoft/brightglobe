@@ -3,7 +3,7 @@
   "info": {
     "title": "Globe Play Private Developer API",
     "version": "1.0.0",
-    "description": "Authenticated developer organization and invitation mutations. All responses are private, no-store and noindex. Requests require a server-validated BrightGlobe canonical session."
+    "description": "Authenticated developer organization workspace reads and invitation/ownership operations. All responses are private, no-store and noindex. Requests require a server-validated BrightGlobe canonical session."
   },
   "servers": [
     {
@@ -207,6 +207,89 @@
                 }
               }
             }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listDeveloperOrganizations",
+        "summary": "List organizations for the authenticated user",
+        "description": "Returns only organizations where the authenticated canonical user has an active membership. Response is private and never shared-cacheable.",
+        "responses": {
+          "200": {
+            "description": "Organizations visible to the authenticated user",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "private, no-store, max-age=0"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "slug",
+                          "displayName",
+                          "status",
+                          "verificationStatus",
+                          "createdAt",
+                          "role"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "verificationStatus": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "role": {
+                            "type": "string",
+                            "enum": [
+                              "owner",
+                              "admin",
+                              "release_manager",
+                              "analyst",
+                              "support_readonly"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Safe internal error"
           }
         }
       }
@@ -1130,6 +1213,83 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/play/developers/{developerId}": {
+      "get": {
+        "operationId": "getDeveloperWorkspace",
+        "summary": "Read an organization workspace",
+        "description": "Requires active membership in the requested organization. Members see active team display names and roles. Only Owner and Admin see pending invitation email addresses. Cross-tenant access returns 404.",
+        "parameters": [
+          {
+            "name": "developerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tenant-scoped workspace; always private no-store",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "private, no-store, max-age=0"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "organization",
+                        "members",
+                        "invitations"
+                      ],
+                      "properties": {
+                        "organization": {
+                          "type": "object"
+                        },
+                        "members": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "invitations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "description": "Organization not found or not accessible"
+          },
+          "500": {
+            "description": "Safe internal error"
           }
         }
       }

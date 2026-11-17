@@ -40,6 +40,14 @@ not the public `globe-play` read Worker and is not the existing BrightGlobe
   fails closed.
 - All responses are private/no-store. No route is eligible for CDN caching.
 
+## Portal origins
+
+- Production developer portal: `https://open.globeapps.com`.
+- Staging developer portal: `https://open-staging.globeapps.com`.
+- Public marketplace Staging H5 remains `https://test.globeapps.com`; it is not reused for the developer console.
+- Better Auth Staging trusted origins include both public H5 and the dedicated developer portal origin. The private Worker allowlist and invitation links use only the developer portal origin.
+- The new hostname is a code/configuration decision only. No DNS record, Worker route or deployment has been created.
+
 ## Developer workspace read API
 
 The private API includes two authenticated read operations:

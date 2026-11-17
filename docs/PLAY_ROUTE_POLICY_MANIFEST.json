@@ -214,7 +214,7 @@
     },
     {
       "id": "developer-console",
-      "pattern": "/open/**",
+      "pattern": "/",
       "surface": "developer-console",
       "access": "authenticated",
       "cache": "private-no-store",
@@ -223,7 +223,8 @@
       "locale": "none",
       "cacheKey": [],
       "invalidationTags": [],
-      "notes": "Tenant-scoped developer workspace; never shared cache."
+      "notes": "Authenticated developer console dashboard on the dedicated open.globeapps.com surface.",
+      "implementationStatus": "implemented-shell"
     },
     {
       "id": "admin-console",
@@ -352,6 +353,48 @@
       "invalidationTags": [],
       "notes": "Revokes a pending tenant-scoped invitation; owner-transfer revocation is restricted to the initiating owner.",
       "implementationStatus": "implemented-module"
+    },
+    {
+      "id": "developer-organization-create",
+      "pattern": "/organizations/new",
+      "surface": "developer-console",
+      "access": "authenticated",
+      "cache": "private-no-store",
+      "ttlSeconds": 0,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [],
+      "invalidationTags": [],
+      "notes": "Create a publisher organization and its initial Owner.",
+      "implementationStatus": "implemented-shell"
+    },
+    {
+      "id": "developer-organization-workspace",
+      "pattern": "/organizations/{developerId}",
+      "surface": "developer-console",
+      "access": "authenticated",
+      "cache": "private-no-store",
+      "ttlSeconds": 0,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [],
+      "invalidationTags": [],
+      "notes": "Tenant-scoped organization workspace, active members and manager-only pending invitations.",
+      "implementationStatus": "implemented-shell"
+    },
+    {
+      "id": "developer-invitation-accept",
+      "pattern": "/invitations/accept",
+      "surface": "developer-console",
+      "access": "authenticated",
+      "cache": "private-no-store",
+      "ttlSeconds": 0,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [],
+      "invalidationTags": [],
+      "notes": "Accept a single-use invitation token read from the URL fragment, then remove it from browser history before POST.",
+      "implementationStatus": "implemented-shell"
     }
   ]
 }

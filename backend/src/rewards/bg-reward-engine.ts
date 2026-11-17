@@ -180,6 +180,12 @@ export async function reserveBgDailyReward(
       periodKey,
       now
     });
+    if (typeof riskDecision.allowed !== "boolean") {
+      throw new BgRewardReservationError(
+        "BG_REWARD_RISK_DECISION_INVALID",
+        "The BG daily reward risk gate must return an explicit boolean decision."
+      );
+    }
     if (!riskDecision.allowed) {
       throw new BgRewardReservationError(
         "BG_REWARD_RISK_REJECTED",

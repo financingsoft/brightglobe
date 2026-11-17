@@ -94,8 +94,9 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
     createdAt: now,
     updatedAt: now
   });
+  const treasuryAccountId = createUuidV7(now.getTime());
   await db.insert(treasuryAccounts).values({
-    id: createUuidV7(now.getTime()),
+    id: treasuryAccountId,
     assetId,
     network: "devnet",
     mintAddress,
@@ -163,6 +164,11 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
         .where(eq(rewardPayoutIntents.rewardEventId, first.rewardEventId));
       assert.equal(events.length, 1);
       assert.equal(payouts.length, 1);
+      assert.equal(payouts[0]?.treasuryAccountId, treasuryAccountId);
+      assert.equal(payouts[0]?.tokenProgram, CLASSIC_SPL_TOKEN_PROGRAM_ID);
+      assert.equal(payouts[0]?.feePayerAddress, feePayerAddress);
+      assert.equal(payouts[0]?.recentBlockhash, null);
+      assert.equal(payouts[0]?.lastValidBlockHeight, null);
       await assert.rejects(
         () => pool.query(
           "UPDATE public.reward_events SET amount_base_units = 999 WHERE id = $1",

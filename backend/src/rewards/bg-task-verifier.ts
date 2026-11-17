@@ -128,16 +128,27 @@ export async function verifyBgTaskCompletion(
     return { outcome: "not_eligible", verifierKey: verifier.key };
   }
 
+  // Adapters are trusted server code, but their runtime output is still checked:
+  // TypeScript types do not protect this boundary from malformed provider data.
+  if (typeof evidence !== "object" || evidence === null) {
+    throw new BgTaskVerifierError("EVIDENCE_INVALID", "The server verifier returned malformed evidence.");
+  }
+
   const occurredAt = evidence.occurredAt instanceof Date ? evidence.occurredAt : new Date(Number.NaN);
   const ageMs = now.getTime() - occurredAt.getTime();
   if (
+    typeof evidence.evidenceId !== "string" ||
     !EVIDENCE_ID_PATTERN.test(evidence.evidenceId) ||
+    typeof evidence.source !== "string" ||
     !SOURCE_PATTERN.test(evidence.source) ||
     (evidence.issuer !== "brightglobe-server" && evidence.issuer !== "trusted-provider") ||
+    typeof evidence.canonicalUserId !== "string" ||
     evidence.canonicalUserId !== input.canonicalUserId ||
+    typeof evidence.taskId !== "string" ||
     evidence.taskId !== input.taskId ||
     evidence.taskVersion !== input.taskVersion ||
     !Number.isSafeInteger(evidence.taskVersion) ||
+    typeof evidence.digestSha256 !== "string" ||
     !SHA256_PATTERN.test(evidence.digestSha256) ||
     Number.isNaN(occurredAt.getTime()) ||
     ageMs < 0 ||

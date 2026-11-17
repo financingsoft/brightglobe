@@ -13,7 +13,7 @@ export interface DeveloperPrivateAppOptions {
   rateLimiter: DeveloperRateLimitBinding;
 }
 
-function privateError(code: string, message: string, status: 400 | 403 | 415 | 429 | 503, requestId: string) {
+function privateError(code: string, message: string, status: 400 | 403 | 404 | 415 | 429 | 503, requestId: string) {
   return Response.json({ error: { code, message, requestId } }, {
     status,
     headers: {
@@ -89,7 +89,7 @@ export function createDeveloperPrivateApp(options: DeveloperPrivateAppOptions) {
   app.notFound((context) => privateError(
     "NOT_FOUND",
     "The requested endpoint does not exist.",
-    403,
+    404,
     crypto.randomUUID()
   ));
   app.onError((error, context) => {

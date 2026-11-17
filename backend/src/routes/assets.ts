@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Database } from "../db/client.js";
 import type { BetterAuthInstance } from "../auth.js";
@@ -14,6 +14,9 @@ import {
   assetRegistry,
   assetTransactionIntents,
   chainObservedEvents,
+  rewardEvents,
+  rewardPrograms,
+  rewardPayoutIntents,
   walletOwnerships
 } from "../db/schema.js";
 import { isValidSolanaAddress } from "../blockchain/solana/address.js";
@@ -87,6 +90,134 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
         balanceBaseUnits: account.balanceBaseUnits.toString(),
         reservedBaseUnits: reservedBaseUnits.toString(),
         spendableBaseUnits: (spendableBaseUnits > 0n ? spendableBaseUnits : 0n).toString()
+      });
+    } catch (error) {
+      if (error instanceof AssetNotFoundError) {
+        return context.json({ error: { code: "ASSET_NOT_FOUND", message: error.message } }, 404);
+      }
+      throw error;
+    }
+  });
+
+  // App-facing BG reward read models. These endpoints never create claims or payouts.
+  routes.get("/:assetCode/rewards", async (context) => {
+    const current = context.get("canonicalAuth");
+    try {
+      const asset = await getAssetByCode(db, context.req.param("assetCode"));
+      if (asset.assetCode !== "BG" || asset.network !== "devnet") {
+        return context.json({
+          error: { code: "BG_REWARDS_UNAVAILABLE", message: "Reward status is available only for the BG Devnet asset." }
+        }, 404);
+      }
+
+      const [totals] = await db.select({
+        reservedBaseUnits: sql<string>`COALESCE(SUM(CASE WHEN ${rewardEvents.status} IN ('reserved', 'submitted', 'confirmed', 'finalized') THEN ${rewardEvents.amountBaseUnits} ELSE 0 END), 0)::text`,
+        paidBaseUnits: sql<string>`COALESCE(SUM(CASE WHEN ${rewardEvents.status} = 'paid' THEN ${rewardEvents.amountBaseUnits} ELSE 0 END), 0)::text`,
+        rewardCount: sql<string>`COUNT(*)::text`
+      }).from(rewardEvents)
+        .innerJoin(rewardPrograms, eq(rewardPrograms.id, rewardEvents.programId))
+        .where(and(
+          eq(rewardEvents.canonicalUserId, current.canonicalUserId),
+          eq(rewardPrograms.assetId, asset.id)
+        ));
+
+      const today = new Date().toISOString().slice(0, 10);
+      const [daily] = await db.select({
+        id: rewardEvents.id,
+        status: rewardEvents.status,
+        amountBaseUnits: rewardEvents.amountBaseUnits,
+        createdAt: rewardEvents.createdAt
+      }).from(rewardEvents)
+        .innerJoin(rewardPrograms, eq(rewardPrograms.id, rewardEvents.programId))
+        .where(and(
+          eq(rewardEvents.canonicalUserId, current.canonicalUserId),
+          eq(rewardPrograms.assetId, asset.id),
+          eq(rewardEvents.actionType, "daily_collection"),
+          eq(rewardEvents.periodKey, today)
+        ))
+        .limit(1);
+
+      return context.json({
+        assetCode: asset.assetCode,
+        network: asset.network,
+        accountingUnit: "base_units",
+        dailyCollection: daily ? {
+          status: daily.status,
+          amountBaseUnits: daily.amountBaseUnits.toString(),
+          createdAt: daily.createdAt.toISOString()
+        } : {
+          status: "not_recorded_today",
+          amountBaseUnits: null,
+          createdAt: null
+        },
+        totals: {
+          rewardCount: Number(totals?.rewardCount ?? "0"),
+          reservedBaseUnits: totals?.reservedBaseUnits ?? "0",
+          paidBaseUnits: totals?.paidBaseUnits ?? "0"
+        },
+        claimAvailability: "not_assessed",
+        onChainBalanceIncluded: false
+      });
+    } catch (error) {
+      if (error instanceof AssetNotFoundError) {
+        return context.json({ error: { code: "ASSET_NOT_FOUND", message: error.message } }, 404);
+      }
+      throw error;
+    }
+  });
+
+  routes.get("/:assetCode/rewards/activity", async (context) => {
+    const current = context.get("canonicalAuth");
+    const rawLimit = Number(context.req.query("limit") ?? "30");
+    const limit = Number.isInteger(rawLimit) ? Math.min(Math.max(rawLimit, 1), 50) : 30;
+    try {
+      const asset = await getAssetByCode(db, context.req.param("assetCode"));
+      if (asset.assetCode !== "BG" || asset.network !== "devnet") {
+        return context.json({
+          error: { code: "BG_REWARDS_UNAVAILABLE", message: "Reward activity is available only for the BG Devnet asset." }
+        }, 404);
+      }
+
+      const rows = await db.select({
+        id: rewardEvents.id,
+        actionType: rewardEvents.actionType,
+        amountBaseUnits: rewardEvents.amountBaseUnits,
+        ruleVersion: rewardEvents.ruleVersion,
+        periodKey: rewardEvents.periodKey,
+        rewardStatus: rewardEvents.status,
+        createdAt: rewardEvents.createdAt,
+        payoutStatus: rewardPayoutIntents.status,
+        chainSignature: rewardPayoutIntents.chainSignature,
+        submittedAt: rewardPayoutIntents.submittedAt,
+        finalizedAt: rewardPayoutIntents.finalizedAt,
+        lastErrorCode: rewardPayoutIntents.lastErrorCode
+      }).from(rewardEvents)
+        .innerJoin(rewardPrograms, eq(rewardPrograms.id, rewardEvents.programId))
+        .leftJoin(rewardPayoutIntents, eq(rewardPayoutIntents.rewardEventId, rewardEvents.id))
+        .where(and(
+          eq(rewardEvents.canonicalUserId, current.canonicalUserId),
+          eq(rewardPrograms.assetId, asset.id)
+        ))
+        .orderBy(desc(rewardEvents.createdAt), desc(rewardEvents.id))
+        .limit(limit);
+
+      return context.json({
+        assetCode: asset.assetCode,
+        network: asset.network,
+        items: rows.map((row) => ({
+          id: row.id,
+          actionType: row.actionType,
+          amountBaseUnits: row.amountBaseUnits.toString(),
+          ruleVersion: row.ruleVersion,
+          periodKey: row.periodKey,
+          rewardStatus: row.rewardStatus,
+          payoutStatus: row.payoutStatus,
+          chainSignature: row.chainSignature,
+          submittedAt: row.submittedAt?.toISOString() ?? null,
+          finalizedAt: row.finalizedAt?.toISOString() ?? null,
+          failureCode: row.lastErrorCode,
+          createdAt: row.createdAt.toISOString()
+        }))
       });
     } catch (error) {
       if (error instanceof AssetNotFoundError) {

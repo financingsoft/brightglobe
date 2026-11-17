@@ -1,3 +1,4 @@
+import { createMiddleware } from "hono/factory";
 import { and, eq, gt, isNull } from "drizzle-orm";
 import type { BetterAuthInstance } from "../auth.js";
 import type { Database } from "../db/client.js";

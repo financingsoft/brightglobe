@@ -50,7 +50,7 @@ BEGIN
     ) VALUES (
       '11000000-0000-4000-8000-000000000001',
       '10000000-0000-4000-8000-000000000001',
-      'invitee@example.com', 'admin', repeat('a', 64) || 'x',
+      'invitee@example.com', 'admin', repeat('g', 64),
       '00000000-0000-4000-8000-000000000001', now() + interval '7 days'
     );
   EXCEPTION WHEN check_violation THEN

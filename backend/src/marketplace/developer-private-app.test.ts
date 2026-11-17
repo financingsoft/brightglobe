@@ -86,6 +86,15 @@ test("private API rejects oversized mutation payloads before route execution", a
   assert.deepEqual(calls, []);
 });
 
+test("private developer workspace reads are rate limited by edge client IP", async () => {
+  const { app } = createApp({ rateAllowed: false });
+  const response = await app.request("/api/v1/play/developers", {
+    headers: { "CF-Connecting-IP": "192.0.2.10" }
+  });
+  assert.equal(response.status, 429);
+  assert.equal(response.headers.get("Cache-Control"), "private, no-store, max-age=0");
+});
+
 test("private API rate limits by edge client IP", async () => {
   const { app, calls } = createApp({ rateAllowed: false });
   const response = await app.request("/api/v1/play/developers", {

@@ -186,11 +186,12 @@ async function enforceRateLimit(
   context: Context,
   dependencies: DeveloperRouteDependencies,
   identity: DeveloperRequestIdentity,
-  developerId?: string
+  developerId?: string,
+  scope: "read" | "write" = "write"
 ): Promise<Response | null> {
   if (!dependencies.rateLimit) return null;
-  const keys = ["user:" + identity.canonicalUserId + ":developer-write"];
-  if (developerId) keys.push("organization:" + developerId + ":developer-write");
+  const keys = ["user:" + identity.canonicalUserId + ":developer-" + scope];
+  if (developerId) keys.push("organization:" + developerId + ":developer-" + scope);
   try {
     const allowed = await dependencies.rateLimit(keys);
     if (!allowed) return respond(context, {
@@ -219,6 +220,8 @@ export function createDeveloperRoutes(dependencies: DeveloperRouteDependencies) 
     const requestId = getRequestId(context.req.raw);
     const identity = await readIdentity(dependencies, context.req.raw).catch(() => null);
     if (!identity) return respond(context, { error: { code: "UNAUTHORIZED", message: "A valid BrightGlobe session is required." } }, 401, requestId);
+    const limited = await enforceRateLimit(context, dependencies, identity, undefined, "read");
+    if (limited) return limited;
     try {
       const organizations = await dependencies.transactions.listOrganizations({
         actorCanonicalUserId: identity.canonicalUserId
@@ -243,6 +246,8 @@ export function createDeveloperRoutes(dependencies: DeveloperRouteDependencies) 
     if (!uuidSchema.safeParse(developerId).success) {
       return respond(context, { error: { code: "NOT_FOUND", message: "Developer organization was not found." } }, 404, requestId);
     }
+    const limited = await enforceRateLimit(context, dependencies, identity, developerId, "read");
+    if (limited) return limited;
     try {
       const workspace = await dependencies.transactions.getWorkspace({
         developerId,

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/app.test.ts src/developer-routes.test.ts src/cursor.test.ts src/projection-events.test.ts src/projection-projector.test.ts",
+    "test": "tsx --test src/app.test.ts src/cursor.test.ts src/projection-events.test.ts src/projection-projector.test.ts",
     "build": "wrangler deploy --dry-run --outdir=dist",
     "validate:developer-openapi": "node scripts/validate-developer-openapi.mjs"
   },

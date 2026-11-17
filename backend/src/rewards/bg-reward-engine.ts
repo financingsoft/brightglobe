@@ -26,6 +26,8 @@ export type BgRewardReservationErrorCode =
   | "BG_REWARD_NOT_CONFIGURED"
   | "BG_REWARD_NOT_AVAILABLE"
   | "BG_REWARD_RULE_INVALID"
+  | "BG_REWARD_RISK_REJECTED"
+  | "BG_REWARD_RISK_DECISION_INVALID"
   | "BG_REWARD_BUDGET_EXHAUSTED"
   | "BG_ASSET_NOT_CONFIGURED"
   | "BG_TREASURY_NOT_CONFIGURED"
@@ -43,6 +45,17 @@ export class BgRewardReservationError extends Error {
     this.name = "BgRewardReservationError";
   }
 }
+
+export interface BgDailyRewardRiskDecision {
+  allowed: boolean;
+  reference: string;
+}
+
+export type BgDailyRewardRiskEvaluator = (context: {
+  canonicalUserId: string;
+  periodKey: string;
+  now: Date;
+}) => Promise<BgDailyRewardRiskDecision>;
 
 export interface BgDailyRewardReservation {
   outcome: "reserved" | "replayed";
@@ -91,7 +104,8 @@ export function getBgDailyIdempotencyKey(canonicalUserId: string, periodKey: str
  */
 export async function reserveBgDailyReward(
   db: Database,
-  input: { canonicalUserId: string; now?: Date }
+  input: { canonicalUserId: string; now?: Date },
+  evaluateRisk: BgDailyRewardRiskEvaluator
 ): Promise<BgDailyRewardReservation> {
   const now = input.now ?? new Date();
   const periodKey = getBgDailyPeriodKey(now);
@@ -157,6 +171,28 @@ export async function reserveBgDailyReward(
       throw new BgRewardReservationError(
         "CANONICAL_USER_INELIGIBLE",
         "Only an active canonical BrightGlobe account can reserve BG rewards."
+      );
+    }
+
+    const riskDecision = await evaluateRisk({
+      canonicalUserId: input.canonicalUserId,
+      periodKey,
+      now
+    });
+    if (!riskDecision.allowed) {
+      throw new BgRewardReservationError(
+        "BG_REWARD_RISK_REJECTED",
+        "The server-side BG daily reward risk gate rejected this reservation."
+      );
+    }
+    if (
+      typeof riskDecision.reference !== "string" ||
+      riskDecision.reference.trim().length === 0 ||
+      riskDecision.reference.length > 128
+    ) {
+      throw new BgRewardReservationError(
+        "BG_REWARD_RISK_DECISION_INVALID",
+        "The BG daily reward risk gate must provide a bounded audit reference."
       );
     }
 
@@ -400,6 +436,7 @@ export async function reserveBgDailyReward(
         periodKey,
         amountBaseUnits: program.rewardBaseUnits.toString(),
         payoutIntentId,
+        riskDecisionReference: riskDecision.reference,
         network: BG_REWARD_NETWORK
       },
       createdAt: now

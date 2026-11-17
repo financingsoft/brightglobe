@@ -104,6 +104,11 @@ async function requireActiveActor(
   return membership;
 }
 
+/**
+ * Acquire the organization row before touching membership or invitation rows.
+ * Every mutating organization service uses this lock order to serialize owner
+ * transfers, invitation acceptance and revocation without lock-order cycles.
+ */
 async function lockDeveloper(
   transaction: Parameters<Parameters<Database["transaction"]>[0]>[0],
   developerId: string

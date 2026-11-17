@@ -51,6 +51,7 @@ export interface BgDailyRewardRiskDecision {
   reference: string;
 }
 
+/** Must be a bounded server-side policy check; denied decisions must be audited by the evaluator. */
 export type BgDailyRewardRiskEvaluator = (context: {
   canonicalUserId: string;
   periodKey: string;
@@ -240,8 +241,8 @@ export async function reserveBgDailyReward(
     }
     if (
       program.perUserLimit !== 1 ||
-      program.approvalReference === null ||
-      program.approvedBy === null ||
+      !program.approvalReference?.trim() ||
+      !program.approvedBy?.trim() ||
       program.approvedAt === null ||
       program.rewardBaseUnits <= 0n ||
       program.rewardBaseUnits > SPL_U64_MAX
@@ -254,6 +255,7 @@ export async function reserveBgDailyReward(
 
     if (
       asset.status !== "active" ||
+      asset.metadataSource !== "verified" ||
       asset.tokenProgram !== CLASSIC_SPL_TOKEN_PROGRAM_ID ||
       !asset.mintAddress ||
       asset.decimals === null ||
@@ -437,7 +439,7 @@ export async function reserveBgDailyReward(
         periodKey,
         amountBaseUnits: program.rewardBaseUnits.toString(),
         payoutIntentId,
-        riskDecisionReference: riskDecision.reference,
+        riskDecisionReference: riskDecision.reference.trim(),
         network: BG_REWARD_NETWORK
       },
       createdAt: now

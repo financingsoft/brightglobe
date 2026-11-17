@@ -196,7 +196,7 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
       );
       await assert.rejects(
         () => pool.query("DELETE FROM public.reward_programs WHERE id = $1", [programId]),
-        /retired instead of deleting/
+        /retire instead of deleting/
       );
     });
 

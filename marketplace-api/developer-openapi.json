@@ -1235,7 +1235,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Tenant-scoped workspace; always private no-store",
+            "description": "Tenant-scoped workspace; active member display names and roles are visible to members. Pending invitation email addresses are visible only to Owner/Admin. Each pending invitation includes canRevoke, computed from server-side role and initiating-owner checks. Always private no-store.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -1272,7 +1272,46 @@
                         "invitations": {
                           "type": "array",
                           "items": {
-                            "type": "object"
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "email",
+                              "role",
+                              "expiresAt",
+                              "createdAt",
+                              "canRevoke"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "email": {
+                                "type": "string",
+                                "format": "email"
+                              },
+                              "role": {
+                                "type": "string",
+                                "enum": [
+                                  "owner",
+                                  "admin",
+                                  "release_manager",
+                                  "analyst",
+                                  "support_readonly"
+                                ]
+                              },
+                              "expiresAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "canRevoke": {
+                                "type": "boolean"
+                              }
+                            }
                           }
                         }
                       }

@@ -115,6 +115,27 @@ test("failed invitation delivery compensates by revoking the unusable invitation
   assert.equal(body.error.code, "INVITATION_DELIVERY_FAILED");
 });
 
+test("wallet-only owner cannot initiate an ownership transfer", async () => {
+  let initiated = false;
+  const base = dependencies();
+  const tx: DeveloperTransactionService = {
+    ...base.transactions,
+    initiateOwnerTransfer: async () => { initiated = true; return invitation; }
+  };
+  const { app } = dependencies({
+    resolveIdentity: async () => ({ ...user, verifiedEmail: null }),
+    transactions: tx
+  });
+  const response = await app.request(`/developers/${developerId}/owner-transfer`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "new-owner@example.com" })
+  });
+  assert.equal(response.status, 403);
+  assert.equal(initiated, false);
+  assert.equal((await response.json() as { error: { code: string } }).error.code, "VERIFIED_EMAIL_REQUIRED");
+});
+
 test("wallet-only identity cannot accept an invitation", async () => {
   const { app } = dependencies({
     resolveIdentity: async () => ({ ...user, verifiedEmail: null })

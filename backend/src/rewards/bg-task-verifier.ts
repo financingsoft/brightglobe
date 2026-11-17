@@ -30,6 +30,12 @@ export type BgTaskVerification =
   | {
       outcome: "verified" | "review_required";
       verifierKey: string;
+      canonicalUserId: string;
+      taskId: string;
+      taskVersion: number;
+      source: string;
+      issuer: BgTaskEvidence["issuer"];
+      sourceEvidenceId: string;
       evidenceRef: string;
       evidenceDigest: string;
       occurredAt: string;
@@ -166,6 +172,12 @@ export async function verifyBgTaskCompletion(
   return {
     outcome: verifier.reviewMode === "manual" ? "review_required" : "verified",
     verifierKey: verifier.key,
+    canonicalUserId: evidence.canonicalUserId,
+    taskId: evidence.taskId,
+    taskVersion: evidence.taskVersion,
+    source: evidence.source,
+    issuer: evidence.issuer,
+    sourceEvidenceId: evidence.evidenceId,
     evidenceRef: `task-evidence:${verifier.key}:${evidence.evidenceId}`,
     evidenceDigest: evidence.digestSha256,
     occurredAt: occurredAt.toISOString(),

@@ -19,6 +19,17 @@
 
 The registry is intentionally empty until a concrete evidence source has been audited and an adapter with integration tests is implemented. This means **no task claim is currently enabled**.
 
+### Evidence persistence service
+
+`backend/src/rewards/bg-task-evidence-service.ts` accepts only the structured result returned by the trusted verifier pipeline and persists it in a database transaction. The verifier result now carries the canonical user, task/version, source, issuer and source evidence ID explicitly; persistence never parses those identities back out of a display/reference string.
+
+- New evidence is always inserted as `pending_review`, including results whose verifier policy is automatic. A verifier result is not an approval decision.
+- The insert uses database uniqueness constraints for both the idempotency key and the global issuer/source/source-evidence tuple.
+- A matching idempotency replay returns the existing evidence only after every immutable identity/proof field is compared.
+- Reuse of a source evidence item by another canonical account fails with `SOURCE_EVIDENCE_REPLAY`; a mismatched proof under an existing idempotency key fails closed.
+- The service is internal only. No HTTP claim route, client evidence input, reviewer API, task activation or reward reservation is added.
+- Unit and ephemeral-PostgreSQL integration tests cover invalid verifier output, pending-review persistence, idempotent retry, concurrent duplicate requests, altered-proof conflicts and cross-user source replay.
+
 ## Explicit remaining work before task rewards
 
 1. Inventory authoritative BrightGlobe-owned task evidence sources and trusted provider APIs; document evidence ownership, retention, rate limits and failure semantics for each.

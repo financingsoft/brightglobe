@@ -70,3 +70,6 @@ jobs:
 
       - name: Cloudflare Worker dry run
         run: npm run build
+
+      - name: Globe Play private Worker dry run
+        run: npm run build:marketplace

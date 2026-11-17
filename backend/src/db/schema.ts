@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { bigint, boolean, check, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
+import { bigint, boolean, check, date, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -536,11 +536,12 @@ export const rewardPrograms = pgTable("reward_programs", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
-  uniqueIndex("reward_programs_key_version_uidx").on(table.programKey, table.ruleVersion),
-  uniqueIndex("reward_programs_one_active_key_uidx").on(table.programKey).where(sql`${table.status} = 'active'`),
+  uniqueIndex("reward_programs_key_version_uidx").on(table.assetId, table.programKey, table.ruleVersion),
+  uniqueIndex("reward_programs_one_active_key_uidx").on(table.assetId, table.programKey).where(sql`${table.status} = 'active'`),
   index("reward_programs_asset_status_idx").on(table.assetId, table.status),
   check("reward_programs_action_check", sql`${table.actionType} IN ('daily_collection', 'task_completion', 'invitation', 'campaign')`),
   check("reward_programs_status_check", sql`${table.status} IN ('draft', 'active', 'paused', 'retired')`),
+  check("reward_programs_active_approval_check", sql`${table.status} <> 'active' OR (${table.approvedBy} IS NOT NULL AND ${table.approvedAt} IS NOT NULL)`),
   check("reward_programs_version_limit_check", sql`${table.ruleVersion} > 0 AND ${table.perUserLimit} > 0`),
   check("reward_programs_amount_check", sql`${table.rewardBaseUnits} > 0 AND ${table.budgetBaseUnits} > 0`),
   check("reward_programs_budget_usage_check", sql`${table.reservedBaseUnits} >= 0 AND ${table.paidBaseUnits} >= 0 AND ${table.reservedBaseUnits} + ${table.paidBaseUnits} <= ${table.budgetBaseUnits}`),
@@ -555,15 +556,20 @@ export const rewardEvents = pgTable("reward_events", {
   evidenceRef: varchar("evidence_ref", { length: 256 }),
   idempotencyKey: varchar("idempotency_key", { length: 160 }).notNull().unique(),
   amountBaseUnits: bigint("amount_base_units", { mode: "bigint" }).notNull(),
+  ruleVersion: integer("rule_version").notNull(),
+  periodKey: date("period_key", { mode: "string" }),
   status: varchar("status", { length: 16 }).notNull().default("reserved"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
+  uniqueIndex("reward_events_daily_user_period_uidx").on(table.canonicalUserId, table.periodKey).where(sql`${table.actionType} = 'daily_collection' AND ${table.periodKey} IS NOT NULL`),
   index("reward_events_user_created_idx").on(table.canonicalUserId, table.createdAt),
   index("reward_events_program_status_idx").on(table.programId, table.status),
   check("reward_events_action_check", sql`${table.actionType} IN ('daily_collection', 'task_completion', 'invitation', 'campaign')`),
   check("reward_events_status_check", sql`${table.status} IN ('reserved', 'submitted', 'confirmed', 'finalized', 'paid', 'rejected', 'failed', 'expired', 'quarantined', 'cancelled')`),
-  check("reward_events_amount_check", sql`${table.amountBaseUnits} > 0`)
+  check("reward_events_amount_check", sql`${table.amountBaseUnits} > 0`),
+  check("reward_events_rule_version_check", sql`${table.ruleVersion} > 0`),
+  check("reward_events_daily_period_check", sql`${table.actionType} <> 'daily_collection' OR ${table.periodKey} IS NOT NULL`)
 ]);
 
 export const rewardPayoutIntents = pgTable("reward_payout_intents", {

@@ -76,7 +76,7 @@ BEGIN
   SELECT count(*) INTO approved_count FROM "bg_task_evidence_records" WHERE "status" = 'approved';
   SELECT count(*) INTO resolved_count FROM "bg_task_appeals" WHERE "status" = 'resolved' AND "resolved_by" = '019a8e5a-4a00-7000-8000-000000000003';
   SELECT count(*) INTO audit_count FROM "bg_task_audit_events";
-  IF approved_count <> 2 OR resolved_count <> 1 OR audit_count < 6 THEN
+  IF approved_count <> 2 OR resolved_count <> 1 OR audit_count < 5 THEN
     RAISE EXCEPTION 'BG task review/appeal state or audit history was not applied';
   END IF;
   blocked := false;

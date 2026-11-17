@@ -26,7 +26,48 @@ export interface DeveloperInvitationRecord {
   organizationName: string;
 }
 
+export interface DeveloperOrganizationSummary {
+  id: string;
+  slug: string;
+  displayName: string;
+  status: string;
+  verificationStatus: string;
+  createdAt: Date;
+  role: string;
+}
+
+export interface DeveloperWorkspaceRecord {
+  organization: {
+    id: string;
+    slug: string;
+    displayName: string;
+    description: string | null;
+    websiteUrl: string | null;
+    supportEmail: string | null;
+    status: string;
+    verificationStatus: string;
+    createdAt: Date;
+    role: string;
+  };
+  members: Array<{
+    canonicalUserId: string;
+    displayName: string | null;
+    role: string;
+    status: string;
+    createdAt: Date;
+  }>;
+  invitations: Array<{
+    id: string;
+    email: string;
+    role: string;
+    expiresAt: Date;
+    createdAt: Date;
+  }>;
+}
+
 export interface DeveloperTransactionService {
+  listOrganizations(input: { actorCanonicalUserId: string }): Promise<DeveloperOrganizationSummary[]>;
+  getWorkspace(input: { developerId: string; actorCanonicalUserId: string }): Promise<DeveloperWorkspaceRecord>;
   createOrganization(input: {
     actorCanonicalUserId: string;
     slug: string;
@@ -172,6 +213,65 @@ export function createDeveloperRoutes(dependencies: DeveloperRouteDependencies) 
     context.header("Vary", "Cookie, Authorization");
     context.header("X-Request-Id", getRequestId(context.req.raw));
     await next();
+  });
+
+  routes.get("/developers", async (context) => {
+    const requestId = getRequestId(context.req.raw);
+    const identity = await readIdentity(dependencies, context.req.raw).catch(() => null);
+    if (!identity) return respond(context, { error: { code: "UNAUTHORIZED", message: "A valid BrightGlobe session is required." } }, 401, requestId);
+    try {
+      const organizations = await dependencies.transactions.listOrganizations({
+        actorCanonicalUserId: identity.canonicalUserId
+      });
+      return respond(context, {
+        data: organizations.map((organization) => ({
+          ...organization,
+          createdAt: organization.createdAt.toISOString()
+        }))
+      }, 200, requestId);
+    } catch {
+      console.error("[globe-play] Developer organization listing failed", { requestId });
+      return respond(context, { error: { code: "INTERNAL_SERVER_ERROR", message: "The request could not be completed." } }, 500, requestId);
+    }
+  });
+
+  routes.get("/developers/:developerId", async (context) => {
+    const requestId = getRequestId(context.req.raw);
+    const identity = await readIdentity(dependencies, context.req.raw).catch(() => null);
+    if (!identity) return respond(context, { error: { code: "UNAUTHORIZED", message: "A valid BrightGlobe session is required." } }, 401, requestId);
+    const developerId = context.req.param("developerId");
+    if (!uuidSchema.safeParse(developerId).success) {
+      return respond(context, { error: { code: "NOT_FOUND", message: "Developer organization was not found." } }, 404, requestId);
+    }
+    try {
+      const workspace = await dependencies.transactions.getWorkspace({
+        developerId,
+        actorCanonicalUserId: identity.canonicalUserId
+      });
+      return respond(context, {
+        data: {
+          organization: {
+            ...workspace.organization,
+            createdAt: workspace.organization.createdAt.toISOString()
+          },
+          members: workspace.members.map((member) => ({
+            ...member,
+            displayName: member.displayName ?? "BrightGlobe member",
+            createdAt: member.createdAt.toISOString()
+          })),
+          invitations: workspace.invitations.map((invitation) => ({
+            ...invitation,
+            expiresAt: invitation.expiresAt.toISOString(),
+            createdAt: invitation.createdAt.toISOString()
+          }))
+        }
+      }, 200, requestId);
+    } catch (error) {
+      const mapped = serviceError(error);
+      if (mapped) return respond(context, { error: { code: mapped.code, message: mapped.message } }, mapped.status, requestId);
+      console.error("[globe-play] Developer workspace read failed", { requestId });
+      return respond(context, { error: { code: "INTERNAL_SERVER_ERROR", message: "The request could not be completed." } }, 500, requestId);
+    }
   });
 
   routes.post("/developers", async (context) => {

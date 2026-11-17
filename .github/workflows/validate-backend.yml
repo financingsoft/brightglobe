@@ -73,3 +73,7 @@ jobs:
       - name: Build Cloudflare Worker (dry run)
         working-directory: backend
         run: npm run build
+
+      - name: Build Globe Play private Worker (dry run)
+        working-directory: backend
+        run: npm run build:marketplace

@@ -95,7 +95,7 @@ if (baseRef && baseRef !== "0000000000000000000000000000000000000000") {
     const changed = execFileSync("git", ["diff", "--name-only", range], { encoding: "utf8" })
       .split("\n").map((p) => p.trim()).filter(Boolean);
     const routeFiles = changed.filter((p) =>
-      /^apps\/play-web\/(?:src\/)?(?:app|pages)\/.+\.(?:tsx?|jsx?)$/.test(p)
+      /^apps\/(?:play-web|developer-web)\/(?:src\/)?(?:app|pages)\/.+\.(?:tsx?|jsx?)$/.test(p)
     );
     if (routeFiles.length > 0 && !changed.includes("docs/PLAY_ROUTE_POLICY_MANIFEST.json")) {
       fail.push(
@@ -118,6 +118,10 @@ console.log("Marketplace contract validation PASSED.");
 console.log(" - Master contract and AGENTS mandatory rules present.");
 console.log(" - " + manifest.routes.length + " route policies validated.");
 const webAppExists = existsSync(resolve(root, "apps/play-web"));
+const developerAppExists = existsSync(resolve(root, "apps/developer-web"));
 console.log(webAppExists
   ? " - Marketplace web app detected: runtime cache/SEO/E2E checks must be enabled in its CI."
   : " - Marketplace web app not present yet: runtime CDN/SEO/Neon checks are pending and are NOT claimed as verified.");
+console.log(developerAppExists
+  ? " - Developer portal detected: private no-store, authentication and tenant-isolation E2E checks are required before activation."
+  : " - Developer portal not present yet: private console E2E checks remain pending.");

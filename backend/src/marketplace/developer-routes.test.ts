@@ -24,6 +24,8 @@ const invitation: DeveloperInvitationRecord = {
 function dependencies(overrides: Partial<DeveloperRouteDependencies> = {}) {
   const calls: string[] = [];
   const transactions: DeveloperTransactionService = {
+    listOrganizations: async () => [],
+    getWorkspace: async () => { throw new Error("not used"); },
     createOrganization: async (input) => ({
       id: developerId,
       slug: input.slug,
@@ -51,6 +53,86 @@ function dependencies(overrides: Partial<DeveloperRouteDependencies> = {}) {
     transactions
   };
 }
+
+test("organization and workspace reads are authenticated, tenant-scoped and private no-store", async () => {
+  const createdAt = new Date("2026-11-17T00:00:00.000Z");
+  const base = dependencies();
+  const transactions: DeveloperTransactionService = {
+    ...base.transactions,
+    listOrganizations: async (input) => {
+      assert.equal(input.actorCanonicalUserId, user.canonicalUserId);
+      return [{
+        id: developerId,
+        slug: "example-publisher",
+        displayName: "Example Publisher",
+        status: "pending",
+        verificationStatus: "unverified",
+        createdAt,
+        role: "owner"
+      }];
+    },
+    getWorkspace: async (input) => {
+      assert.equal(input.developerId, developerId);
+      assert.equal(input.actorCanonicalUserId, user.canonicalUserId);
+      return {
+        organization: {
+          id: developerId,
+          slug: "example-publisher",
+          displayName: "Example Publisher",
+          description: null,
+          websiteUrl: null,
+          supportEmail: null,
+          status: "pending",
+          verificationStatus: "unverified",
+          createdAt,
+          role: "owner"
+        },
+        members: [{
+          canonicalUserId: user.canonicalUserId,
+          displayName: "Publisher Owner",
+          role: "owner",
+          status: "active",
+          createdAt
+        }],
+        invitations: [{
+          id: invitationId,
+          email: "member@example.com",
+          role: "analyst",
+          expiresAt: new Date("2026-11-24T00:00:00.000Z"),
+          createdAt,
+          canRevoke: true
+        }]
+      };
+    }
+  };
+  const { app } = dependencies({ transactions });
+  const listResponse = await app.request("/developers");
+  assert.equal(listResponse.status, 200);
+  assert.equal(listResponse.headers.get("Cache-Control"), "private, no-store, max-age=0");
+  const listBody = await listResponse.json() as { data: Array<{ id: string; role: string; createdAt: string }> };
+  assert.equal(listBody.data[0]?.id, developerId);
+  assert.equal(listBody.data[0]?.role, "owner");
+  assert.equal(listBody.data[0]?.createdAt, createdAt.toISOString());
+
+  const workspaceResponse = await app.request("/developers/" + developerId);
+  assert.equal(workspaceResponse.status, 200);
+  assert.equal(workspaceResponse.headers.get("Cache-Control"), "private, no-store, max-age=0");
+  const workspaceBody = await workspaceResponse.json() as {
+    data: { members: Array<{ displayName: string }>; invitations: Array<{ email: string }> }
+  };
+  assert.equal(workspaceBody.data.members[0]?.displayName, "Publisher Owner");
+  assert.equal(workspaceBody.data.invitations[0]?.email, "member@example.com");
+});
+
+test("workspace read endpoints are rate limited by canonical user", async () => {
+  let keys: string[] = [];
+  const { app } = dependencies({
+    rateLimit: async (nextKeys) => { keys = nextKeys; return false; }
+  });
+  const response = await app.request("/developers");
+  assert.equal(response.status, 429);
+  assert.deepEqual(keys, ["user:" + user.canonicalUserId + ":developer-read"]);
+});
 
 test("organization creation is authenticated and always private no-store", async () => {
   const { app } = dependencies();

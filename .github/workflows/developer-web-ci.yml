@@ -1,0 +1,55 @@
+name: Globe Play Developer Web CI
+
+on:
+  pull_request:
+    paths:
+      - "apps/developer-web/**"
+      - "backend/src/marketplace/**"
+      - "backend/src/services/marketplace-developers.ts"
+      - "backend/src/marketplace-worker.ts"
+      - "marketplace-api/developer-openapi.json"
+      - "marketplace-api/scripts/validate-developer-openapi.mjs"
+      - "docs/PLAY_ROUTE_POLICY_MANIFEST.json"
+      - ".github/workflows/developer-web-ci.yml"
+  push:
+    branches: [main, "feat/**"]
+    paths:
+      - "apps/developer-web/**"
+      - "backend/src/marketplace/**"
+      - "backend/src/services/marketplace-developers.ts"
+      - "backend/src/marketplace-worker.ts"
+      - "marketplace-api/developer-openapi.json"
+      - "marketplace-api/scripts/validate-developer-openapi.mjs"
+      - "docs/PLAY_ROUTE_POLICY_MANIFEST.json"
+      - ".github/workflows/developer-web-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: developer-web-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  developer-web:
+    name: Build Globe Play Developer Portal
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/developer-web
+    env:
+      NEXT_PUBLIC_AUTH_URL: https://api.globeapps.com/staging/api/auth
+      NEXT_PUBLIC_DEVELOPER_API_URL: https://api.globeapps.com/staging/play-private/api/v1/play
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: TypeScript strict typecheck
+        run: npm run typecheck
+      - name: Build developer portal
+        run: npm run build

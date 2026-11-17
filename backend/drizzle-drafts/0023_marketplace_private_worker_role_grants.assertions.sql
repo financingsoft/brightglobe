@@ -21,6 +21,12 @@ BEGIN
      OR has_column_privilege(v_role, 'public.canonical_users', 'status', 'INSERT') THEN
     RAISE EXCEPTION 'canonical user provisioning must use the database active-status default';
   END IF;
+  IF NOT has_column_privilege(v_role, 'public.canonical_user_profiles', 'canonical_user_id', 'SELECT')
+     OR NOT has_column_privilege(v_role, 'public.canonical_user_profiles', 'display_name', 'SELECT')
+     OR has_column_privilege(v_role, 'public.canonical_user_profiles', 'bio', 'SELECT')
+     OR has_column_privilege(v_role, 'public.canonical_user_profiles', 'locale', 'SELECT') THEN
+    RAISE EXCEPTION 'developer workspace profile access must be limited to display names';
+  END IF;
   IF NOT has_column_privilege(v_role, 'public.provider_identities', 'verified_at', 'UPDATE')
      OR has_column_privilege(v_role, 'public.provider_identities', 'provider_subject', 'UPDATE') THEN
     RAISE EXCEPTION 'provider identity updates must be limited to verified_at';

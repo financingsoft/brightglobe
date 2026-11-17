@@ -19,6 +19,8 @@ function createApp(options: {
   const dependencies: DeveloperRouteDependencies = {
     resolveIdentity: async () => user,
     transactions: {
+      listOrganizations: async () => [],
+      getWorkspace: async () => { throw new Error("not used"); },
       createOrganization: async (input) => {
         calls.push("created:" + input.actorCanonicalUserId);
         return {
@@ -38,8 +40,19 @@ function createApp(options: {
     invitationDelivery: { send: async () => undefined },
     rateLimit: async () => true
   };
+  const appDependencies = {
+    resolveIdentity: async () => ({ canonicalUserId: user.canonicalUserId }),
+    apps: {
+      listApps: async () => [],
+      getApp: async () => ({ id: developerId }),
+      createApp: async () => ({ id: developerId }),
+      updateAppDraft: async () => ({ id: developerId })
+    },
+    rateLimit: async () => true
+  };
   const app = createDeveloperPrivateApp({
     dependencies,
+    appDependencies,
     allowedOrigins: ["https://test.globeapps.com"],
     rateLimiter: { limit: async () => ({ success: options.rateAllowed !== false }) }
   });
@@ -82,6 +95,15 @@ test("private API rejects oversized mutation payloads before route execution", a
   });
   assert.equal(response.status, 413);
   assert.deepEqual(calls, []);
+});
+
+test("private developer workspace reads are rate limited by edge client IP", async () => {
+  const { app } = createApp({ rateAllowed: false });
+  const response = await app.request("/api/v1/play/developers", {
+    headers: { "CF-Connecting-IP": "192.0.2.10" }
+  });
+  assert.equal(response.status, 429);
+  assert.equal(response.headers.get("Cache-Control"), "private, no-store, max-age=0");
 });
 
 test("private API rate limits by edge client IP", async () => {

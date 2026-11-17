@@ -3,6 +3,8 @@ import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
 import type { DeveloperRouteDependencies } from "./developer-routes.js";
 import { createDeveloperRoutes } from "./developer-routes.js";
+import type { DeveloperAppRouteDependencies } from "./developer-app-routes.js";
+import { createDeveloperAppRoutes } from "./developer-app-routes.js";
 
 export interface DeveloperRateLimitBinding {
   limit(input: { key: string }): Promise<{ success: boolean }>;
@@ -10,6 +12,7 @@ export interface DeveloperRateLimitBinding {
 
 export interface DeveloperPrivateAppOptions {
   dependencies: DeveloperRouteDependencies;
+  appDependencies: DeveloperAppRouteDependencies;
   allowedOrigins: string[];
   rateLimiter: DeveloperRateLimitBinding;
 }
@@ -26,10 +29,7 @@ function privateError(code: string, message: string, status: 400 | 403 | 404 | 4
   });
 }
 
-/**
- * Separate private Worker application. It has no public projection routes and
- * is never mounted into the public read Worker.
- */
+/** Separate private Worker; public projection routes are never mounted here. */
 export function createDeveloperPrivateApp(options: DeveloperPrivateAppOptions) {
   const app = new Hono();
   const origins = new Set(options.allowedOrigins);
@@ -44,76 +44,56 @@ export function createDeveloperPrivateApp(options: DeveloperPrivateAppOptions) {
   app.use("*", cors({
     origin: (origin) => origin && origins.has(origin) ? origin : "",
     allowHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
-    allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
+    allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
     maxAge: 600
   }));
 
   app.use("/api/v1/play/*", bodyLimit({
     maxSize: 32 * 1024,
-    onError: () => privateError(
-      "PAYLOAD_TOO_LARGE",
-      "The developer request body exceeds the allowed size.",
-      413,
-      crypto.randomUUID()
-    )
+    onError: () => privateError("PAYLOAD_TOO_LARGE", "The developer request body exceeds the allowed size.", 413, crypto.randomUUID())
   }));
 
   app.use("*", async (context, next) => {
     const method = context.req.method.toUpperCase();
-    if (method !== "POST" && method !== "DELETE") {
+    const isDeveloperRead = method === "GET" && context.req.path.startsWith("/api/v1/play/");
+    if (!["POST", "PATCH", "DELETE"].includes(method) && !isDeveloperRead) {
       await next();
       return;
     }
-
     const requestId = context.req.header("X-Request-Id") && /^[A-Za-z0-9._-]{8,100}$/.test(context.req.header("X-Request-Id")!)
-      ? context.req.header("X-Request-Id")!
-      : crypto.randomUUID();
+      ? context.req.header("X-Request-Id")! : crypto.randomUUID();
     const origin = context.req.header("Origin");
-    if (!origin || !origins.has(origin)) {
+    if (method !== "GET" && (!origin || !origins.has(origin))) {
       return privateError("ORIGIN_NOT_ALLOWED", "The request origin is not allowed.", 403, requestId);
     }
-
-    if (method === "POST") {
+    if (["POST", "PATCH"].includes(method)) {
       const contentType = context.req.header("Content-Type")?.split(";")[0]?.trim().toLowerCase();
       if (contentType !== "application/json") {
         return privateError("JSON_REQUIRED", "Developer mutations require an application/json request body.", 415, requestId);
       }
     }
-
     const ipAddress = context.req.header("CF-Connecting-IP") ?? "unknown";
     try {
-      // Do not include arbitrary path parameters in the IP bucket key.
-      const limited = await options.rateLimiter.limit({
-        key: "ip:" + ipAddress + ":" + method
-      });
-      if (!limited.success) {
-        return privateError("RATE_LIMITED", "Too many requests. Try again later.", 429, requestId);
-      }
+      const limited = await options.rateLimiter.limit({ key: "ip:" + ipAddress + ":" + method });
+      if (!limited.success) return privateError("RATE_LIMITED", "Too many requests. Try again later.", 429, requestId);
     } catch {
       return privateError("RATE_LIMIT_UNAVAILABLE", "The developer platform is temporarily unavailable.", 503, requestId);
     }
-
     await next();
   });
 
   app.get("/health/live", (context) => context.json({ status: "ok", service: "globe-play-private" }));
   app.route("/api/v1/play", createDeveloperRoutes(options.dependencies));
+  app.route("/api/v1/play", createDeveloperAppRoutes(options.appDependencies));
 
-  app.notFound((context) => privateError(
-    "NOT_FOUND",
-    "The requested endpoint does not exist.",
-    404,
-    crypto.randomUUID()
-  ));
+  app.notFound((context) => privateError("NOT_FOUND", "The requested endpoint does not exist.", 404, crypto.randomUUID()));
   app.onError((error, context) => {
     const requestId = crypto.randomUUID();
     console.error("[globe-play-private] Unhandled request error", {
-      requestId,
-      errorType: error instanceof Error ? error.name : "unknown"
+      requestId, errorType: error instanceof Error ? error.name : "unknown"
     });
     return privateError("INTERNAL_SERVER_ERROR", "The request could not be completed.", 503, requestId);
   });
-
   return app;
 }

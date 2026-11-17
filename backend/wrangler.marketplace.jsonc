@@ -25,10 +25,10 @@
         "SMS_ENABLED": "false",
         "EMAIL_ENABLED": "false",
         "SOLANA_NETWORK": "disabled",
-        "APP_ORIGINS": "https://test.globeapps.com",
-        "DEVELOPER_PORTAL_ORIGINS": "https://test.globeapps.com",
+        "APP_ORIGINS": "https://open-staging.globeapps.com",
+        "DEVELOPER_PORTAL_ORIGINS": "https://open-staging.globeapps.com",
         "DEVELOPER_API_PATH_PREFIX": "/staging/play-private",
-        "DEVELOPER_INVITATION_LINK_ORIGIN": "https://test.globeapps.com"
+        "DEVELOPER_INVITATION_LINK_ORIGIN": "https://open-staging.globeapps.com"
       }
     }
   },

@@ -40,6 +40,22 @@ not the public `globe-play` read Worker and is not the existing BrightGlobe
   fails closed.
 - All responses are private/no-store. No route is eligible for CDN caching.
 
+## Portal origins
+
+- Production developer portal: `https://open.globeapps.com`.
+- Staging developer portal: `https://open-staging.globeapps.com`.
+- Public marketplace Staging H5 remains `https://test.globeapps.com`; it is not reused for the developer console.
+- Better Auth Staging trusted origins include both public H5 and the dedicated developer portal origin. The private Worker allowlist and invitation links use only the developer portal origin.
+- The new hostname is a code/configuration decision only. No DNS record, Worker route or deployment has been created.
+
+## Developer workspace read API
+
+The private API includes two authenticated read operations:
+- `GET /api/v1/play/developers`: lists only organizations where the current canonical user has an active membership.
+- `GET /api/v1/play/developers/:developerId`: returns the workspace only after an active tenant-membership check. Inaccessible IDs return the same 404 as missing organizations.
+
+Workspace members can see active member display names and roles. Only Owner/Admin receives pending invitation email addresses. The private DB role receives column-level SELECT on `public.canonical_user_profiles(canonical_user_id, display_name)`; it does not receive profile email, bio or locale access. Edge-IP and canonical-user/organization read limits apply. All responses remain private no-store.
+
 ## Local validation
 
 1. Install backend dependencies from `backend/`.

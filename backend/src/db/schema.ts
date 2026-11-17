@@ -542,7 +542,7 @@ export const rewardPrograms = pgTable("reward_programs", {
   index("reward_programs_asset_status_idx").on(table.assetId, table.status),
   check("reward_programs_action_check", sql`${table.actionType} IN ('daily_collection', 'task_completion', 'invitation', 'campaign')`),
   check("reward_programs_status_check", sql`${table.status} IN ('draft', 'active', 'paused', 'retired')`),
-  check("reward_programs_active_approval_check", sql`${table.status} <> 'active' OR (${table.approvalReference} IS NOT NULL AND ${table.approvedBy} IS NOT NULL AND ${table.approvedAt} IS NOT NULL)`),
+  check("reward_programs_active_approval_check", sql`${table.status} <> 'active' OR (${table.approvalReference} IS NOT NULL AND length(trim(${table.approvalReference})) > 0 AND ${table.approvedBy} IS NOT NULL AND length(trim(${table.approvedBy})) > 0 AND ${table.approvedAt} IS NOT NULL)`),
   check("reward_programs_version_limit_check", sql`${table.ruleVersion} > 0 AND ${table.perUserLimit} > 0`),
   check("reward_programs_amount_check", sql`${table.rewardBaseUnits} > 0 AND ${table.budgetBaseUnits} > 0`),
   check("reward_programs_budget_usage_check", sql`${table.reservedBaseUnits} >= 0 AND ${table.paidBaseUnits} >= 0 AND ${table.reservedBaseUnits} + ${table.paidBaseUnits} <= ${table.budgetBaseUnits}`),

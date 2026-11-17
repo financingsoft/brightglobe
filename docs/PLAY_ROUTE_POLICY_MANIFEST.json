@@ -397,7 +397,7 @@
       "implementationStatus": "implemented-shell"
     },
     {
-      "id": "developer-app-list-api",
+      "id": "developer-app-collection-api",
       "pattern": "/api/v1/play/developers/{developerId}/apps",
       "surface": "marketplace-api",
       "access": "authenticated",
@@ -407,21 +407,7 @@
       "locale": "none",
       "cacheKey": [],
       "invalidationTags": [],
-      "notes": "Lists apps and latest localized draft states visible to an active organization member.",
-      "implementationStatus": "implemented-module"
-    },
-    {
-      "id": "developer-app-create-api",
-      "pattern": "/api/v1/play/developers/{developerId}/apps",
-      "surface": "marketplace-api",
-      "access": "authenticated",
-      "cache": "private-no-store",
-      "ttlSeconds": 0,
-      "seo": "noindex",
-      "locale": "none",
-      "cacheKey": [],
-      "invalidationTags": [],
-      "notes": "Creates an app/game draft with independently editable locale drafts, platform targets and up to three platform-owned categories.",
+      "notes": "GET lists tenant-scoped app drafts; POST creates an App/Game draft with independently editable localized listings, platform targets and up to three platform-owned categories.",
       "implementationStatus": "implemented-module"
     },
     {

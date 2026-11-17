@@ -53,7 +53,7 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
   const pool = new PgPool({ connectionString });
   const db = drizzle(pool, { schema }) as unknown as Database;
   const now = new Date("2026-11-17T12:00:00.000Z");
-  const assetId = createUuidV7(now.getTime());
+  let assetId = createUuidV7(now.getTime());
   const mintAddress = testAddress(9001);
   const treasuryWalletAddress = testAddress(9002);
   const feePayerAddress = testAddress(9003);
@@ -84,18 +84,36 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
   }
 
   let walletSequence = 0;
-  await db.insert(assetRegistry).values({
-    id: assetId,
-    assetCode: "BG",
-    network: "devnet",
-    tokenProgram: CLASSIC_SPL_TOKEN_PROGRAM_ID,
-    mintAddress,
-    decimals: 9,
-    status: "active",
-    metadataSource: "verified",
-    createdAt: now,
-    updatedAt: now
-  });
+  // Migration 0008 seeds the BG/devnet placeholder. Reuse that row in
+  // this isolated test database instead of violating its unique asset key.
+  const [seededAsset] = await db.select().from(assetRegistry).where(and(
+    eq(assetRegistry.assetCode, "BG"),
+    eq(assetRegistry.network, "devnet")
+  )).limit(1);
+  if (seededAsset) {
+    assetId = seededAsset.id;
+    await db.update(assetRegistry).set({
+      tokenProgram: CLASSIC_SPL_TOKEN_PROGRAM_ID,
+      mintAddress,
+      decimals: 9,
+      status: "active",
+      metadataSource: "verified",
+      updatedAt: now
+    }).where(eq(assetRegistry.id, assetId));
+  } else {
+    await db.insert(assetRegistry).values({
+      id: assetId,
+      assetCode: "BG",
+      network: "devnet",
+      tokenProgram: CLASSIC_SPL_TOKEN_PROGRAM_ID,
+      mintAddress,
+      decimals: 9,
+      status: "active",
+      metadataSource: "verified",
+      createdAt: now,
+      updatedAt: now
+    });
+  }
   const treasuryAccountId = createUuidV7(now.getTime());
   await db.insert(treasuryAccounts).values({
     id: treasuryAccountId,

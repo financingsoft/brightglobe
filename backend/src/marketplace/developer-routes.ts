@@ -114,7 +114,7 @@ function respond(
   return context.json(body, status as 200, {
     "Cache-Control": "private, no-store, max-age=0",
     "Pragma": "no-cache",
-    "Vary": "Cookie, Authorization",
+    "Vary": "Origin, Cookie, Authorization",
     "X-Request-Id": requestId
   });
 }

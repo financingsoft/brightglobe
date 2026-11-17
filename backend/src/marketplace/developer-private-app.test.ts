@@ -19,6 +19,8 @@ function createApp(options: {
   const dependencies: DeveloperRouteDependencies = {
     resolveIdentity: async () => user,
     transactions: {
+      listOrganizations: async () => [],
+      getWorkspace: async () => { throw new Error("not used"); },
       createOrganization: async (input) => {
         calls.push("created:" + input.actorCanonicalUserId);
         return {

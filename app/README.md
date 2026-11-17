@@ -54,7 +54,7 @@ The app now includes Better Auth email registration/sign-in, email verification 
 
 Several secondary tab experiences (Tasks, Rewards, Wallet history, invitation, and other community modules) still contain preview or unavailable states until their domain APIs and business rules are implemented. Do not present preview values as real account balances or completed rewards.
 
-For Staging, set `EXPO_PUBLIC_API_BASE_URL=https://globe-staging.wanghui-79b.workers.dev`. Email authentication remains disabled until a verified Resend sender and the required Cloudflare Worker settings are configured.
+For Staging, set `EXPO_PUBLIC_API_BASE_URL=https://api.globeapps.com/staging` (the API Gateway path used by the checked-in `.env.example`). Email authentication remains disabled until a verified Resend sender and the required Cloudflare Worker settings are configured.
 
 ## Project structure
 

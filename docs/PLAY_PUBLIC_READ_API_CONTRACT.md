@@ -23,6 +23,7 @@ The projection is derived and rebuildable. It must not contain private publisher
 - Public response bodies contain no Set-Cookie and never vary by user, session, IP or Authorization.
 - Cache policy is explicit: app detail 600 seconds edge TTL; review pages 120 seconds; stale-while-revalidate is permitted within the route manifest.
 - Responses include `ETag` and `Last-Modified` where the projection supports them.
+- Cacheable responses attach targeted Cloudflare `Cache-Tag` headers using the tag vocabulary in Section 6; the public read Worker does not hold cache purge credentials.
 - `Cache-Control` alone is not proof of Cloudflare edge caching. Staging must verify HIT/BYPASS, cache key, invalidation and origin request rate.
 
 ## 3. App detail

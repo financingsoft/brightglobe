@@ -34,13 +34,15 @@ async function successResponse(
   body: unknown,
   requestId: string,
   cacheControl: string,
-  lastModified?: string
+  lastModified?: string,
+  cacheTags: string[] = []
 ): Promise<Response> {
   const serialized = JSON.stringify(body);
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(serialized));
   const etag = '"' + Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("") + '"';
   const headers: Record<string, string> = { ETag: etag };
   if (lastModified) headers["Last-Modified"] = new Date(lastModified).toUTCString();
+  if (cacheTags.length) headers["Cache-Tag"] = [...new Set(cacheTags)].join(",");
   return new Response(serialized, {
     status: 200,
     headers: new Headers({
@@ -96,7 +98,12 @@ export function createPublicReadApp(repository: PublicReadRepository, config: Pu
       return successResponse({
         data: parsed.data,
         meta: { schemaVersion: 1, contentLocale: record.contentLocale, requestedLocale: locale }
-      }, id, "public, max-age=0, s-maxage=600, stale-while-revalidate=1200", record.updatedAt);
+      }, id, "public, max-age=0, s-maxage=600, stale-while-revalidate=1200", record.updatedAt, [
+        "app:" + slug,
+        "developer:" + parsed.data.publisher.slug,
+        ...parsed.data.categories.map((category) => "category:" + category.slug),
+        "locale:" + record.contentLocale
+      ]);
     } catch (error) {
       console.error("[globe-play] Public app read failed", { requestId: id, error });
       return jsonResponse({
@@ -171,7 +178,11 @@ export function createPublicReadApp(repository: PublicReadRepository, config: Pu
       return successResponse({
         data,
         meta: { schemaVersion: 1, contentLocale: page.app.contentLocale, requestedLocale: locale }
-      }, id, "public, max-age=0, s-maxage=120, stale-while-revalidate=240", page.app.updatedAt);
+      }, id, "public, max-age=0, s-maxage=120, stale-while-revalidate=240", page.app.updatedAt, [
+        "app:" + slug,
+        "app:" + slug + ":reviews",
+        "locale:" + page.app.contentLocale
+      ]);
     } catch (error) {
       console.error("[globe-play] Public review read failed", { requestId: id, error });
       return jsonResponse({

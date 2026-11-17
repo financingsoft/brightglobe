@@ -18,6 +18,8 @@ import {
   createDeveloperOrganization,
   hashDeveloperInvitationToken,
   initiateDeveloperOwnerTransfer,
+  listDeveloperOrganizations,
+  getDeveloperWorkspace,
   revokeDeveloperInvitation,
   MarketplaceDeveloperError
 } from "./marketplace-developers.js";
@@ -64,6 +66,46 @@ test("Marketplace developer transactions preserve tenant, invitation and owner i
         ));
       assert.equal(events.length, 1);
       assert.equal(events[0]?.action, "developer.organization.created");
+    });
+
+    await t.test("workspace reads are tenant-scoped and expose pending invitations only to managers", async () => {
+      const ownerId = await addCanonicalUser();
+      const otherUserId = await addCanonicalUser();
+      const organization = await createOrganization(ownerId, "pg-workspace-" + ownerId.slice(-8));
+      const otherOrganization = await createOrganization(otherUserId, "pg-other-" + otherUserId.slice(-8));
+
+      const ownerOrganizations = await listDeveloperOrganizations(db, ownerId);
+      assert.equal(ownerOrganizations.length, 1);
+      assert.equal(ownerOrganizations[0]?.id, organization.id);
+      assert.equal(ownerOrganizations[0]?.role, "owner");
+
+      const invitation = await createDeveloperInvitation(db, {
+        developerId: organization.id,
+        actorCanonicalUserId: ownerId,
+        email: "workspace-member@example.com",
+        role: "analyst"
+      });
+      const workspace = await getDeveloperWorkspace(db, {
+        developerId: organization.id,
+        actorCanonicalUserId: ownerId
+      });
+      assert.equal(workspace.organization.id, organization.id);
+      assert.equal(workspace.organization.role, "owner");
+      assert.equal(workspace.members.length, 1);
+      assert.equal(workspace.members[0]?.canonicalUserId, ownerId);
+      assert.equal(workspace.invitations.length, 1);
+      assert.equal(workspace.invitations[0]?.id, invitation.invitationId);
+      assert.equal(workspace.invitations[0]?.email, "workspace-member@example.com");
+
+      await assert.rejects(
+        () => getDeveloperWorkspace(db, {
+          developerId: organization.id,
+          actorCanonicalUserId: otherUserId
+        }),
+        (error: unknown) => error instanceof MarketplaceDeveloperError && error.code === "NOT_FOUND"
+      );
+      const otherOrganizations = await listDeveloperOrganizations(db, otherUserId);
+      assert.deepEqual(otherOrganizations.map((item) => item.id), [otherOrganization.id]);
     });
 
     await t.test("invitation stores only a SHA-256 token hash and binds acceptance to verified email", async () => {

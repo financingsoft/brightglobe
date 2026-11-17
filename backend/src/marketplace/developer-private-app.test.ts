@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createDeveloperPrivateApp } from "./developer-private-app.js";
-import type { DeveloperRouteDependencies } from "../../../marketplace-api/src/developer-routes.js";
+import type { DeveloperRouteDependencies } from "./developer-routes.js";
 
 const user = {
   canonicalUserId: "018f47b2-5c20-7a00-8000-000000000001",

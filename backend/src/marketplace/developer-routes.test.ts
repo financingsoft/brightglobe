@@ -123,6 +123,16 @@ test("organization and workspace reads are authenticated, tenant-scoped and priv
   assert.equal(workspaceBody.data.invitations[0]?.email, "member@example.com");
 });
 
+test("workspace read endpoints are rate limited by canonical user", async () => {
+  let keys: string[] = [];
+  const { app } = dependencies({
+    rateLimit: async (nextKeys) => { keys = nextKeys; return false; }
+  });
+  const response = await app.request("/developers");
+  assert.equal(response.status, 429);
+  assert.deepEqual(keys, ["user:" + user.canonicalUserId + ":developer-read"]);
+});
+
 test("organization creation is authenticated and always private no-store", async () => {
   const { app } = dependencies();
   const response = await app.request("/developers", {

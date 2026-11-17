@@ -23,7 +23,7 @@ import {
   reserveBgDailyReward
 } from "./bg-reward-engine.js";
 
-const connectionString = process.env.LOCAL_DATABASE_URL;
+const connectionString = process.env.BG_REWARD_TEST_DATABASE_URL ?? process.env.LOCAL_DATABASE_URL;
 const allowRisk = async () => ({ allowed: true, reference: "ci-daily-risk-approval" });
 const denyRisk = async () => ({ allowed: false, reference: "ci-daily-risk-denial" });
 

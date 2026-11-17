@@ -85,6 +85,7 @@ test("Marketplace app draft transactions enforce tenant access, localization and
     ));
     assert.equal(zhRevision?.name, "示例游戏 2");
 
+    await pool.query("UPDATE marketplace.app_listing_revisions SET status = 'published', published_at = now() WHERE app_id = $1 AND content_locale = 'en' AND status = 'draft'", [created.id]);
     await pool.query("UPDATE marketplace.apps SET status = 'published', slug_locked_at = now(), published_at = now() WHERE id = $1", [created.id]);
     await assert.rejects(
       () => updateMarketplaceAppDraft(db, {

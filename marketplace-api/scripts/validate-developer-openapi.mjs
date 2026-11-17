@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 const spec = JSON.parse(readFileSync(new URL("../developer-openapi.json", import.meta.url), "utf8"));
 const failures = [];
 const expected = [
+  ["/api/v1/play/developers", "get", "200"],
+  ["/api/v1/play/developers/{developerId}", "get", "200"],
   ["/api/v1/play/developers", "post", "201"],
   ["/api/v1/play/developers/{developerId}/invitations", "post", "201"],
   ["/api/v1/play/developers/{developerId}/owner-transfer", "post", "201"],

@@ -243,6 +243,13 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
         ),
         /immutable/
       );
+      await assert.rejects(
+        () => pool.query(
+          "UPDATE public.reward_programs SET status = 'draft' WHERE id = $1",
+          [programId]
+        ),
+        /immutable/
+      );
     });
   } finally {
     await pool.end();

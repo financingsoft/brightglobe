@@ -372,9 +372,12 @@ export async function reserveBgDailyReward(
     await transaction.insert(rewardPayoutIntents).values({
       id: payoutIntentId,
       rewardEventId: eventId,
+      treasuryAccountId: treasury.id,
       network: BG_REWARD_NETWORK,
       mintAddress: asset.mintAddress,
+      tokenProgram: asset.tokenProgram,
       sourceTokenAccount: treasury.tokenAccountAddress,
+      feePayerAddress: treasury.feePayerAddress,
       destinationWallet: wallet.address,
       destinationTokenAccount,
       amountBaseUnits: program.rewardBaseUnits,

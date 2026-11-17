@@ -98,6 +98,24 @@ test("member invitation excludes owner role and sends only after creation", asyn
   const body = await response.json() as { data: { invitationId: string; delivery: string } };
   assert.equal(body.data.invitationId, invitationId);
   assert.equal(body.data.delivery, "sent");
+  assert.equal(JSON.stringify(body).includes(invitation.rawToken), false);
+});
+
+test("generic member invitation endpoint cannot assign the Owner role", async () => {
+  let created = false;
+  const base = dependencies();
+  const tx: DeveloperTransactionService = {
+    ...base.transactions,
+    createInvitation: async () => { created = true; return invitation; }
+  };
+  const { app } = dependencies({ transactions: tx });
+  const response = await app.request(`/developers/${developerId}/invitations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "new-owner@example.com", role: "owner" })
+  });
+  assert.equal(response.status, 400);
+  assert.equal(created, false);
 });
 
 test("failed invitation delivery compensates by revoking the unusable invitation", async () => {

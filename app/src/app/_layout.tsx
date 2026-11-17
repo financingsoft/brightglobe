@@ -37,6 +37,7 @@ export default function RootLayout() {
               <Stack.Screen name="settings" />
               <Stack.Screen name="wallet" />
               <Stack.Screen name="bg-wallet" />
+              <Stack.Screen name="bg-rewards" />
               <Stack.Screen name="login" />
               <Stack.Screen name="licenses" />
               <Stack.Screen name="auth/verified" />

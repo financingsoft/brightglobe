@@ -26,15 +26,29 @@ The Worker reads only precomputed rows from `marketplace.public_app_detail_proje
 
 This package is not deployed by this PR. Creating the Worker, configuring secrets, granting database privileges, applying migrations, configuring routes/DNS and Staging deployment require their own explicit approval. The SQL in `migrations/` is a draft and must not be run until the projection publisher/outbox workflow and migration ordering are reviewed.
 
-## Private developer API module status
+## Private developer API boundary
 
-`backend/src/marketplace/developer-routes.ts` defines the authenticated organization/invitation route module and its dependency-injected tests. It is deliberately **not mounted by the public Worker yet**.
+The authenticated organization/invitation route module and its tests live in
+`backend/src/marketplace/developer-routes.ts` and
+`backend/src/marketplace/developer-routes.test.ts`. The separate Worker is
+`globe-play-private` / `globe-play-private-staging`, configured by
+`backend/wrangler.marketplace.jsonc`.
 
-Before mounting, a separate integration task must provide and verify:
-- a server-side canonical identity resolver using the same Better Auth session and canonical UUID mapping as BrightGlobe; wallet-only sessions must not be treated as verified-email sessions;
-- a narrowly scoped transactional Marketplace DB adapter/role, separate from the public projection reader;
-- a verified invitation email delivery adapter and an explicitly configured developer-portal origin;
-- origin/CSRF protections and per-user/per-organization rate limits;
-- runtime integration tests proving tenant isolation, Owner/Admin authorization and owner-transfer confirmation.
+The private Worker is intentionally not mounted by this public read Worker.
+It is routed behind the existing `api.globeapps.com` hostname so the browser
+sends the host-only Better Auth session cookie. It is not exposed on a
+`workers.dev` hostname.
 
-Do not reuse the existing BrightGlobe `globe` Worker or its broad database credentials as a shortcut. Until these gates pass, the private route module is not a live endpoint and the public read Worker remains read-only.
+The code and CI dry-run are present, but the private service is not live. Before
+activation, the following operator-controlled gates remain:
+- create the dedicated Neon application role and apply the reviewed grants;
+- apply the Marketplace schema migration only after explicit Staging approval;
+- provision the matching Better Auth secret, restricted pooled `DATABASE_URL`,
+  dedicated Resend key and verified sender;
+- create and bind the Cloudflare Rate Limiting namespace;
+- bind the exact API path route to the private Worker, after approval;
+- run role-level negative privilege tests and deployed Staging authentication,
+  tenant-isolation, invitation-email and owner-transfer tests.
+
+Do not reuse the public projection reader or the broad BrightGlobe `globe`
+credential. The public read Worker remains anonymous GET-only and SELECT-only.

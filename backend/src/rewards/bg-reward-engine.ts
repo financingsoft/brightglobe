@@ -240,6 +240,7 @@ export async function reserveBgDailyReward(
     }
     if (
       program.perUserLimit !== 1 ||
+      program.approvalReference === null ||
       program.approvedBy === null ||
       program.approvedAt === null ||
       program.rewardBaseUnits <= 0n ||

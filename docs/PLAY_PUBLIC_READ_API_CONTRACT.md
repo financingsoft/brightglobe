@@ -1,6 +1,6 @@
 # Globe Play — Public Read API Contract
 
-**Status:** Draft · Required before public catalogue API implementation  
+**Status:** Draft implementation contract · Public read Worker scaffold implemented; projection publisher and Staging proof pending  
 **Applies to:** `play.globeapps.com`, `globe-play` public read boundary  
 **Depends on:** PLAY_MARKETPLACE_MASTER_CONTRACT.md, PLAY_MARKETPLACE_DATA_CONTRACT.md, PLAY_DATA_MODEL_V2_CONTRACT.md, PLAY_ROUTE_POLICY_MANIFEST.json
 

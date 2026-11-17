@@ -1,0 +1,48 @@
+name: Globe Play Public API CI
+
+on:
+  pull_request:
+    paths:
+      - "marketplace-api/**"
+      - ".github/workflows/globe-play-api.yml"
+      - "docs/PLAY_PUBLIC_READ_API_CONTRACT.md"
+      - "docs/PLAY_ROUTE_POLICY_MANIFEST.json"
+  push:
+    branches: [main, "feat/**"]
+    paths:
+      - "marketplace-api/**"
+      - ".github/workflows/globe-play-api.yml"
+      - "docs/PLAY_PUBLIC_READ_API_CONTRACT.md"
+      - "docs/PLAY_ROUTE_POLICY_MANIFEST.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: globe-play-api-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  public-read-api:
+    name: Validate Globe Play Public Read API
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: marketplace-api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate OpenAPI contract
+        run: node scripts/validate-openapi.mjs
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run unit tests
+        run: npm test
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build Worker without deploying
+        run: npm run build

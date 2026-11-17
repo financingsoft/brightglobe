@@ -97,7 +97,10 @@ export function createDeveloperPrivateApp(options: DeveloperPrivateAppOptions) {
   ));
   app.onError((error, context) => {
     const requestId = crypto.randomUUID();
-    console.error("[globe-play-private] Unhandled request error", { requestId, error });
+    console.error("[globe-play-private] Unhandled request error", {
+      requestId,
+      errorType: error instanceof Error ? error.name : "unknown"
+    });
     return privateError("INTERNAL_SERVER_ERROR", "The request could not be completed.", 503, requestId);
   });
 

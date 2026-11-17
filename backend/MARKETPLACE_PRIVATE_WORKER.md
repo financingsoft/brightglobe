@@ -30,7 +30,8 @@ not the public `globe-play` read Worker and is not the existing BrightGlobe
   file. The actual role must pass negative privilege tests before activation.
 - The Worker uses a dedicated Resend API key for developer invitations.
 - Invitation tokens are placed in the URL fragment, not path/query. The portal
-  must read the fragment and POST the token in the JSON body to
+  must read the fragment, immediately clear it from browser history with
+  `history.replaceState`, and POST the token in the JSON body to
   `/api/v1/play/invitations/accept`. Fragments are not sent in HTTP requests or
   Referer headers.
 - Mutations require an exact allowlisted HTTPS Origin and JSON content type.

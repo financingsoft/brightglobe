@@ -27,16 +27,18 @@ The registry is intentionally empty until a concrete evidence source has been au
 - The insert uses database uniqueness constraints for both the idempotency key and the global issuer/source/source-evidence tuple.
 - A matching idempotency replay returns the existing evidence only after every immutable identity/proof field is compared.
 - Reuse of a source evidence item by another canonical account fails with `SOURCE_EVIDENCE_REPLAY`; a mismatched proof under an existing idempotency key fails closed.
-- The service is internal only. No HTTP claim route, client evidence input, reviewer API, task activation or reward reservation is added.
-- Unit and ephemeral-PostgreSQL integration tests cover invalid verifier output, pending-review persistence, idempotent retry, concurrent duplicate requests, altered-proof conflicts and cross-user source replay.
+- The evidence service is internal only. No HTTP claim route, client evidence input, task activation or reward reservation is added.
+- `backend/src/rewards/bg-task-review-service.ts` adds internal initial-review, owner-appeal and independent appeal-resolution transactions. Reviewer authorization is a required injected server-side policy callback; request payloads cannot grant reviewer privileges. No reviewer role store or HTTP reviewer route is enabled by this change.
+- Initial decisions are append-only; database triggers apply the evidence state transition and audit event in the same transaction. Appeals are restricted to the evidence owner after rejection, can be submitted once, and require a different authorized reviewer for resolution.
+- Ephemeral-PostgreSQL integration tests cover verifier persistence/replay and the review lifecycle, including denied authorization, self-review rejection, owner-only appeal, separation of duties and audit/status transitions.
 
 ## Explicit remaining work before task rewards
 
 1. Inventory authoritative BrightGlobe-owned task evidence sources and trusted provider APIs; document evidence ownership, retention, rate limits and failure semantics for each.
-2. Add task reward configuration/versioning, immutable evidence persistence, unique evidence replay constraints and review/appeal audit records.
+2. Add task reward configuration/versioning and audited source-specific adapters; evidence/review persistence and internal review/appeal transactions now exist.
 3. Implement only the approved adapters, with source-specific integration and adversarial tests.
 4. Connect verified completions to the existing BG reward reservation transaction so evidence, user/task idempotency, budget reservation, reward event and payout intent commit atomically.
-5. Add separately authorized reviewer APIs and ensure public users cannot approve their own tasks.
+5. Integrate the review authorizer with the platform's approved operator/role-management source before exposing any reviewer HTTP API; keep public users unable to approve tasks.
 6. Keep task claim endpoints disabled until all of the above and CI pass.
 
 ## Non-goals

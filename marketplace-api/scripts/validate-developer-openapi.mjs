@@ -10,6 +10,7 @@ const expected = [
   ["/api/v1/play/developers/{developerId}/owner-transfer", "post", "201"],
   ["/api/v1/play/invitations/accept", "post", "200"],
   ["/api/v1/play/developers/{developerId}/invitations/{invitationId}", "delete", "200"],
+  ["/api/v1/play/developers/{developerId}/categories", "get", "200"],
   ["/api/v1/play/developers/{developerId}/apps", "get", "200"],
   ["/api/v1/play/developers/{developerId}/apps", "post", "201"],
   ["/api/v1/play/developers/{developerId}/apps/{appId}", "get", "200"],

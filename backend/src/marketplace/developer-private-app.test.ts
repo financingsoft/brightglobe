@@ -43,6 +43,7 @@ function createApp(options: {
   const appDependencies = {
     resolveIdentity: async () => ({ canonicalUserId: user.canonicalUserId }),
     apps: {
+      listCategories: async () => [],
       listApps: async () => [],
       getApp: async () => ({ id: developerId }),
       createApp: async () => ({ id: developerId }),

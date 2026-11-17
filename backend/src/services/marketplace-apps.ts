@@ -7,6 +7,7 @@ import {
   appListingPlatformTargets,
   auditEvents,
   categories,
+  categoryLocalizations,
   developerMemberships,
   developers
 } from "../db/marketplace-schema.js";
@@ -251,6 +252,23 @@ export async function listMarketplaceApps(db: Database, input: { developerId: st
     byApp.set(revision.appId, entries);
   }
   return appRows.map((app) => ({ ...app, localizations: byApp.get(app.id) ?? [] }));
+}
+
+export async function listMarketplaceCategories(db: Database, input: {
+  developerId: string; actorCanonicalUserId: string; locale: string;
+}) {
+  await requireOrganizationRole(db, input.developerId, input.actorCanonicalUserId, [
+    "owner", "admin", "release_manager", "analyst", "support_readonly"
+  ]);
+  const locale = normalizeLocale(input.locale);
+  return db.select({
+    id: categories.id, slug: categories.slug, parentId: categories.parentId,
+    name: categoryLocalizations.name, sortOrder: categories.sortOrder
+  }).from(categories).leftJoin(categoryLocalizations, and(
+    eq(categoryLocalizations.categoryId, categories.id),
+    eq(categoryLocalizations.locale, locale)
+  )).where(eq(categories.status, "active"))
+    .orderBy(asc(categories.sortOrder), asc(categories.slug)).limit(200);
 }
 
 export async function getMarketplaceApp(db: Database, input: { developerId: string; appId: string; actorCanonicalUserId: string }) {

@@ -39,6 +39,11 @@ GRANT INSERT (
   id, slug, display_name, description, website_url, support_email,
   created_by_canonical_user_id, created_at, updated_at
 ) ON TABLE marketplace.developers TO brightglobe_play_developer_app;
+-- lockDeveloper() uses SELECT ... FOR UPDATE; PostgreSQL requires UPDATE
+-- privilege on at least one column. Only the non-business updated_at column
+-- is writable; lifecycle and verification state remain database/operator-owned.
+GRANT UPDATE (updated_at)
+  ON TABLE marketplace.developers TO brightglobe_play_developer_app;
 
 GRANT SELECT ON TABLE marketplace.developer_memberships TO brightglobe_play_developer_app;
 GRANT INSERT (

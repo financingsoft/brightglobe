@@ -19,7 +19,7 @@ test("invitation token is delivered only in the URL fragment, not path or query"
     from: "BrightGlobe <verified-sender@example.com>",
     linkOrigin: "https://test.globeapps.com"
   });
-  const link = message.text.split("\n").find((line) => line.startsWith("Open this link:"))?.slice("Open this link: ".length);
+  const link = message.text.split("\n").find((line) => line.startsWith("Open this link to continue:"))?.slice("Open this link to continue: ".length);
   assert.ok(link);
   const parsed = new URL(link);
   assert.equal(parsed.pathname, "/invitations/accept");

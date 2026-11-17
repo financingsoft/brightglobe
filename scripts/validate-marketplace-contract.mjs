@@ -95,7 +95,7 @@ if (baseRef && baseRef !== "0000000000000000000000000000000000000000") {
     const changed = execFileSync("git", ["diff", "--name-only", range], { encoding: "utf8" })
       .split("\n").map((p) => p.trim()).filter(Boolean);
     const routeFiles = changed.filter((p) =>
-      /^apps\/play-web\/(?:src\/)?(?:app|pages)\/.+\.(?:tsx?|jsx?)$/.test(p)
+      /^apps\/(?:play-web|developer-web)\/(?:src\/)?(?:app|pages)\/.+\.(?:tsx?|jsx?)$/.test(p)
     );
     if (routeFiles.length > 0 && !changed.includes("docs/PLAY_ROUTE_POLICY_MANIFEST.json")) {
       fail.push(

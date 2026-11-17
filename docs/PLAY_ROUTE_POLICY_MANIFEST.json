@@ -446,7 +446,7 @@
       "cache": "private-no-store",
       "ttlSeconds": 0,
       "seo": "noindex",
-      "locale": "query",
+      "locale": "none",
       "cacheKey": [],
       "invalidationTags": [],
       "notes": "Active Globe-owned category taxonomy localized for the requested locale; developers may select categories but cannot mutate taxonomy.",

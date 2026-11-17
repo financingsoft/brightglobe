@@ -437,6 +437,20 @@
       "invalidationTags": [],
       "notes": "Updates only an editable draft localization; submitted or published revisions cannot be modified.",
       "implementationStatus": "implemented-module"
+    },
+    {
+      "id": "developer-app-category-catalogue-api",
+      "pattern": "/api/v1/play/developers/{developerId}/categories",
+      "surface": "marketplace-api",
+      "access": "authenticated",
+      "cache": "private-no-store",
+      "ttlSeconds": 0,
+      "seo": "noindex",
+      "locale": "query",
+      "cacheKey": [],
+      "invalidationTags": [],
+      "notes": "Active Globe-owned category taxonomy localized for the requested locale; developers may select categories but cannot mutate taxonomy.",
+      "implementationStatus": "implemented-module"
     }
   ]
 }

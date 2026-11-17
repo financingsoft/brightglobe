@@ -18,7 +18,7 @@ GRANT UPDATE (updated_at) ON TABLE public."session" TO brightglobe_play_develope
 -- Canonical identity resolution/provisioning. No identity deletion or canonical
 -- user status mutation. Provider subject remains Better Auth's private ID.
 GRANT SELECT ON TABLE public.canonical_users, public.provider_identities TO brightglobe_play_developer_app;
-GRANT INSERT (id, status, created_at, updated_at)
+GRANT INSERT (id, created_at, updated_at)
   ON TABLE public.canonical_users TO brightglobe_play_developer_app;
 GRANT INSERT (id, canonical_user_id, provider, provider_subject, verified_at, created_at)
   ON TABLE public.provider_identities TO brightglobe_play_developer_app;
@@ -37,8 +37,7 @@ GRANT UPDATE (last_seen_at)
 GRANT SELECT ON TABLE marketplace.developers TO brightglobe_play_developer_app;
 GRANT INSERT (
   id, slug, display_name, description, website_url, support_email,
-  verification_status, status, created_by_canonical_user_id,
-  aggregate_version, created_at, updated_at
+  created_by_canonical_user_id, created_at, updated_at
 ) ON TABLE marketplace.developers TO brightglobe_play_developer_app;
 
 GRANT SELECT ON TABLE marketplace.developer_memberships TO brightglobe_play_developer_app;

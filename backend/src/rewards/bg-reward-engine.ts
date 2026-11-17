@@ -2,6 +2,7 @@ import { and, desc, eq, gt, isNull, lte, or, sql } from "drizzle-orm";
 import type { Database } from "../db/client.js";
 import {
   assetRegistry,
+  canonicalUsers,
   rewardAuditEvents,
   rewardEvents,
   rewardPayoutIntents,
@@ -21,6 +22,7 @@ const SPL_U64_MAX = 18_446_744_073_709_551_615n;
 
 export type BgRewardReservationErrorCode =
   | "CANONICAL_USER_INVALID"
+  | "CANONICAL_USER_INELIGIBLE"
   | "BG_REWARD_NOT_CONFIGURED"
   | "BG_REWARD_NOT_AVAILABLE"
   | "BG_REWARD_RULE_INVALID"
@@ -143,6 +145,20 @@ export async function reserveBgDailyReward(
 
     const existing = await findExisting();
     if (existing) return existing;
+
+    const [canonicalUser] = await transaction.select({
+      id: canonicalUsers.id,
+      status: canonicalUsers.status
+    }).from(canonicalUsers)
+      .where(eq(canonicalUsers.id, input.canonicalUserId))
+      .limit(1)
+      .for("share");
+    if (!canonicalUser || canonicalUser.status !== "active") {
+      throw new BgRewardReservationError(
+        "CANONICAL_USER_INELIGIBLE",
+        "Only an active canonical BrightGlobe account can reserve BG rewards."
+      );
+    }
 
     const [configuration] = await transaction.select({
       program: rewardPrograms,

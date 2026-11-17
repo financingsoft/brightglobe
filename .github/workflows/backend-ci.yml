@@ -51,9 +51,6 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Unit tests
-        run: npm test
-
       - name: Validate Marketplace SQL draft on ephemeral PostgreSQL
         env:
           LOCAL_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/brightglobe_ci
@@ -62,6 +59,11 @@ jobs:
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle-drafts/0022_marketplace_source_schema.sql
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle-drafts/0022_marketplace_source_schema.assertions.sql
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle-drafts/0022_marketplace_source_schema.behavior.sql
+
+      - name: Unit and PostgreSQL integration tests
+        env:
+          LOCAL_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/brightglobe_ci
+        run: npm test
 
       - name: Marketplace Drizzle schema generation (draft only)
         run: |

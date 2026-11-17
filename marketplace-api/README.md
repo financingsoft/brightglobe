@@ -25,3 +25,16 @@ The Worker reads only precomputed rows from `marketplace.public_app_detail_proje
 ## Deployment boundary
 
 This package is not deployed by this PR. Creating the Worker, configuring secrets, granting database privileges, applying migrations, configuring routes/DNS and Staging deployment require their own explicit approval. The SQL in `migrations/` is a draft and must not be run until the projection publisher/outbox workflow and migration ordering are reviewed.
+
+## Private developer API module status
+
+`src/developer-routes.ts` defines the authenticated organization/invitation route module and its dependency-injected tests. It is deliberately **not mounted by the public Worker yet**.
+
+Before mounting, a separate integration task must provide and verify:
+- a server-side canonical identity resolver using the same Better Auth session and canonical UUID mapping as BrightGlobe; wallet-only sessions must not be treated as verified-email sessions;
+- a narrowly scoped transactional Marketplace DB adapter/role, separate from the public projection reader;
+- a verified invitation email delivery adapter and an explicitly configured developer-portal origin;
+- origin/CSRF protections and per-user/per-organization rate limits;
+- runtime integration tests proving tenant isolation, Owner/Admin authorization and owner-transfer confirmation.
+
+Do not reuse the existing BrightGlobe `globe` Worker or its broad database credentials as a shortcut. Until these gates pass, the private route module is not a live endpoint and the public read Worker remains read-only.

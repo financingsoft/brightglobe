@@ -231,12 +231,10 @@ export async function reserveBgDailyReward(
       );
     }
 
-    const [sourceAta] = await Promise.all([
-      deriveClassicSplAssociatedTokenAddress({
-        ownerAddress: treasury.treasuryWalletAddress,
-        mintAddress: asset.mintAddress
-      })
-    ]);
+    const sourceAta = await deriveClassicSplAssociatedTokenAddress({
+      ownerAddress: treasury.treasuryWalletAddress,
+      mintAddress: asset.mintAddress
+    });
     if (sourceAta !== treasury.tokenAccountAddress) {
       throw new BgRewardReservationError(
         "BG_TREASURY_NOT_CONFIGURED",

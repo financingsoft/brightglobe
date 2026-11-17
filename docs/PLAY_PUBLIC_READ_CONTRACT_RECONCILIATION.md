@@ -19,6 +19,19 @@ The public app detail and reviews routes read precomputed projection tables, val
 
 The projection event schema and dependency-injected projector core exist. The production outbox writer, relay, Queue consumer, Neon event-store adapter, Cloudflare purge adapter, replay/operations and Staging proof remain incomplete.
 
+## 1A. Additional source-schema and authorization evidence (verified 2026-11-17)
+
+A deeper source review refines the implementation gap:
+
+- `backend/src/db/marketplace-schema.ts` already declares `domainOutbox`, `projectionEventReceipts` and `projectionAggregateWatermarks`.
+- `backend/drizzle-drafts/0022_marketplace_source_schema.sql` already contains the corresponding tables, indexes, constraints and outbox immutability guard.
+- CI validates this SQL against an ephemeral PostgreSQL instance. `backend/drizzle.marketplace.config.ts` writes generated SQL under `drizzle-drafts/generated`; this is draft-only and is not evidence that the schema has been applied to Neon Staging or Production.
+- `0023_marketplace_private_worker_role_grants.sql` deliberately grants the current private developer role no access to app listing, projection or outbox tables, and no Queue bindings or purge credentials.
+- `backend/src/services/marketplace-apps.ts` currently creates and updates draft listings and writes audit events. It does not insert `domain_outbox` rows. The current private Worker exposes draft CRUD, not an approved publication transaction.
+- The SQL behavior test inserts sample outbox rows to validate constraints; that test fixture is not a production event producer.
+
+Therefore, do not create duplicate outbox/receipt/watermark DDL as the next task. The missing work is the approved source-side publication transaction and event builder, plus separate least-privilege relay/projector execution, durable adapters and Queue/purge operations. Keep the existing private developer role isolated.
+
 ## 2. Decision proposal summary
 
 | ID | Proposal | Why it must be settled before implementation |
@@ -151,7 +164,7 @@ SSR behavior:
 
 ## 10. P8 — Projection adapter interface and retry semantics
 
-Before writing DDL or runtime bindings, define concrete adapters for the existing core interfaces.
+Before adding any new DDL or runtime bindings, define concrete adapters for the existing core interfaces. Reuse and reconcile the existing draft outbox/receipt/watermark schema; do not duplicate it. No schema is considered deployed until an explicitly approved migration has been applied and verified.
 
 ### Durable store
 One Neon transaction must:
@@ -195,7 +208,7 @@ If these decisions are accepted, implement them in one coordinated contract upda
 
 1. Approve this proposal and reconcile the detailed contracts.
 2. Add deterministic source-side event/tag builder and tests.
-3. Implement outbox writer/relay, Queue consumer, Neon event store and Cloudflare purge adapter behind Staging-only configuration.
+3. Implement the approved publication transaction/source-side outbox writer and tag builder, then the relay, Queue consumer, Neon event store and Cloudflare purge adapter behind Staging-only configuration. Reuse the existing draft schema and keep the current developer Worker DB role out of the projection write path.
 4. Add public catalogue/category/search read endpoints and projection schemas.
 5. Connect home/category/search UI and sitemap generation.
 6. Add collections only if CMS composition and publication guarantees are proven.

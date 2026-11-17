@@ -470,7 +470,7 @@
       "post": {
         "operationId": "initiateDeveloperOwnerTransfer",
         "summary": "Initiate an owner transfer",
-        "description": "Only the current Owner can initiate. The recipient must accept with a verified email session before ownership changes.",
+        "description": "Requires a verified email session. Only the current Owner can initiate. The recipient must accept with a verified email session before ownership changes.",
         "parameters": [
           {
             "name": "developerId",

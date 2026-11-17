@@ -95,7 +95,7 @@ const worker = {
         linkOrigin: configuration.linkOrigin
       });
       const transactions = {
-        listOrganizations: (input: Parameters<typeof listDeveloperOrganizations>[1]) =>
+        listOrganizations: (input: { actorCanonicalUserId: string }) =>
           listDeveloperOrganizations(db, input.actorCanonicalUserId),
         getWorkspace: (input: Parameters<typeof getDeveloperWorkspace>[1]) =>
           getDeveloperWorkspace(db, input),

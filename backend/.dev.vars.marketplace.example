@@ -12,7 +12,7 @@ DEVELOPER_PORTAL_ORIGINS=https://test.globeapps.com
 DEVELOPER_API_PATH_PREFIX=/staging/play-private
 DEVELOPER_INVITATION_LINK_ORIGIN=https://test.globeapps.com
 DEVELOPER_INVITATION_RESEND_API_KEY=re_replace_with_dedicated_staging_key
-DEVELOPER_INVITATION_EMAIL_FROM=BrightGlobe <noreply@go.globeapps.com>
+DEVELOPER_INVITATION_EMAIL_FROM=BrightGlobe <verified-sender@example.com>
 
 # Configure a real Cloudflare Rate Limiting binding in wrangler.marketplace.jsonc
 # before running or deploying the private Worker. It intentionally fails closed

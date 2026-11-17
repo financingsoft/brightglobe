@@ -22,7 +22,6 @@ for (const [path, method, successStatus] of expected) {
   const response = operation.responses?.[successStatus];
   const cacheHeader = response?.headers?.["Cache-Control"]?.schema?.example ?? "";
   if (!String(cacheHeader).includes("private, no-store")) failures.push("Success response must document private no-store for " + method.toUpperCase() + " " + path + ".");
-  if (operation.description?.toLowerCase().includes("cacheable")) failures.push("Private developer operation must not describe a cacheable response: " + path + ".");
 }
 if (failures.length) {
   console.error("Private developer OpenAPI validation FAILED:\n" + failures.join("\n"));

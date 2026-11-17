@@ -35,6 +35,35 @@ ALTER TABLE "reward_programs"
   ADD CONSTRAINT "reward_programs_active_approval_check"
   CHECK ("status" <> 'active' OR ("approved_by" IS NOT NULL AND "approved_at" IS NOT NULL));
 --> statement-breakpoint
+ALTER TABLE "reward_payout_intents"
+  ADD COLUMN "treasury_account_id" uuid NOT NULL REFERENCES "treasury_accounts"("id") ON DELETE RESTRICT,
+  ADD COLUMN "token_program" varchar(64) NOT NULL,
+  ADD COLUMN "fee_payer_address" varchar(44) NOT NULL,
+  ADD COLUMN "recent_blockhash" varchar(44),
+  ADD COLUMN "last_valid_block_height" bigint,
+  ADD COLUMN "confirmed_slot" bigint,
+  ADD COLUMN "finalized_slot" bigint,
+  ADD COLUMN "reconciliation_metadata" jsonb NOT NULL DEFAULT '{}'::jsonb,
+  ADD CONSTRAINT "reward_payout_intents_token_program_check"
+    CHECK ("token_program" = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
+  ADD CONSTRAINT "reward_payout_intents_last_valid_height_check"
+    CHECK ("last_valid_block_height" IS NULL OR "last_valid_block_height" >= 0),
+  ADD CONSTRAINT "reward_payout_intents_confirmed_slot_check"
+    CHECK ("confirmed_slot" IS NULL OR "confirmed_slot" >= 0),
+  ADD CONSTRAINT "reward_payout_intents_finalized_slot_check"
+    CHECK ("finalized_slot" IS NULL OR "finalized_slot" >= 0),
+  ADD CONSTRAINT "reward_payout_intents_slot_order_check"
+    CHECK ("confirmed_slot" IS NULL OR "finalized_slot" IS NULL OR "finalized_slot" >= "confirmed_slot"),
+  ADD CONSTRAINT "reward_payout_intents_confirmed_evidence_check"
+    CHECK ("status" <> 'confirmed' OR ("chain_signature" IS NOT NULL AND "confirmed_slot" IS NOT NULL)),
+  ADD CONSTRAINT "reward_payout_intents_finalized_slot_required_check"
+    CHECK ("status" NOT IN ('finalized', 'paid') OR "finalized_slot" IS NOT NULL),
+  ADD CONSTRAINT "reward_payout_intents_signed_blockhash_check"
+    CHECK ("status" NOT IN ('signed', 'submitted', 'confirmed', 'finalized', 'paid') OR ("recent_blockhash" IS NOT NULL AND "last_valid_block_height" IS NOT NULL));
+--> statement-breakpoint
+CREATE INDEX "reward_payout_intents_treasury_idx"
+  ON "reward_payout_intents" ("treasury_account_id", "created_at");
+--> statement-breakpoint
 CREATE OR REPLACE FUNCTION prevent_reward_program_rule_mutation() RETURNS trigger AS $bg$
 BEGIN
   IF OLD."status" <> 'draft' AND (

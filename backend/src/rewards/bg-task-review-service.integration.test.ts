@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { eq } from "drizzle-orm";
 import { Pool as PgPool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Database } from "../db/client.js";
@@ -128,12 +129,13 @@ test("BG task review and appeal services enforce authorization, ownership and in
     assert.equal(resolution.status, "approved");
 
     const [finalEvidence] = await db.select().from(bgTaskEvidenceRecords)
-      .where((await import("drizzle-orm")).eq(bgTaskEvidenceRecords.id, persisted.evidenceId));
+      .where(eq(bgTaskEvidenceRecords.id, persisted.evidenceId));
     const [finalAppeal] = await db.select().from(bgTaskAppeals)
-      .where((await import("drizzle-orm")).eq(bgTaskAppeals.id, appeal.appealId));
-    const decisions = await db.select().from(bgTaskReviewDecisions);
+      .where(eq(bgTaskAppeals.id, appeal.appealId));
+    const decisions = await db.select().from(bgTaskReviewDecisions)
+      .where(eq(bgTaskReviewDecisions.evidenceId, persisted.evidenceId));
     const audit = await db.select().from(bgTaskAuditEvents)
-      .where((await import("drizzle-orm")).eq(bgTaskAuditEvents.evidenceId, persisted.evidenceId));
+      .where(eq(bgTaskAuditEvents.evidenceId, persisted.evidenceId));
 
     assert.equal(finalEvidence?.status, "approved");
     assert.equal(finalAppeal?.status, "resolved");

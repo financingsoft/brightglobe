@@ -16,7 +16,6 @@ import {
 } from "../db/schema.js";
 import { CLASSIC_SPL_TOKEN_PROGRAM_ID } from "../blockchain/solana/token/classic-token.js";
 import { deriveClassicSplAssociatedTokenAddress } from "../blockchain/solana/transfer-builder.js";
-import { encodeBase58 } from "../auth/wallet/base58.js";
 import { createUuidV7 } from "../identity/ids.js";
 import {
   BG_DAILY_COLLECTION_PROGRAM_KEY,
@@ -27,13 +26,23 @@ import {
 const connectionString = process.env.LOCAL_DATABASE_URL;
 
 function testAddress(seed: number): string {
+  const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
   const bytes = new Uint8Array(32);
   let value = BigInt(seed);
   for (let index = bytes.length - 1; index >= 0; index -= 1) {
     bytes[index] = Number(value & 0xffn);
     value >>= 8n;
   }
-  return encodeBase58(bytes);
+  let number = 0n;
+  for (const byte of bytes) number = number * 256n + BigInt(byte);
+  let encoded = "";
+  while (number > 0n) {
+    const remainder = Number(number % 58n);
+    encoded = alphabet[remainder]! + encoded;
+    number /= 58n;
+  }
+  const leadingZeroes = bytes.findIndex((byte) => byte !== 0);
+  return "1".repeat(leadingZeroes === -1 ? bytes.length : leadingZeroes) + encoded;
 }
 
 test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL", {

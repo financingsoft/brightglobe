@@ -97,6 +97,7 @@
       ],
       "invalidationTags": [
         "app:{slug}",
+        "app:{slug}:rating",
         "developer",
         "category",
         "locale"
@@ -254,6 +255,7 @@
       ],
       "invalidationTags": [
         "app:{slug}",
+        "app:{slug}:rating",
         "developer",
         "category",
         "locale"

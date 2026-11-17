@@ -285,7 +285,7 @@
     },
     {
       "id": "developer-organization-create-api",
-      "pattern": "POST /api/v1/play/developers",
+      "pattern": "/api/v1/play/developers",
       "surface": "marketplace-api",
       "access": "authenticated",
       "cache": "private-no-store",
@@ -299,7 +299,7 @@
     },
     {
       "id": "developer-invitation-create-api",
-      "pattern": "POST /api/v1/play/developers/{developerId}/invitations",
+      "pattern": "/api/v1/play/developers/{developerId}/invitations",
       "surface": "marketplace-api",
       "access": "authenticated",
       "cache": "private-no-store",
@@ -313,7 +313,7 @@
     },
     {
       "id": "developer-owner-transfer-api",
-      "pattern": "POST /api/v1/play/developers/{developerId}/owner-transfer",
+      "pattern": "/api/v1/play/developers/{developerId}/owner-transfer",
       "surface": "marketplace-api",
       "access": "authenticated",
       "cache": "private-no-store",
@@ -327,7 +327,7 @@
     },
     {
       "id": "developer-invitation-accept-api",
-      "pattern": "POST /api/v1/play/invitations/accept",
+      "pattern": "/api/v1/play/invitations/accept",
       "surface": "marketplace-api",
       "access": "authenticated",
       "cache": "private-no-store",
@@ -341,7 +341,7 @@
     },
     {
       "id": "developer-invitation-revoke-api",
-      "pattern": "DELETE /api/v1/play/developers/{developerId}/invitations/{invitationId}",
+      "pattern": "/api/v1/play/developers/{developerId}/invitations/{invitationId}",
       "surface": "marketplace-api",
       "access": "authenticated",
       "cache": "private-no-store",

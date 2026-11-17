@@ -28,7 +28,7 @@ This package is not deployed by this PR. Creating the Worker, configuring secret
 
 ## Private developer API module status
 
-`src/developer-routes.ts` defines the authenticated organization/invitation route module and its dependency-injected tests. It is deliberately **not mounted by the public Worker yet**.
+`backend/src/marketplace/developer-routes.ts` defines the authenticated organization/invitation route module and its dependency-injected tests. It is deliberately **not mounted by the public Worker yet**.
 
 Before mounting, a separate integration task must provide and verify:
 - a server-side canonical identity resolver using the same Better Auth session and canonical UUID mapping as BrightGlobe; wallet-only sessions must not be treated as verified-email sessions;

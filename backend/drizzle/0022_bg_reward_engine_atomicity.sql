@@ -38,6 +38,7 @@ ALTER TABLE "reward_programs"
 CREATE OR REPLACE FUNCTION prevent_reward_program_rule_mutation() RETURNS trigger AS $$
 BEGIN
   IF OLD."status" <> 'draft' AND (
+    NEW."status" = 'draft' OR
     NEW."asset_id" IS DISTINCT FROM OLD."asset_id" OR
     NEW."program_key" IS DISTINCT FROM OLD."program_key" OR
     NEW."action_type" IS DISTINCT FROM OLD."action_type" OR

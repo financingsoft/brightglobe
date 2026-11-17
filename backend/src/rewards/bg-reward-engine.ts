@@ -166,7 +166,17 @@ export async function reserveBgDailyReward(
       );
     }
 
-    const { program, asset } = configuration;
+    const { program, asset: candidateAsset } = configuration;
+    const [asset] = await transaction.select().from(assetRegistry)
+      .where(eq(assetRegistry.id, candidateAsset.id))
+      .limit(1)
+      .for("share");
+    if (!asset) {
+      throw new BgRewardReservationError(
+        "BG_ASSET_NOT_CONFIGURED",
+        "The configured BG Devnet asset is unavailable."
+      );
+    }
     if (
       program.startsAt > now ||
       (program.endsAt !== null && program.endsAt <= now)
@@ -211,7 +221,8 @@ export async function reserveBgDailyReward(
         eq(treasuryAccounts.network, BG_REWARD_NETWORK),
         eq(treasuryAccounts.status, "active")
       ))
-      .limit(1);
+      .limit(1)
+      .for("share");
     if (
       !treasury ||
       treasury.mintAddress !== asset.mintAddress ||
@@ -249,7 +260,8 @@ export async function reserveBgDailyReward(
         lte(walletOwnerships.verifiedAt, now)
       ))
       .orderBy(desc(walletOwnerships.createdAt), desc(walletOwnerships.id))
-      .limit(2);
+      .limit(2)
+      .for("share");
     if (wallets.length === 0) {
       throw new BgRewardReservationError(
         "BG_WALLET_REQUIRED",

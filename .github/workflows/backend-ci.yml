@@ -61,6 +61,7 @@ jobs:
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public.provider_identities (id uuid PRIMARY KEY, canonical_user_id uuid NOT NULL, provider varchar(32) NOT NULL, provider_subject varchar(256) NOT NULL, verified_at timestamptz, created_at timestamptz NOT NULL DEFAULT now());'
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public.identity_audit_events (id uuid PRIMARY KEY, canonical_user_id uuid, event_type varchar(64), actor_type varchar(24), actor_id varchar(256), metadata jsonb, created_at timestamptz);'
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public.wallet_sessions (id uuid PRIMARY KEY, last_seen_at timestamptz NOT NULL DEFAULT now(), revoked_at timestamptz);'
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public.canonical_user_profiles (canonical_user_id uuid PRIMARY KEY, display_name varchar(48), locale varchar(16), bio varchar(160));'
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE ROLE brightglobe_play_developer_app NOLOGIN;'
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle-drafts/0022_marketplace_source_schema.sql
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle-drafts/0022_marketplace_source_schema.assertions.sql

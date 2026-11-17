@@ -60,10 +60,11 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
     mintAddress
   });
 
-  async function addUser(walletCount = 1): Promise<string> {
+  async function addUser(walletCount = 1, status = "active"): Promise<string> {
     const canonicalUserId = createUuidV7(now.getTime());
     await db.insert(canonicalUsers).values({
       id: canonicalUserId,
+      status,
       createdAt: now,
       updatedAt: now
     });
@@ -237,6 +238,12 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
       await assert.rejects(
         () => reserveBgDailyReward(db, { canonicalUserId: noWalletUser, now }),
         (error: unknown) => error instanceof BgRewardReservationError && error.code === "BG_WALLET_REQUIRED"
+      );
+
+      const suspendedUser = await addUser(1, "suspended");
+      await assert.rejects(
+        () => reserveBgDailyReward(db, { canonicalUserId: suspendedUser, now }),
+        (error: unknown) => error instanceof BgRewardReservationError && error.code === "CANONICAL_USER_INELIGIBLE"
       );
 
       const ambiguousUser = await addUser(2);

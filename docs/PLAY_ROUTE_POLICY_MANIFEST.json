@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contractVersion": "1.0",
+  "status": "planned-route-contract",
+  "note": "Normative route inventory for implementation. It is not evidence these routes exist or that runtime cache/SEO behavior is verified.",
+  "routes": [
+    {
+      "id": "home",
+      "pattern": "/{locale}",
+      "surface": "play-web",
+      "access": "public",
+      "cache": "public-edge",
+      "ttlSeconds": 300,
+      "seo": "indexable",
+      "locale": "path",
+      "cacheKey": [
+        "locale",
+        "path"
+      ],
+      "invalidationTags": [
+        "site-home",
+        "locale"
+      ],
+      "notes": "Localized public landing page."
+    },
+    {
+      "id": "category-index",
+      "pattern": "/{locale}/categories",
+      "surface": "play-web",
+      "access": "public",
+      "cache": "public-edge",
+      "ttlSeconds": 900,
+      "seo": "indexable",
+      "locale": "path",
+      "cacheKey": [
+        "locale",
+        "path"
+      ],
+      "invalidationTags": [
+        "category-index",
+        "locale"
+      ],
+      "notes": "Published category catalogue only."
+    },
+    {
+      "id": "category-detail",
+      "pattern": "/{locale}/categories/{slug}",
+      "surface": "play-web",
+      "access": "public",
+      "cache": "public-edge",
+      "ttlSeconds": 900,
+      "seo": "indexable",
+      "locale": "path",
+      "cacheKey": [
+        "locale",
+        "path"
+      ],
+      "invalidationTags": [
+        "category:{slug}",
+        "locale"
+      ],
+      "notes": "Published category projection."
+    },
+    {
+      "id": "collection-detail",
+      "pattern": "/{locale}/collections/{slug}",
+      "surface": "play-web",
+      "access": "public",
+      "cache": "public-edge",
+      "ttlSeconds": 600,
+      "seo": "indexable",
+      "locale": "path",
+      "cacheKey": [
+        "locale",
+        "path"
+      ],
+      "invalidationTags": [
+        "collection:{slug}",
+        "locale"
+      ],
+      "notes": "Published collection only."
+    },
+    {
+      "id": "app-detail",
+      "pattern": "/{locale}/apps/{slug}",
+      "surface": "play-web",
+      "access": "public",
+      "cache": "public-edge",
+      "ttlSeconds": 600,
+      "seo": "indexable",
+      "locale": "path",
+      "cacheKey": [
+        "locale",
+        "path"
+      ],
+      "invalidationTags": [
+        "app:{slug}",
+        "developer",
+        "category",
+        "locale"
+      ],
+      "notes": "Published app projection only."
+    },
+    {
+      "id": "app-reviews",
+      "pattern": "/{locale}/apps/{slug}/reviews",
+      "surface": "play-web",
+      "access": "public",
+      "cache": "public-edge",
+      "ttlSeconds": 120,
+      "seo": "conditional",
+      "locale": "path",
+      "cacheKey": [
+        "locale",
+        "path",
+        "page"
+      ],
+      "invalidationTags": [
+        "app:{slug}:reviews",
+        "app:{slug}:rating",
+        "locale"
+      ],
+      "notes": "Index only after review quality/moderation thresholds; bounded pagination."
+    },
+    {
+      "id": "developer-profile",
+      "pattern": "/{locale}/developers/{slug}",
+      "surface": "play-web",
+      "access": "public",
+      "cache": "public-edge",
+      "ttlSeconds": 600,
+      "seo": "indexable",
+      "locale": "path",
+      "cacheKey": [
+        "locale",
+        "path"
+      ],
+      "invalidationTags": [
+        "developer:{slug}",
+        "locale"
+      ],
+      "notes": "Published profile fields only."
+    },
+    {
+      "id": "editorial-article",
+      "pattern": "/{locale}/articles/{slug}",
+      "surface": "play-web",
+      "access": "public",
+      "cache": "public-edge",
+      "ttlSeconds": 900,
+      "seo": "indexable",
+      "locale": "path",
+      "cacheKey": [
+        "locale",
+        "path"
+      ],
+      "invalidationTags": [
+        "article:{slug}",
+        "locale"
+      ],
+      "notes": "Published editorial content only."
+    },
+    {
+      "id": "search",
+      "pattern": "/{locale}/search",
+      "surface": "play-web",
+      "access": "public",
+      "cache": "public-edge",
+      "ttlSeconds": 60,
+      "seo": "noindex",
+      "locale": "path",
+      "cacheKey": [
+        "locale",
+        "normalized-query",
+        "bounded-filters",
+        "page"
+      ],
+      "invalidationTags": [
+        "search-index",
+        "locale"
+      ],
+      "notes": "Normalize query and allowlist filters; never index arbitrary query combinations."
+    },
+    {
+      "id": "account",
+      "pattern": "/{locale}/account",
+      "surface": "play-web",
+      "access": "authenticated",
+      "cache": "private-no-store",
+      "ttlSeconds": 0,
+      "seo": "noindex",
+      "locale": "path",
+      "cacheKey": [],
+      "invalidationTags": [],
+      "notes": "User-specific data; shared cache forbidden."
+    },
+    {
+      "id": "library",
+      "pattern": "/{locale}/library",
+      "surface": "play-web",
+      "access": "authenticated",
+      "cache": "private-no-store",
+      "ttlSeconds": 0,
+      "seo": "noindex",
+      "locale": "path",
+      "cacheKey": [],
+      "invalidationTags": [],
+      "notes": "Bookmarks, follows and download history are private."
+    },
+    {
+      "id": "developer-console",
+      "pattern": "/open/**",
+      "surface": "developer-console",
+      "access": "authenticated",
+      "cache": "private-no-store",
+      "ttlSeconds": 0,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [],
+      "invalidationTags": [],
+      "notes": "Tenant-scoped developer workspace; never shared cache."
+    },
+    {
+      "id": "admin-console",
+      "pattern": "/admin/**",
+      "surface": "admin-console",
+      "access": "privileged",
+      "cache": "private-no-store",
+      "ttlSeconds": 0,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [],
+      "invalidationTags": [],
+      "notes": "Privileged operations; never shared cache."
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+name: Globe Play Contract Guard
+
+on:
+  # Run on every PR, including code-only changes. Contract checks must not be
+  # bypassable by changing application code without touching documentation.
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main, "feat/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: marketplace-contract-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    name: Validate Marketplace Contracts and Route Policies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate mandatory contracts and route cache/SEO policy
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: node scripts/validate-marketplace-contract.mjs
+      - name: Install Globe Play Web dependencies
+        if: hashFiles('apps/play-web/package.json') != ''
+        working-directory: apps/play-web
+        run: npm install --no-audit --no-fund
+      - name: Validate Globe Play Web locale catalogs
+        if: hashFiles('apps/play-web/package.json') != ''
+        working-directory: apps/play-web
+        run: npm run validate:locales
+      - name: Typecheck Globe Play Web
+        if: hashFiles('apps/play-web/package.json') != ''
+        working-directory: apps/play-web
+        run: npm run typecheck
+      - name: Build Globe Play Web
+        if: hashFiles('apps/play-web/package.json') != ''
+        working-directory: apps/play-web
+        run: npm run build
+

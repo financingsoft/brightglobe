@@ -55,10 +55,18 @@ jobs:
         env:
           LOCAL_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/brightglobe_ci
         run: |
-          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public.canonical_users (id uuid PRIMARY KEY);'
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public.canonical_users (id uuid PRIMARY KEY, status varchar(16) NOT NULL DEFAULT ''active'', created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now());'
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public."user" (id text PRIMARY KEY, email text NOT NULL);'
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public."session" (id text PRIMARY KEY, token text NOT NULL, updated_at timestamptz NOT NULL DEFAULT now());'
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public.provider_identities (id uuid PRIMARY KEY, canonical_user_id uuid NOT NULL, provider varchar(32) NOT NULL, provider_subject varchar(256) NOT NULL, verified_at timestamptz, created_at timestamptz NOT NULL DEFAULT now());'
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public.identity_audit_events (id uuid PRIMARY KEY, canonical_user_id uuid, event_type varchar(64) NOT NULL, actor_type varchar(24) NOT NULL, actor_id varchar(256), metadata jsonb NOT NULL DEFAULT ''{}''::jsonb, created_at timestamptz NOT NULL DEFAULT now());'
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public.wallet_sessions (id uuid PRIMARY KEY, last_seen_at timestamptz NOT NULL DEFAULT now(), revoked_at timestamptz);'
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE ROLE brightglobe_play_developer_app NOLOGIN;'
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle-drafts/0022_marketplace_source_schema.sql
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle-drafts/0022_marketplace_source_schema.assertions.sql
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle-drafts/0022_marketplace_source_schema.behavior.sql
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle-drafts/0023_marketplace_private_worker_role_grants.sql
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle-drafts/0023_marketplace_private_worker_role_grants.assertions.sql
 
       - name: Unit and PostgreSQL integration tests
         env:

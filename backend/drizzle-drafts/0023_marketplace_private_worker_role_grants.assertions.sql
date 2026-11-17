@@ -34,6 +34,8 @@ BEGIN
      OR NOT has_column_privilege(v_role, 'marketplace.developers', 'slug', 'INSERT')
      OR has_column_privilege(v_role, 'marketplace.developers', 'status', 'INSERT')
      OR has_column_privilege(v_role, 'marketplace.developers', 'verification_status', 'INSERT')
+     OR NOT has_column_privilege(v_role, 'marketplace.developers', 'updated_at', 'UPDATE')
+     OR has_column_privilege(v_role, 'marketplace.developers', 'status', 'UPDATE')
      OR has_table_privilege(v_role, 'marketplace.developers', 'DELETE') THEN
     RAISE EXCEPTION 'developer organization grants exceed the required create/read scope';
   END IF;

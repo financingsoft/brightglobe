@@ -65,7 +65,7 @@ const worker = {
       configuration = readPrivateConfiguration(bindings);
     } catch (error) {
       console.error("[globe-play-private] Invalid runtime configuration", {
-        error: error instanceof Error ? error.message : "unknown"
+        errorType: error instanceof Error ? error.name : "unknown"
       });
       return Response.json({
         error: {
@@ -120,7 +120,9 @@ const worker = {
       // The Neon pool and Better Auth adapter are request-scoped in Workers.
       return await app.fetch(request);
     } catch (error) {
-      console.error("[globe-play-private] Request failed", error);
+      console.error("[globe-play-private] Request failed", {
+        errorType: error instanceof Error ? error.name : "unknown"
+      });
       return Response.json({
         error: { code: "SERVICE_UNAVAILABLE", message: "The developer platform is temporarily unavailable." }
       }, {
@@ -129,7 +131,9 @@ const worker = {
       });
     } finally {
       await pool.end().catch((error: unknown) => {
-        console.error("[globe-play-private] Database pool cleanup failed", error);
+        console.error("[globe-play-private] Database pool cleanup failed", {
+          errorType: error instanceof Error ? error.name : "unknown"
+        });
       });
     }
   }

@@ -11,6 +11,7 @@ function setup(overrides: Partial<DeveloperAppRouteDependencies> = {}) {
   const base: DeveloperAppRouteDependencies = {
     resolveIdentity: async () => user,
     apps: {
+      listCategories: async (input) => { calls.push("categories:" + input.locale); return []; },
       listApps: async (input) => { calls.push("list:" + input.developerId); return []; },
       getApp: async (input) => { calls.push("get:" + input.appId); return { id: appId, status: "draft" }; },
       createApp: async (input) => { calls.push("create:" + input.actorCanonicalUserId); return { id: appId, status: "draft" }; },
@@ -19,6 +20,21 @@ function setup(overrides: Partial<DeveloperAppRouteDependencies> = {}) {
   };
   return { app: createDeveloperAppRoutes({ ...base, ...overrides }), calls };
 }
+
+test("category catalogue is authenticated, localized and private no-store", async () => {
+  const { app, calls } = setup();
+  const response = await app.request("/developers/" + developerId + "/categories?locale=zh-CN");
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("Cache-Control"), "private, no-store, max-age=0");
+  assert.deepEqual(calls, ["categories:zh-CN"]);
+});
+
+test("category catalogue rejects malformed locale", async () => {
+  const { app, calls } = setup();
+  const response = await app.request("/developers/" + developerId + "/categories?locale=../../private");
+  assert.equal(response.status, 400);
+  assert.deepEqual(calls, []);
+});
 
 test("app list is authenticated, tenant-scoped and private no-store", async () => {
   const { app, calls } = setup();

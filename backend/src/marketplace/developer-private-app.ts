@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
 import type { DeveloperRouteDependencies } from "./developer-routes.js";
 import { createDeveloperRoutes } from "./developer-routes.js";
@@ -13,7 +14,7 @@ export interface DeveloperPrivateAppOptions {
   rateLimiter: DeveloperRateLimitBinding;
 }
 
-function privateError(code: string, message: string, status: 400 | 403 | 404 | 415 | 429 | 503, requestId: string) {
+function privateError(code: string, message: string, status: 400 | 403 | 404 | 413 | 415 | 429 | 503, requestId: string) {
   return Response.json({ error: { code, message, requestId } }, {
     status,
     headers: {
@@ -46,6 +47,16 @@ export function createDeveloperPrivateApp(options: DeveloperPrivateAppOptions) {
     allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
     credentials: true,
     maxAge: 600
+  }));
+
+  app.use("/api/v1/play/*", bodyLimit({
+    maxSize: 32 * 1024,
+    onError: () => privateError(
+      "PAYLOAD_TOO_LARGE",
+      "The developer request body exceeds the allowed size.",
+      413,
+      crypto.randomUUID()
+    )
   }));
 
   app.use("*", async (context, next) => {

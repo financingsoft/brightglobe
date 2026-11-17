@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, gt, isNull } from "drizzle-orm";
 import type { Database } from "../db/client.js";
 import {
   auditEvents,
@@ -6,6 +6,7 @@ import {
   developerMemberships,
   developers
 } from "../db/marketplace-schema.js";
+import { canonicalUserProfiles } from "../db/schema.js";
 import { createUuidV7 } from "../identity/ids.js";
 
 const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -511,4 +512,98 @@ export async function revokeDeveloperInvitation(
     }));
     return { invitationId: invitation.id, revokedAt: now };
   });
+}
+
+
+/** List only organizations in which the current canonical user is an active member. */
+export async function listDeveloperOrganizations(db: Database, actorCanonicalUserId: string) {
+  return db.select({
+    id: developers.id,
+    slug: developers.slug,
+    displayName: developers.displayName,
+    status: developers.status,
+    verificationStatus: developers.verificationStatus,
+    createdAt: developers.createdAt,
+    role: developerMemberships.role
+  })
+    .from(developerMemberships)
+    .innerJoin(developers, eq(developers.id, developerMemberships.developerId))
+    .where(and(
+      eq(developerMemberships.canonicalUserId, actorCanonicalUserId),
+      eq(developerMemberships.status, "active")
+    ))
+    .orderBy(asc(developers.displayName), asc(developers.id));
+}
+
+/**
+ * Return a tenant-scoped workspace. A missing or inaccessible organization
+ * deliberately produces the same NOT_FOUND result to prevent ID enumeration.
+ */
+export async function getDeveloperWorkspace(
+  db: Database,
+  input: { developerId: string; actorCanonicalUserId: string }
+) {
+  const [organization] = await db.select({
+    id: developers.id,
+    slug: developers.slug,
+    displayName: developers.displayName,
+    description: developers.description,
+    websiteUrl: developers.websiteUrl,
+    supportEmail: developers.supportEmail,
+    status: developers.status,
+    verificationStatus: developers.verificationStatus,
+    createdAt: developers.createdAt,
+    role: developerMemberships.role
+  })
+    .from(developers)
+    .innerJoin(developerMemberships, eq(developerMemberships.developerId, developers.id))
+    .where(and(
+      eq(developers.id, input.developerId),
+      eq(developerMemberships.canonicalUserId, input.actorCanonicalUserId),
+      eq(developerMemberships.status, "active")
+    ))
+    .limit(1);
+
+  if (!organization) {
+    throw new MarketplaceDeveloperError("NOT_FOUND", "Developer organization was not found.");
+  }
+
+  const members = await db.select({
+    canonicalUserId: developerMemberships.canonicalUserId,
+    displayName: canonicalUserProfiles.displayName,
+    role: developerMemberships.role,
+    status: developerMemberships.status,
+    createdAt: developerMemberships.createdAt
+  })
+    .from(developerMemberships)
+    .leftJoin(
+      canonicalUserProfiles,
+      eq(canonicalUserProfiles.canonicalUserId, developerMemberships.canonicalUserId)
+    )
+    .where(and(
+      eq(developerMemberships.developerId, input.developerId),
+      eq(developerMemberships.status, "active")
+    ))
+    .orderBy(asc(developerMemberships.createdAt), asc(developerMemberships.canonicalUserId));
+
+  const canManageMembers = organization.role === "owner" || organization.role === "admin";
+  const invitations = canManageMembers
+    ? await db.select({
+        id: developerInvitations.id,
+        email: developerInvitations.normalizedEmail,
+        role: developerInvitations.role,
+        expiresAt: developerInvitations.expiresAt,
+        createdAt: developerInvitations.createdAt
+      })
+        .from(developerInvitations)
+        .where(and(
+          eq(developerInvitations.developerId, input.developerId),
+          isNull(developerInvitations.acceptedAt),
+          isNull(developerInvitations.revokedAt),
+          gt(developerInvitations.expiresAt, new Date())
+        ))
+        .orderBy(asc(developerInvitations.createdAt))
+    : [];
+
+  return { organization, members, invitations };
 }

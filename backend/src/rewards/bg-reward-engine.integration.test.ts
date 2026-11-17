@@ -171,6 +171,17 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
       assert.equal(payouts[0]?.lastValidBlockHeight, null);
       await assert.rejects(
         () => pool.query(
+          "UPDATE public.reward_payout_intents SET destination_wallet = $1 WHERE id = $2",
+          [testAddress(99_999), first.payoutIntentId]
+        ),
+        /immutable/
+      );
+      await assert.rejects(
+        () => pool.query("DELETE FROM public.reward_payout_intents WHERE id = $1", [first.payoutIntentId]),
+        /instead of deleting/
+      );
+      await assert.rejects(
+        () => pool.query(
           "UPDATE public.reward_events SET amount_base_units = 999 WHERE id = $1",
           [first.rewardEventId]
         ),

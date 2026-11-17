@@ -43,7 +43,7 @@ export function createDeveloperPrivateApp(options: DeveloperPrivateAppOptions) {
 
   app.use("*", cors({
     origin: (origin) => origin && origins.has(origin) ? origin : "",
-    allowHeaders: ["Content-Type", "X-Request-Id"],
+    allowHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
     allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
     credentials: true,
     maxAge: 600

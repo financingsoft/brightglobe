@@ -54,6 +54,7 @@ test("Marketplace developer transactions preserve tenant, invitation and owner i
     await t.test("organization creation atomically creates its first active Owner and audit event", async () => {
       const ownerId = await addCanonicalUser();
       const organization = await createOrganization(ownerId, "pg-owner-" + ownerId.slice(-8));
+      await pool.query("UPDATE marketplace.developers SET status = 'active' WHERE id = $1", [organization.id]);
       const memberships = await db.select().from(developerMemberships)
         .where(eq(developerMemberships.developerId, organization.id));
       assert.equal(memberships.length, 1);
@@ -141,6 +142,7 @@ test("Marketplace developer transactions preserve tenant, invitation and owner i
       const oldOwnerId = await addCanonicalUser();
       const newOwnerId = await addCanonicalUser();
       const organization = await createOrganization(oldOwnerId, "pg-transfer-" + oldOwnerId.slice(-8));
+      await pool.query("UPDATE marketplace.developers SET status = 'active' WHERE id = $1", [organization.id]);
       const invitation = await initiateDeveloperOwnerTransfer(db, {
         developerId: organization.id,
         actorCanonicalUserId: oldOwnerId,
@@ -198,6 +200,7 @@ test("Marketplace developer transactions preserve tenant, invitation and owner i
       const oldOwnerId = await addCanonicalUser();
       const adminId = await addCanonicalUser();
       const organization = await createOrganization(oldOwnerId, "pg-revoke-" + oldOwnerId.slice(-8));
+      await pool.query("UPDATE marketplace.developers SET status = 'active' WHERE id = $1", [organization.id]);
       await db.insert(developerMemberships).values({
         developerId: organization.id,
         canonicalUserId: adminId,
@@ -234,6 +237,7 @@ test("Marketplace developer transactions preserve tenant, invitation and owner i
         [developerId, userIds]
       );
       await pool.query("DELETE FROM marketplace.developer_invitations WHERE developer_id = $1", [developerId]);
+      await pool.query("UPDATE marketplace.developers SET status = 'pending' WHERE id = $1", [developerId]);
       await pool.query("DELETE FROM marketplace.developer_memberships WHERE developer_id = $1", [developerId]);
       await pool.query("DELETE FROM marketplace.developers WHERE id = $1", [developerId]);
     }

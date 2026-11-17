@@ -11,7 +11,7 @@ import {
 import { createUuidV7 } from "../identity/ids.js";
 import { createDeveloperOrganization } from "./marketplace-developers.js";
 import {
-  createMarketplaceApp, getMarketplaceApp, listMarketplaceApps, updateMarketplaceAppDraft,
+  createMarketplaceApp, getMarketplaceApp, listMarketplaceApps, listMarketplaceCategories, updateMarketplaceAppDraft,
   MarketplaceAppError
 } from "./marketplace-apps.js";
 
@@ -87,6 +87,15 @@ test("Marketplace app draft transactions enforce tenant access, localization and
 
     const categoryId = createUuidV7();
     await pool.query("INSERT INTO marketplace.categories (id, slug, status) VALUES ($1, $2, 'active')", [categoryId, "test-category-" + categoryId.slice(-8)]);
+    await pool.query("INSERT INTO marketplace.category_localizations (category_id, locale, name) VALUES ($1, 'en', 'Utilities'), ($1, 'zh-CN', '工具')", [categoryId]);
+    const categoriesEn = await listMarketplaceCategories(db, { developerId: organization.id, actorCanonicalUserId: ownerId, locale: "en" });
+    const categoriesZh = await listMarketplaceCategories(db, { developerId: organization.id, actorCanonicalUserId: ownerId, locale: "zh-CN" });
+    assert.equal(categoriesEn.find((item) => item.id === categoryId)?.name, "Utilities");
+    assert.equal(categoriesZh.find((item) => item.id === categoryId)?.name, "工具");
+    await assert.rejects(
+      () => listMarketplaceCategories(db, { developerId: organization.id, actorCanonicalUserId: outsiderId, locale: "en" }),
+      (error: unknown) => error instanceof MarketplaceAppError && error.code === "NOT_FOUND"
+    );
     const [enRevision] = await db.select().from(appListingRevisions).where(and(
       eq(appListingRevisions.appId, created.id), eq(appListingRevisions.contentLocale, "en")
     ));

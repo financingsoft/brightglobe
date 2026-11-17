@@ -60,3 +60,41 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER "reward_program_rule_immutable"
   BEFORE UPDATE ON "reward_programs"
   FOR EACH ROW EXECUTE FUNCTION prevent_reward_program_rule_mutation();
+
+--> statement-breakpoint
+CREATE OR REPLACE FUNCTION prevent_reward_program_delete() RETURNS trigger AS $
+BEGIN
+  RAISE EXCEPTION 'Reward program versions are retained for audit; retire instead of deleting';
+END;
+$ LANGUAGE plpgsql;
+--> statement-breakpoint
+CREATE TRIGGER "reward_program_no_delete"
+  BEFORE DELETE ON "reward_programs"
+  FOR EACH ROW EXECUTE FUNCTION prevent_reward_program_delete();
+--> statement-breakpoint
+CREATE OR REPLACE FUNCTION prevent_reward_event_mutation() RETURNS trigger AS $
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'Reward events are immutable; use an audited state transition';
+  END IF;
+  IF
+    NEW."id" IS DISTINCT FROM OLD."id" OR
+    NEW."program_id" IS DISTINCT FROM OLD."program_id" OR
+    NEW."canonical_user_id" IS DISTINCT FROM OLD."canonical_user_id" OR
+    NEW."action_type" IS DISTINCT FROM OLD."action_type" OR
+    NEW."evidence_ref" IS DISTINCT FROM OLD."evidence_ref" OR
+    NEW."idempotency_key" IS DISTINCT FROM OLD."idempotency_key" OR
+    NEW."amount_base_units" IS DISTINCT FROM OLD."amount_base_units" OR
+    NEW."rule_version" IS DISTINCT FROM OLD."rule_version" OR
+    NEW."period_key" IS DISTINCT FROM OLD."period_key" OR
+    NEW."created_at" IS DISTINCT FROM OLD."created_at"
+  THEN
+    RAISE EXCEPTION 'Reward event identity and evidence are immutable';
+  END IF;
+  RETURN NEW;
+END;
+$ LANGUAGE plpgsql;
+--> statement-breakpoint
+CREATE TRIGGER "reward_event_immutable"
+  BEFORE UPDATE OR DELETE ON "reward_events"
+  FOR EACH ROW EXECUTE FUNCTION prevent_reward_event_mutation();

@@ -70,6 +70,7 @@ test("uses evidence instance in idempotency key only for repeatable tasks", asyn
     request,
     now
   );
+  assert.equal(result.outcome, "verified");
   assert.equal(result.idempotencyKey, `bg-task:${canonicalUserId}:task-profile-complete:2:activity-123`);
 });
 

@@ -7,6 +7,8 @@ import {
   createDeveloperInvitation,
   createDeveloperOrganization,
   initiateDeveloperOwnerTransfer,
+  listDeveloperOrganizations,
+  getDeveloperWorkspace,
   revokeDeveloperInvitation
 } from "./services/marketplace-developers.js";
 import { resolveDeveloperRequestIdentity } from "./marketplace/developer-identity.js";
@@ -93,6 +95,10 @@ const worker = {
         linkOrigin: configuration.linkOrigin
       });
       const transactions = {
+        listOrganizations: (input: Parameters<typeof listDeveloperOrganizations>[1]) =>
+          listDeveloperOrganizations(db, input.actorCanonicalUserId),
+        getWorkspace: (input: Parameters<typeof getDeveloperWorkspace>[1]) =>
+          getDeveloperWorkspace(db, input),
         createOrganization: (input: Parameters<typeof createDeveloperOrganization>[1]) =>
           createDeveloperOrganization(db, input),
         createInvitation: (input: Parameters<typeof createDeveloperInvitation>[1]) =>

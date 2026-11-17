@@ -1,0 +1,113 @@
+{
+  "metadata": {
+    "title": "Globe Play — 发现值得使用的应用",
+    "description": "发现来自全球可信开发者的实用应用与游戏。"
+  },
+  "nav": {
+    "explore": "发现",
+    "categories": "分类",
+    "developers": "开发者平台",
+    "search": "搜索应用和游戏"
+  },
+  "hero": {
+    "eyebrow": "更好的软件发现平台",
+    "title": "发现下一款\n值得拥有的应用。",
+    "description": "探索实用应用与游戏，了解开发者和产品信息，做出更放心的选择。",
+    "searchPlaceholder": "搜索应用、游戏或开发者",
+    "searchAction": "搜索",
+    "trust": "开发者信息透明 · 应用信息清晰 · 真实用户体验",
+    "publisherTitle": "开发者信息透明",
+    "publisherText": "清楚了解应用来源",
+    "versionsTitle": "版本历史",
+    "versionsText": "了解每一次更新",
+    "communityTitle": "真实体验",
+    "communityText": "有价值的社区反馈"
+  },
+  "categories": {
+    "eyebrow": "按兴趣探索",
+    "title": "让应用发现更有条理。",
+    "description": "从你的真实需求出发，探索日常工作与生活中的各类软件。",
+    "productivity": "效率办公",
+    "creativity": "创意与设计",
+    "education": "学习教育",
+    "finance": "金融理财",
+    "health": "健康运动",
+    "games": "游戏",
+    "utilities": "实用工具",
+    "entertainment": "影音娱乐"
+  },
+  "trust": {
+    "eyebrow": "以信任为基础",
+    "title": "安装之前，先了解清楚。",
+    "description": "开发者身份、版本历史、设备兼容性、隐私信息和有价值的社区反馈，应当完整呈现。",
+    "publisher": "开发者透明",
+    "publisherText": "了解应用由谁发布，以及开发者资料的验证状态。",
+    "versions": "版本信息清晰",
+    "versionsText": "查看更新历史、平台支持和版本说明。",
+    "community": "有价值的真实反馈",
+    "communityText": "阅读经过治理的真实体验反馈，而不是付费刷出来的评分。"
+  },
+  "developers": {
+    "eyebrow": "致每一位创造者",
+    "title": "让优秀作品拥有更好的展示空间。",
+    "description": "创建开发者主页，管理多语言应用资料，并通过透明的审核流程发布每一次更新。",
+    "action": "了解开发者平台"
+  },
+  "footer": {
+    "tagline": "放心发现，安心选择。",
+    "privacy": "隐私政策",
+    "terms": "服务条款",
+    "support": "帮助与支持"
+  },
+  "search": {
+    "title": "搜索 Globe Play",
+    "description": "搜索公开的应用和游戏资料。",
+    "placeholder": "你正在寻找什么？",
+    "action": "搜索",
+    "note": "搜索结果页不参与搜索引擎索引；应用详情和分类页面负责长期内容发现。"
+  },
+  "categoriesPage": {
+    "title": "探索应用分类",
+    "description": "根据你的需求浏览应用和游戏。",
+    "emptyState": "开发者入驻和应用审核完成后，这里将展示正式应用目录。"
+  },
+  "appDetail": {
+    "explore": "发现",
+    "categories": "分类",
+    "breadcrumbs": "面包屑导航",
+    "app": "应用",
+    "game": "游戏",
+    "verifiedPublisher": "已验证开发者",
+    "unverifiedPublisher": "开发者尚未验证",
+    "noRatings": "暂时没有已发布评分",
+    "screenshots": "应用截图",
+    "about": "应用介绍",
+    "versions": "版本历史",
+    "dateUnavailable": "日期暂不可用",
+    "noVersions": "暂无公开版本信息。",
+    "reviews": "用户体验",
+    "viewAll": "查看全部",
+    "reviewsIntro": "阅读 Globe Play 用户分享的真实使用体验。",
+    "publisher": "开发者",
+    "publisherWebsite": "开发者网站",
+    "compatibility": "兼容性",
+    "minimumOs": "最低系统版本 {version}",
+    "versionNotSpecified": "未提供系统版本要求",
+    "privacySupport": "隐私与支持",
+    "privacyPolicy": "隐私政策",
+    "support": "技术支持",
+    "website": "官方网站"
+  },
+  "appReviews": {
+    "breadcrumbs": "面包屑导航",
+    "title": "用户评价",
+    "eyebrow": "社区真实反馈",
+    "description": "阅读 Globe Play 用户分享的第一手使用体验。",
+    "basedOn": "基于 {count} 条已发布评价",
+    "ratingOutOfFive": "满分 5 分，评分 {rating}",
+    "version": "版本 {version}",
+    "helpfulCount": "{count} 人认为有帮助",
+    "affiliationDisclosed": "已披露开发者关联关系",
+    "empty": "暂时还没有已发布的评价。"
+  }
+}

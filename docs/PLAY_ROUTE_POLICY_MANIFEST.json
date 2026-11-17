@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "contractVersion": "1.0",
   "status": "planned-route-contract",
-  "note": "Normative route inventory for implementation. It is not evidence these routes exist or that runtime cache/SEO behavior is verified.",
+  "note": "Normative route inventory for implementation. It is not evidence these routes exist or that runtime cache/SEO behavior is verified. implementationStatus distinguishes scaffolded shells from API-backed production routes.",
   "routes": [
     {
       "id": "home",
@@ -21,7 +21,8 @@
         "site-home",
         "locale"
       ],
-      "notes": "Localized public landing page."
+      "notes": "Localized public landing page.",
+      "implementationStatus": "implemented-shell"
     },
     {
       "id": "category-index",
@@ -40,7 +41,8 @@
         "category-index",
         "locale"
       ],
-      "notes": "Published category catalogue only."
+      "notes": "Published category catalogue only.",
+      "implementationStatus": "implemented-shell"
     },
     {
       "id": "category-detail",
@@ -99,7 +101,8 @@
         "category",
         "locale"
       ],
-      "notes": "Published app projection only."
+      "notes": "Published app projection only.",
+      "implementationStatus": "implemented-shell"
     },
     {
       "id": "app-reviews",
@@ -120,7 +123,8 @@
         "app:{slug}:rating",
         "locale"
       ],
-      "notes": "Index only after review quality/moderation thresholds; bounded pagination."
+      "notes": "Index only after review quality/moderation thresholds; bounded pagination.",
+      "implementationStatus": "implemented-shell"
     },
     {
       "id": "developer-profile",
@@ -179,7 +183,8 @@
         "search-index",
         "locale"
       ],
-      "notes": "Normalize query and allowlist filters; never index arbitrary query combinations."
+      "notes": "Normalize query and allowlist filters; never index arbitrary query combinations.",
+      "implementationStatus": "implemented-shell"
     },
     {
       "id": "account",
@@ -232,6 +237,51 @@
       "cacheKey": [],
       "invalidationTags": [],
       "notes": "Privileged operations; never shared cache."
+    },
+    {
+      "id": "app-detail-api",
+      "pattern": "/api/v1/play/apps/{slug}",
+      "surface": "marketplace-api",
+      "access": "public",
+      "cache": "public-edge",
+      "ttlSeconds": 600,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [
+        "slug",
+        "locale"
+      ],
+      "invalidationTags": [
+        "app:{slug}",
+        "developer",
+        "category",
+        "locale"
+      ],
+      "notes": "Anonymous published-only app detail projection; no user/session variation.",
+      "implementationStatus": "implemented"
+    },
+    {
+      "id": "app-reviews-api",
+      "pattern": "/api/v1/play/apps/{slug}/reviews",
+      "surface": "marketplace-api",
+      "access": "public",
+      "cache": "public-edge",
+      "ttlSeconds": 120,
+      "seo": "noindex",
+      "locale": "none",
+      "cacheKey": [
+        "slug",
+        "locale",
+        "cursor",
+        "limit"
+      ],
+      "invalidationTags": [
+        "app:{slug}:reviews",
+        "app:{slug}:rating",
+        "locale"
+      ],
+      "notes": "Anonymous published-only review projection with bounded signed cursor pagination.",
+      "implementationStatus": "implemented"
     }
   ]
 }

@@ -48,6 +48,14 @@ test("Marketplace app draft transactions enforce tenant access, localization and
       ]
     });
     assert.equal(created.status, "draft");
+    await assert.rejects(
+      () => createMarketplaceApp(db, {
+        developerId: organization.id, actorCanonicalUserId: ownerId,
+        slug: created.slug, appType: "app", platforms: ["web"],
+        localizations: [{ locale: "en", name: "Duplicate", description: "Duplicate slug should fail." }]
+      }),
+      (error: unknown) => error instanceof MarketplaceAppError && error.code === "CONFLICT"
+    );
 
     const detail = await getMarketplaceApp(db, {
       developerId: organization.id, appId: created.id, actorCanonicalUserId: ownerId

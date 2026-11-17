@@ -115,6 +115,27 @@ test("failed invitation delivery compensates by revoking the unusable invitation
   assert.equal(body.error.code, "INVITATION_DELIVERY_FAILED");
 });
 
+test("reports operator attention if failed delivery cannot revoke the invitation", async () => {
+  const base = dependencies();
+  const tx: DeveloperTransactionService = {
+    ...base.transactions,
+    revokeInvitation: async () => { throw new Error("database unavailable"); }
+  };
+  const { app } = dependencies({
+    transactions: tx,
+    invitationDelivery: { send: async () => { throw new Error("provider unavailable"); } }
+  });
+  const response = await app.request(`/developers/${developerId}/invitations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "member@example.com", role: "analyst" })
+  });
+  assert.equal(response.status, 503);
+  const body = await response.json() as { error: { code: string; message: string } };
+  assert.equal(body.error.code, "INVITATION_REVOCATION_REQUIRED");
+  assert.match(body.error.message, /may remain pending/);
+});
+
 test("wallet-only owner cannot initiate an ownership transfer", async () => {
   let initiated = false;
   const base = dependencies();

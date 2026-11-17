@@ -134,7 +134,7 @@ export async function reserveBgDailyReward(
         amountBaseUnits: event.amountBaseUnits.toString(),
         rewardStatus: event.status,
         payoutStatus: payout.status,
-        network: BG_REWARD_NETWORK,
+        network: BG_REWARD_NETWORK as typeof BG_REWARD_NETWORK,
         mintAddress: payout.mintAddress,
         destinationWallet: payout.destinationWallet,
         destinationTokenAccount: payout.destinationTokenAccount

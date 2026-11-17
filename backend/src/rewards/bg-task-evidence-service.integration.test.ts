@@ -16,7 +16,7 @@ import {
   persistBgTaskEvidence
 } from "./bg-task-evidence-service.js";
 
-const connectionString = process.env.LOCAL_DATABASE_URL;
+const connectionString = process.env.BG_REWARD_TEST_DATABASE_URL ?? process.env.LOCAL_DATABASE_URL;
 
 test("BG task evidence persistence is atomic, idempotent and blocks cross-user source replay in PostgreSQL", {
   skip: !connectionString ? "LOCAL_DATABASE_URL is not configured; PostgreSQL integration test skipped." : false

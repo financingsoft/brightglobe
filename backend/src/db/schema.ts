@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { bigint, boolean, check, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
+import { bigint, boolean, check, date, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -531,16 +531,18 @@ export const rewardPrograms = pgTable("reward_programs", {
   paidBaseUnits: bigint("paid_base_units", { mode: "bigint" }).notNull().default(0n),
   startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
   endsAt: timestamp("ends_at", { withTimezone: true }),
+  approvalReference: varchar("approval_reference", { length: 128 }),
   approvedBy: varchar("approved_by", { length: 128 }),
   approvedAt: timestamp("approved_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
-  uniqueIndex("reward_programs_key_version_uidx").on(table.programKey, table.ruleVersion),
-  uniqueIndex("reward_programs_one_active_key_uidx").on(table.programKey).where(sql`${table.status} = 'active'`),
+  uniqueIndex("reward_programs_key_version_uidx").on(table.assetId, table.programKey, table.ruleVersion),
+  uniqueIndex("reward_programs_one_active_key_uidx").on(table.assetId, table.programKey).where(sql`${table.status} = 'active'`),
   index("reward_programs_asset_status_idx").on(table.assetId, table.status),
   check("reward_programs_action_check", sql`${table.actionType} IN ('daily_collection', 'task_completion', 'invitation', 'campaign')`),
   check("reward_programs_status_check", sql`${table.status} IN ('draft', 'active', 'paused', 'retired')`),
+  check("reward_programs_active_approval_check", sql`${table.status} <> 'active' OR (${table.approvalReference} IS NOT NULL AND length(trim(${table.approvalReference})) > 0 AND ${table.approvedBy} IS NOT NULL AND length(trim(${table.approvedBy})) > 0 AND ${table.approvedAt} IS NOT NULL)`),
   check("reward_programs_version_limit_check", sql`${table.ruleVersion} > 0 AND ${table.perUserLimit} > 0`),
   check("reward_programs_amount_check", sql`${table.rewardBaseUnits} > 0 AND ${table.budgetBaseUnits} > 0`),
   check("reward_programs_budget_usage_check", sql`${table.reservedBaseUnits} >= 0 AND ${table.paidBaseUnits} >= 0 AND ${table.reservedBaseUnits} + ${table.paidBaseUnits} <= ${table.budgetBaseUnits}`),
@@ -555,29 +557,42 @@ export const rewardEvents = pgTable("reward_events", {
   evidenceRef: varchar("evidence_ref", { length: 256 }),
   idempotencyKey: varchar("idempotency_key", { length: 160 }).notNull().unique(),
   amountBaseUnits: bigint("amount_base_units", { mode: "bigint" }).notNull(),
+  ruleVersion: integer("rule_version").notNull(),
+  periodKey: date("period_key", { mode: "string" }),
   status: varchar("status", { length: 16 }).notNull().default("reserved"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
+  uniqueIndex("reward_events_daily_user_period_uidx").on(table.canonicalUserId, table.periodKey).where(sql`${table.actionType} = 'daily_collection' AND ${table.periodKey} IS NOT NULL`),
   index("reward_events_user_created_idx").on(table.canonicalUserId, table.createdAt),
   index("reward_events_program_status_idx").on(table.programId, table.status),
   check("reward_events_action_check", sql`${table.actionType} IN ('daily_collection', 'task_completion', 'invitation', 'campaign')`),
   check("reward_events_status_check", sql`${table.status} IN ('reserved', 'submitted', 'confirmed', 'finalized', 'paid', 'rejected', 'failed', 'expired', 'quarantined', 'cancelled')`),
-  check("reward_events_amount_check", sql`${table.amountBaseUnits} > 0`)
+  check("reward_events_amount_check", sql`${table.amountBaseUnits} > 0`),
+  check("reward_events_rule_version_check", sql`${table.ruleVersion} > 0`),
+  check("reward_events_daily_period_check", sql`${table.actionType} <> 'daily_collection' OR ${table.periodKey} IS NOT NULL`)
 ]);
 
 export const rewardPayoutIntents = pgTable("reward_payout_intents", {
   id: uuid("id").primaryKey(),
   rewardEventId: uuid("reward_event_id").notNull().references(() => rewardEvents.id, { onDelete: "restrict" }).unique(),
+  treasuryAccountId: uuid("treasury_account_id").notNull().references(() => treasuryAccounts.id, { onDelete: "restrict" }),
   network: varchar("network", { length: 24 }).notNull(),
   mintAddress: varchar("mint_address", { length: 44 }).notNull(),
+  tokenProgram: varchar("token_program", { length: 64 }).notNull(),
   sourceTokenAccount: varchar("source_token_account", { length: 44 }).notNull(),
+  feePayerAddress: varchar("fee_payer_address", { length: 44 }).notNull(),
   destinationWallet: varchar("destination_wallet", { length: 44 }).notNull(),
   destinationTokenAccount: varchar("destination_token_account", { length: 44 }).notNull(),
   amountBaseUnits: bigint("amount_base_units", { mode: "bigint" }).notNull(),
   status: varchar("status", { length: 20 }).notNull().default("queued"),
   chainSignature: varchar("chain_signature", { length: 128 }),
   chainSlot: bigint("chain_slot", { mode: "bigint" }),
+  recentBlockhash: varchar("recent_blockhash", { length: 44 }),
+  lastValidBlockHeight: bigint("last_valid_block_height", { mode: "bigint" }),
+  confirmedSlot: bigint("confirmed_slot", { mode: "bigint" }),
+  finalizedSlot: bigint("finalized_slot", { mode: "bigint" }),
+  reconciliationMetadata: jsonb("reconciliation_metadata").$type<Record<string, unknown>>().notNull().default({}),
   lastErrorCode: varchar("last_error_code", { length: 64 }),
   retryAfter: timestamp("retry_after", { withTimezone: true }),
   submittedAt: timestamp("submitted_at", { withTimezone: true }),
@@ -587,10 +602,18 @@ export const rewardPayoutIntents = pgTable("reward_payout_intents", {
 }, (table) => [
   uniqueIndex("reward_payout_intents_signature_uidx").on(table.chainSignature).where(sql`${table.chainSignature} IS NOT NULL`),
   index("reward_payout_intents_status_created_idx").on(table.status, table.createdAt),
+  index("reward_payout_intents_treasury_idx").on(table.treasuryAccountId, table.createdAt),
   check("reward_payout_intents_network_check", sql`${table.network} IN ('devnet', 'mainnet-beta')`),
   check("reward_payout_intents_status_check", sql`${table.status} IN ('queued', 'signing', 'signed', 'submitted', 'confirmed', 'finalized', 'paid', 'failed', 'quarantined', 'cancelled')`),
   check("reward_payout_intents_amount_check", sql`${table.amountBaseUnits} > 0`),
-  check("reward_payout_intents_finalized_check", sql`${table.status} NOT IN ('finalized', 'paid') OR (${table.chainSignature} IS NOT NULL AND ${table.chainSlot} IS NOT NULL AND ${table.finalizedAt} IS NOT NULL)`)
+  check("reward_payout_intents_token_program_check", sql`${table.tokenProgram} = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'`),
+  check("reward_payout_intents_last_valid_height_check", sql`${table.lastValidBlockHeight} IS NULL OR ${table.lastValidBlockHeight} >= 0`),
+  check("reward_payout_intents_confirmed_slot_check", sql`${table.confirmedSlot} IS NULL OR ${table.confirmedSlot} >= 0`),
+  check("reward_payout_intents_finalized_slot_check", sql`${table.finalizedSlot} IS NULL OR ${table.finalizedSlot} >= 0`),
+  check("reward_payout_intents_slot_order_check", sql`${table.confirmedSlot} IS NULL OR ${table.finalizedSlot} IS NULL OR ${table.finalizedSlot} >= ${table.confirmedSlot}`),
+  check("reward_payout_intents_confirmed_evidence_check", sql`${table.status} <> 'confirmed' OR (${table.chainSignature} IS NOT NULL AND ${table.confirmedSlot} IS NOT NULL)`),
+  check("reward_payout_intents_signed_blockhash_check", sql`${table.status} NOT IN ('signed', 'submitted', 'confirmed', 'finalized', 'paid') OR (${table.recentBlockhash} IS NOT NULL AND ${table.lastValidBlockHeight} IS NOT NULL)`),
+  check("reward_payout_intents_finalized_check", sql`${table.status} NOT IN ('finalized', 'paid') OR (${table.chainSignature} IS NOT NULL AND ${table.chainSlot} IS NOT NULL AND ${table.finalizedAt} IS NOT NULL AND ${table.finalizedSlot} IS NOT NULL)`)
 ]);
 
 export const treasuryAccounts = pgTable("treasury_accounts", {

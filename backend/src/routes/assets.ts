@@ -126,9 +126,13 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
         id: rewardEvents.id,
         status: rewardEvents.status,
         amountBaseUnits: rewardEvents.amountBaseUnits,
-        createdAt: rewardEvents.createdAt
+        createdAt: rewardEvents.createdAt,
+        payoutStatus: rewardPayoutIntents.status,
+        chainSignature: rewardPayoutIntents.chainSignature,
+        finalizedAt: rewardPayoutIntents.finalizedAt
       }).from(rewardEvents)
         .innerJoin(rewardPrograms, eq(rewardPrograms.id, rewardEvents.programId))
+        .leftJoin(rewardPayoutIntents, eq(rewardPayoutIntents.rewardEventId, rewardEvents.id))
         .where(and(
           eq(rewardEvents.canonicalUserId, current.canonicalUserId),
           eq(rewardPrograms.assetId, asset.id),
@@ -144,14 +148,20 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
         dailyCollection: daily ? {
           status: daily.status,
           amountBaseUnits: daily.amountBaseUnits.toString(),
+          payoutStatus: daily.payoutStatus,
+          chainSignature: daily.chainSignature,
+          finalizedAt: daily.finalizedAt?.toISOString() ?? null,
           createdAt: daily.createdAt.toISOString()
         } : {
           status: "not_recorded_today",
           amountBaseUnits: null,
+          payoutStatus: null,
+          chainSignature: null,
+          finalizedAt: null,
           createdAt: null
         },
         totals: {
-          rewardCount: Number(totals?.rewardCount ?? "0"),
+          rewardCount: totals?.rewardCount ?? "0",
           reservedBaseUnits: totals?.reservedBaseUnits ?? "0",
           paidBaseUnits: totals?.paidBaseUnits ?? "0"
         },

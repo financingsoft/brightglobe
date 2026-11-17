@@ -32,6 +32,13 @@ BEGIN
 
   blocked := false;
   BEGIN
+    UPDATE "bg_task_evidence_records" SET "status" = 'approved' WHERE "id" = '019a8e5a-4a00-7000-8000-000000000011';
+  EXCEPTION WHEN raise_exception THEN blocked := true;
+  END;
+  IF NOT blocked THEN RAISE EXCEPTION 'evidence status was approved without a recorded review decision'; END IF;
+
+  blocked := false;
+  BEGIN
     INSERT INTO "bg_task_review_decisions" ("id", "evidence_id", "decision_type", "decision", "reviewer_id", "reason")
     VALUES ('019a8e5a-4a00-7000-8000-000000000021', '019a8e5a-4a00-7000-8000-000000000011', 'initial', 'approved', '019a8e5a-4a00-7000-8000-000000000001', 'self approval attempt');
   EXCEPTION WHEN raise_exception THEN blocked := true;
@@ -76,7 +83,7 @@ BEGIN
   SELECT count(*) INTO approved_count FROM "bg_task_evidence_records" WHERE "status" = 'approved';
   SELECT count(*) INTO resolved_count FROM "bg_task_appeals" WHERE "status" = 'resolved' AND "resolved_by" = '019a8e5a-4a00-7000-8000-000000000003';
   SELECT count(*) INTO audit_count FROM "bg_task_audit_events";
-  IF approved_count <> 2 OR resolved_count <> 1 OR audit_count < 5 THEN
+  IF approved_count <> 2 OR resolved_count <> 1 OR audit_count < 6 THEN
     RAISE EXCEPTION 'BG task review/appeal state or audit history was not applied';
   END IF;
   blocked := false;

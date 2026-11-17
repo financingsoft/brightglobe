@@ -227,6 +227,7 @@ export function createDeveloperRoutes(dependencies: DeveloperRouteDependencies) 
     const requestId = getRequestId(context.req.raw);
     const identity = await readIdentity(dependencies, context.req.raw).catch(() => null);
     if (!identity) return respond(context, { error: { code: "UNAUTHORIZED", message: "A valid BrightGlobe session is required." } }, 401, requestId);
+    if (!identity.verifiedEmail) return respond(context, { error: { code: "VERIFIED_EMAIL_REQUIRED", message: "A verified email session is required to initiate an ownership transfer." } }, 403, requestId);
     const developerId = context.req.param("developerId");
     if (!uuidSchema.safeParse(developerId).success) return respond(context, { error: { code: "INVALID_DEVELOPER_ID", message: "The developer ID is invalid." } }, 400, requestId);
     const parsed = ownerTransferSchema.safeParse(await context.req.json().catch(() => null));

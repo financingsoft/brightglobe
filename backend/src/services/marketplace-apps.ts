@@ -214,21 +214,33 @@ export async function listMarketplaceApps(db: Database, input: { developerId: st
   await requireOrganizationRole(db, input.developerId, input.actorCanonicalUserId, ["owner", "admin", "release_manager", "analyst", "support_readonly"]);
   const rows = await db.select({
     id: apps.id, slug: apps.slug, appType: apps.appType, status: apps.status,
-    createdAt: apps.createdAt, updatedAt: apps.updatedAt
-  }).from(apps).where(eq(apps.developerId, input.developerId))
-    .orderBy(desc(apps.updatedAt), asc(apps.id)).limit(100);
-  const result = [];
-  for (const app of rows) {
-    const revisions = await db.select({
-      locale: appListingRevisions.contentLocale, name: appListingRevisions.name,
-      status: appListingRevisions.status, revisionNumber: appListingRevisions.revisionNumber
-    }).from(appListingRevisions).where(eq(appListingRevisions.appId, app.id))
-      .orderBy(asc(appListingRevisions.contentLocale), desc(appListingRevisions.revisionNumber));
-    const latestByLocale = new Map<string, typeof revisions[number]>();
-    for (const revision of revisions) if (!latestByLocale.has(revision.locale)) latestByLocale.set(revision.locale, revision);
-    result.push({ ...app, localizations: [...latestByLocale.values()] });
+    createdAt: apps.createdAt, updatedAt: apps.updatedAt,
+    locale: appListingRevisions.contentLocale, name: appListingRevisions.name,
+    revisionStatus: appListingRevisions.status, revisionNumber: appListingRevisions.revisionNumber
+  }).from(apps).leftJoin(appListingRevisions, eq(appListingRevisions.appId, apps.id))
+    .where(eq(apps.developerId, input.developerId))
+    .orderBy(desc(apps.updatedAt), asc(apps.id), asc(appListingRevisions.contentLocale), desc(appListingRevisions.revisionNumber))
+    .limit(800);
+  const grouped = new Map<string, {
+    id: string; slug: string; appType: string; status: string; createdAt: Date; updatedAt: Date;
+    localizations: Array<{ locale: string; name: string; status: string; revisionNumber: number }>;
+  }>();
+  const seenLocales = new Set<string>();
+  for (const row of rows) {
+    let app = grouped.get(row.id);
+    if (!app) {
+      app = { id: row.id, slug: row.slug, appType: row.appType, status: row.status, createdAt: row.createdAt, updatedAt: row.updatedAt, localizations: [] };
+      grouped.set(row.id, app);
+    }
+    if (row.locale) {
+      const key = row.id + ":" + row.locale;
+      if (!seenLocales.has(key)) {
+        seenLocales.add(key);
+        app.localizations.push({ locale: row.locale, name: row.name ?? "", status: row.revisionStatus ?? "draft", revisionNumber: row.revisionNumber ?? 1 });
+      }
+    }
   }
-  return result;
+  return [...grouped.values()].slice(0, 100);
 }
 
 export async function getMarketplaceApp(db: Database, input: { developerId: string; appId: string; actorCanonicalUserId: string }) {
@@ -241,23 +253,22 @@ export async function getMarketplaceApp(db: Database, input: { developerId: stri
   const revisions = await db.select().from(appListingRevisions)
     .where(eq(appListingRevisions.appId, input.appId))
     .orderBy(asc(appListingRevisions.contentLocale), desc(appListingRevisions.revisionNumber));
-  const localizations = [];
-  for (const revision of revisions) {
-    const [categoryRows, platformRows] = await Promise.all([
-      db.select({ id: categories.id, slug: categories.slug }).from(appListingRevisionCategories)
-        .innerJoin(categories, eq(appListingRevisionCategories.categoryId, categories.id))
-        .where(eq(appListingRevisionCategories.revisionId, revision.id)),
-      db.select({ platform: appListingPlatformTargets.platform }).from(appListingPlatformTargets)
-        .where(eq(appListingPlatformTargets.revisionId, revision.id))
-    ]);
-    localizations.push({
-      id: revision.id, revisionNumber: revision.revisionNumber, locale: revision.contentLocale,
-      name: revision.name, tagline: revision.tagline, description: revision.description,
-      websiteUrl: revision.websiteUrl, privacyPolicyUrl: revision.privacyPolicyUrl,
-      supportUrl: revision.supportUrl, status: revision.status,
-      categories: categoryRows, platforms: platformRows.map((row) => row.platform)
-    });
-  }
+  const revisionIds = revisions.map((revision) => revision.id);
+  const [categoryRows, platformRows] = revisionIds.length ? await Promise.all([
+    db.select({ revisionId: appListingRevisionCategories.revisionId, id: categories.id, slug: categories.slug })
+      .from(appListingRevisionCategories).innerJoin(categories, eq(appListingRevisionCategories.categoryId, categories.id))
+      .where(inArray(appListingRevisionCategories.revisionId, revisionIds)),
+    db.select({ revisionId: appListingPlatformTargets.revisionId, platform: appListingPlatformTargets.platform })
+      .from(appListingPlatformTargets).where(inArray(appListingPlatformTargets.revisionId, revisionIds))
+  ]) : [[], []];
+  const localizations = revisions.map((revision) => ({
+    id: revision.id, revisionNumber: revision.revisionNumber, locale: revision.contentLocale,
+    name: revision.name, tagline: revision.tagline, description: revision.description,
+    websiteUrl: revision.websiteUrl, privacyPolicyUrl: revision.privacyPolicyUrl,
+    supportUrl: revision.supportUrl, status: revision.status,
+    categories: categoryRows.filter((row) => row.revisionId === revision.id).map(({ id, slug }) => ({ id, slug })),
+    platforms: platformRows.filter((row) => row.revisionId === revision.id).map((row) => row.platform)
+  }));
   return { ...app, localizations };
 }
 

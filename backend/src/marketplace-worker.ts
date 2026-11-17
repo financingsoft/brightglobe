@@ -8,7 +8,7 @@ import {
   revokeDeveloperInvitation
 } from "./services/marketplace-developers.js";
 import {
-  createMarketplaceApp, getMarketplaceApp, listMarketplaceApps, updateMarketplaceAppDraft
+  createMarketplaceApp, getMarketplaceApp, listMarketplaceApps, listMarketplaceCategories, updateMarketplaceAppDraft
 } from "./services/marketplace-apps.js";
 import { resolveDeveloperRequestIdentity } from "./marketplace/developer-identity.js";
 import { createResendDeveloperInvitationDelivery } from "./marketplace/developer-invitation-email.js";
@@ -71,6 +71,7 @@ const worker = {
         revokeInvitation: (input: Parameters<typeof revokeDeveloperInvitation>[1]) => revokeDeveloperInvitation(db, input)
       };
       const appTransactions = {
+        listCategories: (input: Parameters<typeof listMarketplaceCategories>[1]) => listMarketplaceCategories(db, input),
         listApps: (input: Parameters<typeof listMarketplaceApps>[1]) => listMarketplaceApps(db, input),
         getApp: (input: Parameters<typeof getMarketplaceApp>[1]) => getMarketplaceApp(db, input),
         createApp: (input: Parameters<typeof createMarketplaceApp>[1]) => createMarketplaceApp(db, input),

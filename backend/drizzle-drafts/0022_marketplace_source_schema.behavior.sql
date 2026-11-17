@@ -12,6 +12,7 @@ DECLARE
   v_audit_mutation_rejected boolean := false;
   v_duplicate_tags_rejected boolean := false;
   v_malformed_invitation_token_rejected boolean := false;
+  v_duplicate_owner_transfer_rejected boolean := false;
 BEGIN
   INSERT INTO public.canonical_users(id) VALUES
     ('00000000-0000-4000-8000-000000000001'),
@@ -57,6 +58,66 @@ BEGIN
   END;
   IF NOT v_malformed_invitation_token_rejected THEN
     RAISE EXCEPTION 'malformed invitation token hash was accepted';
+  END IF;
+
+  -- Owner transfer is represented by a single-use owner invitation: the
+  -- current owner initiates it; the invited, email-verified user accepts it.
+  INSERT INTO marketplace.developer_invitations(
+    id, developer_id, normalized_email, "role", token_hash,
+    invited_by_canonical_user_id, expires_at
+  ) VALUES (
+    '11000000-0000-4000-8000-000000000002',
+    '10000000-0000-4000-8000-000000000001',
+    'new-owner@example.com', 'owner', repeat('b', 64),
+    '00000000-0000-4000-8000-000000000001', now() + interval '7 days'
+  );
+
+  BEGIN
+    INSERT INTO marketplace.developer_invitations(
+      id, developer_id, normalized_email, "role", token_hash,
+      invited_by_canonical_user_id, expires_at
+    ) VALUES (
+      '11000000-0000-4000-8000-000000000003',
+      '10000000-0000-4000-8000-000000000001',
+      'another-owner@example.com', 'owner', repeat('c', 64),
+      '00000000-0000-4000-8000-000000000001', now() + interval '7 days'
+    );
+  EXCEPTION WHEN unique_violation THEN
+    v_duplicate_owner_transfer_rejected := true;
+  END;
+  IF NOT v_duplicate_owner_transfer_rejected THEN
+    RAISE EXCEPTION 'multiple pending owner transfers were allowed';
+  END IF;
+
+  -- Simulate the acceptance transaction. The deferred owner invariant is
+  -- checked at commit, so both membership changes must succeed atomically.
+  UPDATE marketplace.developer_memberships
+  SET "role" = 'admin', updated_at = now()
+  WHERE developer_id = '10000000-0000-4000-8000-000000000001'
+    AND canonical_user_id = '00000000-0000-4000-8000-000000000001';
+  INSERT INTO marketplace.developer_memberships(
+    developer_id, canonical_user_id, "role", status, created_by_canonical_user_id
+  ) VALUES (
+    '10000000-0000-4000-8000-000000000001',
+    '00000000-0000-4000-8000-000000000002',
+    'owner', 'active',
+    '00000000-0000-4000-8000-000000000001'
+  );
+  UPDATE marketplace.developer_invitations
+  SET accepted_at = now(), accepted_by_canonical_user_id = '00000000-0000-4000-8000-000000000002'
+  WHERE id = '11000000-0000-4000-8000-000000000002';
+  IF (SELECT count(*) FROM marketplace.developer_memberships
+      WHERE developer_id = '10000000-0000-4000-8000-000000000001'
+        AND "role" = 'owner' AND status = 'active') <> 1 THEN
+    RAISE EXCEPTION 'owner transfer did not leave exactly one active owner';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM marketplace.developer_memberships
+    WHERE developer_id = '10000000-0000-4000-8000-000000000001'
+      AND canonical_user_id = '00000000-0000-4000-8000-000000000002'
+      AND "role" = 'owner' AND status = 'active'
+  ) THEN
+    RAISE EXCEPTION 'owner transfer did not assign the invited user as owner';
   END IF;
 
   INSERT INTO marketplace.categories(id, slug, status, sort_order) VALUES

@@ -31,6 +31,7 @@ test("accepts a sanitized app projection event with matching identity", () => {
     eventType: "app.projection.upsert.v1",
     aggregate: { type: "app", id: app.id, slug: app.slug },
     locale: "en",
+    invalidationTags: ["app:sample-app", "app:sample-app:reviews", "app:sample-app:rating", "developer:sample-publisher", "locale:en"],
     projection: app
   });
   assert.equal(parsed.success, true);
@@ -45,6 +46,7 @@ test("rejects an app projection whose slug or locale differs from its event enve
     eventType: "app.projection.upsert.v1",
     aggregate: { type: "app", id: app.id, slug: "different-app" },
     locale: "zh-CN",
+    invalidationTags: ["app:sample-app", "app:sample-app:reviews", "app:sample-app:rating", "developer:sample-publisher", "locale:zh-CN"],
     projection: app
   });
   assert.equal(parsed.success, false);
@@ -59,6 +61,7 @@ test("rejects private fields in a public projection event", () => {
     eventType: "app.projection.upsert.v1",
     aggregate: { type: "app", id: app.id, slug: app.slug },
     locale: "en",
+    invalidationTags: ["app:sample-app", "app:sample-app:reviews", "app:sample-app:rating", "developer:sample-publisher", "locale:en"],
     projection: { ...app, ownerEmail: "private@example.test" }
   });
   assert.equal(parsed.success, false);
@@ -74,4 +77,32 @@ test("queue message contains only event reference, not projection payload", () =
     schemaVersion: 1,
     projection: app
   }).success, false);
+});
+test("rejects incomplete invalidation scope", () => {
+  const parsed = projectionOutboxEventSchema.safeParse({
+    eventId: "018f47b2-5c20-7a00-8000-000000000010",
+    schemaVersion: 1,
+    aggregateVersion: 3,
+    occurredAt: "2026-11-10T12:00:00.000Z",
+    eventType: "app.projection.upsert.v1",
+    aggregate: { type: "app", id: app.id, slug: app.slug },
+    locale: "en",
+    invalidationTags: ["app:sample-app", "locale:en"],
+    projection: app
+  });
+  assert.equal(parsed.success, false);
+});
+
+test("accepts app deletion with historical relationship invalidation tags", () => {
+  const parsed = projectionOutboxEventSchema.safeParse({
+    eventId: "018f47b2-5c20-7a00-8000-000000000011",
+    schemaVersion: 1,
+    aggregateVersion: 4,
+    occurredAt: "2026-11-10T13:00:00.000Z",
+    eventType: "app.projection.delete.v1",
+    aggregate: { type: "app", id: app.id, slug: app.slug },
+    locale: "en",
+    invalidationTags: ["app:sample-app", "app:sample-app:reviews", "app:sample-app:rating", "developer:sample-publisher", "category:productivity", "locale:en"]
+  });
+  assert.equal(parsed.success, true);
 });

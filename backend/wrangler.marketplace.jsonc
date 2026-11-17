@@ -1,0 +1,41 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "globe-play-private",
+  "main": "src/marketplace-worker.ts",
+  "compatibility_date": "2026-11-17",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "vars": {
+    "NODE_ENV": "production",
+    "SMS_ENABLED": "false",
+    "EMAIL_ENABLED": "false",
+    "SOLANA_NETWORK": "disabled",
+    "APP_ORIGINS": "https://open.globeapps.com",
+    "DEVELOPER_PORTAL_ORIGINS": "https://open.globeapps.com",
+    "DEVELOPER_API_PATH_PREFIX": "/play-private",
+    "DEVELOPER_INVITATION_LINK_ORIGIN": "https://open.globeapps.com"
+  },
+  "env": {
+    "staging": {
+      "name": "globe-play-private-staging",
+      "workers_dev": false,
+      "vars": {
+        "NODE_ENV": "production",
+        "BETTER_AUTH_URL": "https://api.globeapps.com/staging/api/auth",
+        "SMS_ENABLED": "false",
+        "EMAIL_ENABLED": "false",
+        "SOLANA_NETWORK": "disabled",
+        "APP_ORIGINS": "https://test.globeapps.com",
+        "DEVELOPER_PORTAL_ORIGINS": "https://test.globeapps.com",
+        "DEVELOPER_API_PATH_PREFIX": "/staging/play-private",
+        "DEVELOPER_INVITATION_LINK_ORIGIN": "https://test.globeapps.com"
+      }
+    }
+  },
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true
+    }
+  }
+}

@@ -7,7 +7,12 @@
   },
   "servers": [
     {
-      "url": "https://api.globeapps.com"
+      "url": "https://api.globeapps.com/staging/play-private",
+      "description": "Staging private developer API"
+    },
+    {
+      "url": "https://api.globeapps.com/play-private",
+      "description": "Production private developer API"
     }
   ],
   "paths": {

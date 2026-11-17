@@ -68,7 +68,6 @@ export async function provisionCanonicalIdentity(
     return await db.transaction(async (transaction) => {
       const [createdUser] = await transaction.insert(canonicalUsers).values({
         id: canonicalUserId,
-        status: "active",
         createdAt: now,
         updatedAt: now
       }).returning();

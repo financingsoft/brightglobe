@@ -173,10 +173,7 @@ export async function createDeveloperOrganization(
       description: input.description?.trim() || null,
       websiteUrl,
       supportEmail,
-      verificationStatus: "unverified",
-      status: "pending",
       createdByCanonicalUserId: input.actorCanonicalUserId,
-      aggregateVersion: 1,
       createdAt: now,
       updatedAt: now
     }).returning();

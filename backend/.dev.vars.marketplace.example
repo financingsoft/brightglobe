@@ -1,0 +1,19 @@
+# Local-only values. Never commit real secrets.
+NODE_ENV=development
+DATABASE_URL=postgresql://brightglobe_play_developer_app:replace-me@ep-example-pooler.region.aws.neon.tech/neondb?sslmode=require
+BETTER_AUTH_SECRET=replace-with-the-existing-BrightGlobe-auth-secret
+BETTER_AUTH_URL=https://api.globeapps.com/staging/api/auth
+APP_ORIGINS=https://test.globeapps.com
+SMS_ENABLED=false
+EMAIL_ENABLED=false
+SOLANA_NETWORK=disabled
+
+DEVELOPER_PORTAL_ORIGINS=https://test.globeapps.com
+DEVELOPER_API_PATH_PREFIX=/staging/play-private
+DEVELOPER_INVITATION_LINK_ORIGIN=https://test.globeapps.com
+DEVELOPER_INVITATION_RESEND_API_KEY=re_replace_with_dedicated_staging_key
+DEVELOPER_INVITATION_EMAIL_FROM=BrightGlobe <verified-sender@example.com>
+
+# Configure a real Cloudflare Rate Limiting binding in wrangler.marketplace.jsonc
+# before running or deploying the private Worker. It intentionally fails closed
+# when the binding is absent.

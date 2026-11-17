@@ -63,15 +63,18 @@ export function createDeveloperPrivateApp(options: DeveloperPrivateAppOptions) {
       return privateError("ORIGIN_NOT_ALLOWED", "The request origin is not allowed.", 403, requestId);
     }
 
-    const contentType = context.req.header("Content-Type")?.split(";")[0]?.trim().toLowerCase();
-    if (contentType !== "application/json") {
-      return privateError("JSON_REQUIRED", "Developer mutations require an application/json request body.", 415, requestId);
+    if (method === "POST") {
+      const contentType = context.req.header("Content-Type")?.split(";")[0]?.trim().toLowerCase();
+      if (contentType !== "application/json") {
+        return privateError("JSON_REQUIRED", "Developer mutations require an application/json request body.", 415, requestId);
+      }
     }
 
     const ipAddress = context.req.header("CF-Connecting-IP") ?? "unknown";
     try {
+      // Do not include arbitrary path parameters in the IP bucket key.
       const limited = await options.rateLimiter.limit({
-        key: "ip:" + ipAddress + ":" + method + ":" + context.req.path
+        key: "ip:" + ipAddress + ":" + method
       });
       if (!limited.success) {
         return privateError("RATE_LIMITED", "Too many requests. Try again later.", 429, requestId);

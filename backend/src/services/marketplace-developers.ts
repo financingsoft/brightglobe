@@ -223,9 +223,11 @@ async function createInvitation(
   const tokenHash = await hashDeveloperInvitationToken(rawToken);
   const invitationId = createUuidV7(now.getTime());
   const expiresAt = invitationExpiry(now);
+  let organizationName = "";
 
   await db.transaction(async (transaction) => {
-    await lockDeveloper(transaction, input.developerId);
+    const developer = await lockDeveloper(transaction, input.developerId);
+    organizationName = developer.displayName;
     await requireActiveActor(
       transaction,
       input.developerId,
@@ -278,7 +280,7 @@ async function createInvitation(
   });
 
   // The raw token is returned once to the caller for delivery; only its hash is stored.
-  return { invitationId, rawToken, expiresAt };
+  return { invitationId, rawToken, expiresAt, organizationName };
 }
 
 export async function createDeveloperInvitation(

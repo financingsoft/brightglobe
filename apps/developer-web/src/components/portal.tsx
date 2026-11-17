@@ -94,8 +94,12 @@ export function AuthForm({ mode = "login", embedded = false }: { mode?: "login" 
       } else {
         const result = await authClient.signIn.email({ email: email.trim(), password });
         if (result.error) throw new Error(result.error.message ?? "Sign-in failed.");
-        router.replace("/");
-        router.refresh();
+        if (embedded) {
+          setNotice("Signed in. You can now accept the invitation.");
+        } else {
+          router.replace("/");
+          router.refresh();
+        }
       }
     } catch (caught) {
       setError(friendlyError(caught));

@@ -205,12 +205,17 @@ export function createDeveloperRoutes(dependencies: DeveloperRouteDependencies) 
           kind: "membership"
         });
       } catch {
-        await dependencies.transactions.revokeInvitation({
-          developerId,
-          invitationId: created.invitationId,
-          actorCanonicalUserId: identity.canonicalUserId
-        }).catch(() => undefined);
-        return respond(context, { error: { code: "INVITATION_DELIVERY_FAILED", message: "The invitation could not be delivered. No active invitation was retained." } }, 503, requestId);
+        try {
+          await dependencies.transactions.revokeInvitation({
+            developerId,
+            invitationId: created.invitationId,
+            actorCanonicalUserId: identity.canonicalUserId
+          });
+          return respond(context, { error: { code: "INVITATION_DELIVERY_FAILED", message: "The invitation could not be delivered and has been revoked." } }, 503, requestId);
+        } catch {
+          console.error("[globe-play] Invitation delivery failed and compensating revocation also failed", { requestId, invitationId: created.invitationId });
+          return respond(context, { error: { code: "INVITATION_REVOCATION_REQUIRED", message: "The invitation delivery failed. The invitation may remain pending and requires operator attention." } }, 503, requestId);
+        }
       }
       return respond(context, {
         data: { invitationId: created.invitationId, expiresAt: created.expiresAt.toISOString(), delivery: "sent" }
@@ -249,12 +254,17 @@ export function createDeveloperRoutes(dependencies: DeveloperRouteDependencies) 
           kind: "owner_transfer"
         });
       } catch {
-        await dependencies.transactions.revokeInvitation({
-          developerId,
-          invitationId: created.invitationId,
-          actorCanonicalUserId: identity.canonicalUserId
-        }).catch(() => undefined);
-        return respond(context, { error: { code: "INVITATION_DELIVERY_FAILED", message: "The owner-transfer invitation could not be delivered. No active invitation was retained." } }, 503, requestId);
+        try {
+          await dependencies.transactions.revokeInvitation({
+            developerId,
+            invitationId: created.invitationId,
+            actorCanonicalUserId: identity.canonicalUserId
+          });
+          return respond(context, { error: { code: "INVITATION_DELIVERY_FAILED", message: "The owner-transfer invitation could not be delivered and has been revoked." } }, 503, requestId);
+        } catch {
+          console.error("[globe-play] Owner-transfer delivery failed and compensating revocation also failed", { requestId, invitationId: created.invitationId });
+          return respond(context, { error: { code: "INVITATION_REVOCATION_REQUIRED", message: "The owner-transfer invitation delivery failed. The invitation may remain pending and requires operator attention." } }, 503, requestId);
+        }
       }
       return respond(context, {
         data: { invitationId: created.invitationId, expiresAt: created.expiresAt.toISOString(), delivery: "sent" }

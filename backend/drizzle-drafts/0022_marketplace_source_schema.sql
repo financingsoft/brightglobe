@@ -74,7 +74,7 @@ CREATE TABLE marketplace.developer_invitations (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT developer_invitations_email_normalized_check CHECK (normalized_email = lower(btrim(normalized_email))),
   CONSTRAINT developer_invitations_token_hash_check CHECK (length(token_hash) = 64 AND token_hash ~ '^[a-f0-9]{64}$'),
-  CONSTRAINT developer_invitations_role_check CHECK ("role" IN ('admin','release_manager','analyst','support_readonly')),
+  CONSTRAINT developer_invitations_role_check CHECK ("role" IN ('owner','admin','release_manager','analyst','support_readonly')),
   CONSTRAINT developer_invitations_expiry_check CHECK (expires_at > created_at),
   CONSTRAINT developer_invitations_acceptance_check CHECK (
     (accepted_at IS NULL AND accepted_by_canonical_user_id IS NULL) OR
@@ -82,6 +82,9 @@ CREATE TABLE marketplace.developer_invitations (
   )
 );
 CREATE UNIQUE INDEX developer_invitations_token_hash_uidx ON marketplace.developer_invitations(token_hash);
+CREATE UNIQUE INDEX developer_invitations_one_pending_owner_transfer_uidx
+  ON marketplace.developer_invitations(developer_id)
+  WHERE "role" = 'owner' AND accepted_at IS NULL AND revoked_at IS NULL;
 CREATE INDEX developer_invitations_developer_created_idx ON marketplace.developer_invitations(developer_id, created_at);
 CREATE INDEX developer_invitations_email_created_idx ON marketplace.developer_invitations(normalized_email, created_at);
 

@@ -27,7 +27,8 @@ BEGIN
   END IF;
 
   IF EXISTS (
-    SELECT 1 FROM pg_constraint c
+    SELECT 1
+    FROM pg_constraint c
     JOIN pg_class source_table ON source_table.oid = c.conrelid
     JOIN pg_namespace source_schema ON source_schema.oid = source_table.relnamespace
     JOIN pg_class target_table ON target_table.oid = c.confrelid
@@ -50,39 +51,14 @@ BEGIN
   END IF;
 
   IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint c
+    SELECT 1
+    FROM pg_constraint c
     JOIN pg_class t ON t.oid = c.conrelid
     JOIN pg_namespace n ON n.oid = t.relnamespace
     WHERE n.nspname = 'marketplace'
       AND t.relname = 'developer_invitations'
       AND c.conname = 'developer_invitations_token_hash_check'
-      AND position('
-      AND tgconstraint <> 0
-      AND tgdeferrable
-  ) THEN
-    RAISE EXCEPTION 'missing deferred developer owner invariant trigger';
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_trigger
-    WHERE tgname = 'audit_events_append_only_guard'
-      AND NOT tgisinternal
-  ) THEN
-    RAISE EXCEPTION 'missing append-only audit trigger';
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_trigger
-    WHERE tgname = 'app_listing_publication_guard'
-      AND NOT tgisinternal
-  ) THEN
-    RAISE EXCEPTION 'missing listing publication guard';
-  END IF;
-
-  RAISE NOTICE 'Marketplace V1 schema assertions passed.';
-END;
-$assertions$;
- in pg_get_constraintdef(c.oid)) > 0
+      AND position('^[a-f0-9]{64}$' IN pg_get_constraintdef(c.oid)) > 0
   ) THEN
     RAISE EXCEPTION 'missing fully anchored invitation token hash constraint';
   END IF;

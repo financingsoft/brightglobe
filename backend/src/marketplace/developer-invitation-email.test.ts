@@ -16,7 +16,7 @@ const input = {
 
 test("invitation token is delivered only in the URL fragment, not path or query", () => {
   const message = buildDeveloperInvitationEmail(input, {
-    from: "BrightGlobe <noreply@go.globeapps.com>",
+    from: "BrightGlobe <verified-sender@example.com>",
     linkOrigin: "https://test.globeapps.com"
   });
   const link = message.text.split("\n").find((line) => line.startsWith("Open this link:"))?.slice("Open this link: ".length);
@@ -31,11 +31,11 @@ test("invitation token is delivered only in the URL fragment, not path or query"
 
 test("invitation link origin must be a clean HTTPS origin", () => {
   assert.throws(() => buildDeveloperInvitationEmail(input, {
-    from: "BrightGlobe <noreply@go.globeapps.com>",
+    from: "BrightGlobe <verified-sender@example.com>",
     linkOrigin: "http://test.globeapps.com"
   }));
   assert.throws(() => buildDeveloperInvitationEmail(input, {
-    from: "BrightGlobe <noreply@go.globeapps.com>",
+    from: "BrightGlobe <verified-sender@example.com>",
     linkOrigin: "https://test.globeapps.com/extra"
   }));
 });
@@ -44,7 +44,7 @@ test("Resend delivery sends a message and never exposes provider response detail
   let captured: RequestInit | undefined;
   const delivery = createResendDeveloperInvitationDelivery({
     apiKey: "test-secret",
-    from: "BrightGlobe <noreply@go.globeapps.com>",
+    from: "BrightGlobe <verified-sender@example.com>",
     linkOrigin: "https://test.globeapps.com",
     fetcher: async (_input, init) => {
       captured = init;
@@ -62,7 +62,7 @@ test("Resend delivery sends a message and never exposes provider response detail
 test("provider failures are surfaced without logging sensitive payloads", async () => {
   const delivery = createResendDeveloperInvitationDelivery({
     apiKey: "test-secret",
-    from: "BrightGlobe <noreply@go.globeapps.com>",
+    from: "BrightGlobe <verified-sender@example.com>",
     linkOrigin: "https://test.globeapps.com",
     fetcher: async () => new Response("sensitive provider body", { status: 503 })
   });

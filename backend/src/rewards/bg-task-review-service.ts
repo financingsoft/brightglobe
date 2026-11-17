@@ -77,14 +77,13 @@ export async function recordBgTaskInitialReview(
       Number.isNaN(now.getTime())) {
     throw new BgTaskReviewError("INVALID_INPUT", "A valid evidence ID, decision and timestamp are required.");
   }
-  await requireAuthorizedReviewer(authorize, input.reviewerId, "initial");
-
   return db.transaction(async (tx) => {
     const [evidence] = await tx.select().from(bgTaskEvidenceRecords)
       .where(eq(bgTaskEvidenceRecords.id, input.evidenceId))
       .limit(1)
       .for("update");
     if (!evidence) throw new BgTaskReviewError("NOT_FOUND", "BG task evidence was not found.");
+    await requireAuthorizedReviewer(authorize, input.reviewerId, "initial");
     if (evidence.canonicalUserId === input.reviewerId) {
       throw new BgTaskReviewError("SELF_REVIEW", "A task owner cannot review their own evidence.");
     }
@@ -186,14 +185,13 @@ export async function resolveBgTaskAppeal(
       Number.isNaN(now.getTime())) {
     throw new BgTaskReviewError("INVALID_INPUT", "A valid evidence ID, decision and timestamp are required.");
   }
-  await requireAuthorizedReviewer(authorize, input.reviewerId, "appeal");
-
   return db.transaction(async (tx) => {
     const [evidence] = await tx.select().from(bgTaskEvidenceRecords)
       .where(eq(bgTaskEvidenceRecords.id, input.evidenceId))
       .limit(1)
       .for("update");
     if (!evidence) throw new BgTaskReviewError("NOT_FOUND", "BG task evidence was not found.");
+    await requireAuthorizedReviewer(authorize, input.reviewerId, "appeal");
     if (evidence.status !== "appealed") {
       throw new BgTaskReviewError("INVALID_STATE", "Appeal resolution requires appealed evidence.");
     }

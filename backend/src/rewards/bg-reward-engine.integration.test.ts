@@ -24,6 +24,8 @@ import {
 } from "./bg-reward-engine.js";
 
 const connectionString = process.env.LOCAL_DATABASE_URL;
+const allowRisk = async () => ({ allowed: true, reference: "ci-daily-risk-approval" });
+const denyRisk = async () => ({ allowed: false, reference: "ci-daily-risk-denial" });
 
 function testAddress(seed: number): string {
   const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -149,8 +151,8 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
     await t.test("duplicate request returns the same event and payout without reserving twice", async () => {
       const programId = await createActiveProgram(1, 100n, 1_000n);
       const userId = await addUser();
-      const first = await reserveBgDailyReward(db, { canonicalUserId: userId, now });
-      const replay = await reserveBgDailyReward(db, { canonicalUserId: userId, now });
+      const first = await reserveBgDailyReward(db, { canonicalUserId: userId, now }, allowRisk);
+      const replay = await reserveBgDailyReward(db, { canonicalUserId: userId, now }, allowRisk);
       assert.equal(first.outcome, "reserved");
       assert.equal(replay.outcome, "replayed");
       assert.equal(replay.rewardEventId, first.rewardEventId);
@@ -200,11 +202,11 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
     await t.test("daily uniqueness survives a new rule version on the same UTC day", async () => {
       const userId = await addUser();
       const oldProgramId = await createActiveProgram(2, 100n, 1_000n);
-      const first = await reserveBgDailyReward(db, { canonicalUserId: userId, now });
+      const first = await reserveBgDailyReward(db, { canonicalUserId: userId, now }, allowRisk);
       assert.equal(first.programId, oldProgramId);
 
       const newProgramId = await createActiveProgram(3, 200n, 2_000n);
-      const replay = await reserveBgDailyReward(db, { canonicalUserId: userId, now });
+      const replay = await reserveBgDailyReward(db, { canonicalUserId: userId, now }, allowRisk);
       assert.equal(replay.outcome, "replayed");
       assert.equal(replay.rewardEventId, first.rewardEventId);
       assert.equal(replay.programId, oldProgramId);
@@ -216,8 +218,8 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
       const programId = await createActiveProgram(4, 100n, 1_000n);
       const userId = await addUser();
       const outcomes = await Promise.all([
-        reserveBgDailyReward(db, { canonicalUserId: userId, now }),
-        reserveBgDailyReward(db, { canonicalUserId: userId, now })
+        reserveBgDailyReward(db, { canonicalUserId: userId, now }, allowRisk),
+        reserveBgDailyReward(db, { canonicalUserId: userId, now }, allowRisk)
       ]);
       assert.equal(outcomes.filter((item) => item.outcome === "reserved").length, 1);
       assert.equal(outcomes.filter((item) => item.outcome === "replayed").length, 1);
@@ -230,8 +232,8 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
       const firstUser = await addUser();
       const secondUser = await addUser();
       const outcomes = await Promise.allSettled([
-        reserveBgDailyReward(db, { canonicalUserId: firstUser, now }),
-        reserveBgDailyReward(db, { canonicalUserId: secondUser, now })
+        reserveBgDailyReward(db, { canonicalUserId: firstUser, now }, allowRisk),
+        reserveBgDailyReward(db, { canonicalUserId: secondUser, now }, allowRisk)
       ]);
       assert.equal(outcomes.filter((item) => item.status === "fulfilled").length, 1);
       const rejected = outcomes.find((item) => item.status === "rejected");
@@ -253,20 +255,26 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
       const programId = await createActiveProgram(6, 100n, 1_000n);
       const noWalletUser = await addUser(0);
       await assert.rejects(
-        () => reserveBgDailyReward(db, { canonicalUserId: noWalletUser, now }),
+        () => reserveBgDailyReward(db, { canonicalUserId: noWalletUser, now }, allowRisk),
         (error: unknown) => error instanceof BgRewardReservationError && error.code === "BG_WALLET_REQUIRED"
       );
 
       const suspendedUser = await addUser(1, "suspended");
       await assert.rejects(
-        () => reserveBgDailyReward(db, { canonicalUserId: suspendedUser, now }),
+        () => reserveBgDailyReward(db, { canonicalUserId: suspendedUser, now }, allowRisk),
         (error: unknown) => error instanceof BgRewardReservationError && error.code === "CANONICAL_USER_INELIGIBLE"
       );
 
       const ambiguousUser = await addUser(2);
       await assert.rejects(
-        () => reserveBgDailyReward(db, { canonicalUserId: ambiguousUser, now }),
+        () => reserveBgDailyReward(db, { canonicalUserId: ambiguousUser, now }, allowRisk),
         (error: unknown) => error instanceof BgRewardReservationError && error.code === "BG_WALLET_SELECTION_REQUIRED"
+      );
+
+      const riskRejectedUser = await addUser();
+      await assert.rejects(
+        () => reserveBgDailyReward(db, { canonicalUserId: riskRejectedUser, now }, denyRisk),
+        (error: unknown) => error instanceof BgRewardReservationError && error.code === "BG_REWARD_RISK_REJECTED"
       );
 
       const [program] = await db.select().from(rewardPrograms).where(eq(rewardPrograms.id, programId));

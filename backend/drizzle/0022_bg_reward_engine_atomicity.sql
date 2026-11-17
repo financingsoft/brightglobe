@@ -127,3 +127,33 @@ $bg$ LANGUAGE plpgsql;
 CREATE TRIGGER "reward_event_immutable"
   BEFORE UPDATE OR DELETE ON "reward_events"
   FOR EACH ROW EXECUTE FUNCTION prevent_reward_event_mutation();
+
+--> statement-breakpoint
+CREATE OR REPLACE FUNCTION prevent_reward_payout_intent_mutation() RETURNS trigger AS $bg$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'Reward payout intents are immutable; reconcile or cancel instead of deleting';
+  END IF;
+  IF
+    NEW."id" IS DISTINCT FROM OLD."id" OR
+    NEW."reward_event_id" IS DISTINCT FROM OLD."reward_event_id" OR
+    NEW."treasury_account_id" IS DISTINCT FROM OLD."treasury_account_id" OR
+    NEW."network" IS DISTINCT FROM OLD."network" OR
+    NEW."mint_address" IS DISTINCT FROM OLD."mint_address" OR
+    NEW."token_program" IS DISTINCT FROM OLD."token_program" OR
+    NEW."source_token_account" IS DISTINCT FROM OLD."source_token_account" OR
+    NEW."fee_payer_address" IS DISTINCT FROM OLD."fee_payer_address" OR
+    NEW."destination_wallet" IS DISTINCT FROM OLD."destination_wallet" OR
+    NEW."destination_token_account" IS DISTINCT FROM OLD."destination_token_account" OR
+    NEW."amount_base_units" IS DISTINCT FROM OLD."amount_base_units" OR
+    NEW."created_at" IS DISTINCT FROM OLD."created_at"
+  THEN
+    RAISE EXCEPTION 'Reward payout intent transfer identity is immutable';
+  END IF;
+  RETURN NEW;
+END;
+$bg$ LANGUAGE plpgsql;
+--> statement-breakpoint
+CREATE TRIGGER "reward_payout_intent_immutable"
+  BEFORE UPDATE OR DELETE ON "reward_payout_intents"
+  FOR EACH ROW EXECUTE FUNCTION prevent_reward_payout_intent_mutation();

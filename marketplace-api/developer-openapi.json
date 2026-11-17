@@ -1854,6 +1854,105 @@
           }
         }
       }
+    },
+    "/api/v1/play/developers/{developerId}/categories": {
+      "get": {
+        "operationId": "listDeveloperAppCategories",
+        "summary": "List active localized platform-owned categories",
+        "description": "Returns active Globe-managed categories for the requested locale. Developers may select but cannot create or edit taxonomy. The response is private and tenant-membership scoped.",
+        "parameters": [
+          {
+            "name": "developerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 35,
+              "default": "en"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private localized platform-owned category catalogue",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "private, no-store, max-age=0"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "slug",
+                          "sortOrder"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "parentId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "sortOrder": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid locale"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        }
+      }
     }
   }
 }

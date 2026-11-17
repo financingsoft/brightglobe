@@ -154,6 +154,51 @@ test("reports operator attention if failed delivery cannot revoke the invitation
   assert.match(body.error.message, /may remain pending/);
 });
 
+test("rate limits private mutations by canonical user and organization", async () => {
+  const base = dependencies();
+  let created = false;
+  let keys: string[] = [];
+  const { app } = dependencies({
+    transactions: {
+      ...base.transactions,
+      createInvitation: async () => { created = true; return invitation; }
+    },
+    rateLimit: async (nextKeys) => { keys = nextKeys; return false; }
+  });
+  const response = await app.request(`/developers/${developerId}/invitations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "member@example.com", role: "analyst" })
+  });
+  assert.equal(response.status, 429);
+  assert.deepEqual(keys, [
+    "user:" + user.canonicalUserId + ":developer-write",
+    "organization:" + developerId + ":developer-write"
+  ]);
+  assert.equal(created, false);
+});
+
+test("owner-transfer email uses the organization display name from the transaction", async () => {
+  let deliveredOrganization = "";
+  const base = dependencies();
+  const { app } = dependencies({
+    transactions: {
+      ...base.transactions,
+      initiateOwnerTransfer: async () => invitation
+    },
+    invitationDelivery: {
+      send: async (message) => { deliveredOrganization = message.organizationName; }
+    }
+  });
+  const response = await app.request(`/developers/${developerId}/owner-transfer`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "new-owner@example.com" })
+  });
+  assert.equal(response.status, 201);
+  assert.equal(deliveredOrganization, invitation.organizationName);
+});
+
 test("wallet-only owner cannot initiate an ownership transfer", async () => {
   let initiated = false;
   const base = dependencies();

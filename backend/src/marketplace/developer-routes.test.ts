@@ -99,7 +99,8 @@ test("organization and workspace reads are authenticated, tenant-scoped and priv
           email: "member@example.com",
           role: "analyst",
           expiresAt: new Date("2026-11-24T00:00:00.000Z"),
-          createdAt
+          createdAt,
+          canRevoke: true
         }]
       };
     }

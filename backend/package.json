@@ -8,10 +8,12 @@
     "deploy": "wrangler deploy",
     "build": "wrangler deploy --dry-run --outdir=dist/worker",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "tsx --test src/config/origins.test.ts src/config/env.test.ts src/domain/profile.test.ts src/domain/phone.test.ts src/domain/bd.test.ts src/domain/session-revocation.test.ts src/services/email.test.ts src/blockchain/solana/rpc-client.test.ts src/blockchain/solana/address.test.ts src/blockchain/solana/signature.test.ts src/routes/solana.test.ts src/identity/ids.test.ts src/identity/identity-service.test.ts src/auth/wallet/message.test.ts src/auth/wallet/base58.test.ts src/auth/wallet/cookie.test.ts src/blockchain/solana/gateway.test.ts src/blockchain/solana/token/classic-token.test.ts src/blockchain/solana/transfer-builder.test.ts src/assets/ledger/invariants.test.ts src/assets/transactions/state-machine.test.ts src/indexer/event-policy.test.ts src/indexer/reconciliation.test.ts src/blockchain/solana/transaction-decoder.test.ts src/assets/ledger/evidence.test.ts src/indexer/transaction-verifier.test.ts src/assets/transactions/blockhash.test.ts src/db/marketplace-schema.test.ts src/services/marketplace-developers.test.ts",
+    "test": "tsx --test src/config/origins.test.ts src/config/env.test.ts src/domain/profile.test.ts src/domain/phone.test.ts src/domain/bd.test.ts src/domain/session-revocation.test.ts src/services/email.test.ts src/blockchain/solana/rpc-client.test.ts src/blockchain/solana/address.test.ts src/blockchain/solana/signature.test.ts src/routes/solana.test.ts src/identity/ids.test.ts src/identity/identity-service.test.ts src/auth/wallet/message.test.ts src/auth/wallet/base58.test.ts src/auth/wallet/cookie.test.ts src/blockchain/solana/gateway.test.ts src/blockchain/solana/token/classic-token.test.ts src/blockchain/solana/transfer-builder.test.ts src/assets/ledger/invariants.test.ts src/assets/transactions/state-machine.test.ts src/indexer/event-policy.test.ts src/indexer/reconciliation.test.ts src/blockchain/solana/transaction-decoder.test.ts src/assets/ledger/evidence.test.ts src/indexer/transaction-verifier.test.ts src/assets/transactions/blockhash.test.ts src/db/marketplace-schema.test.ts src/services/marketplace-developers.test.ts src/marketplace/developer-invitation-email.test.ts src/marketplace/developer-private-app.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:generate:marketplace-draft": "drizzle-kit generate --config=drizzle.marketplace.config.ts"
+    "db:generate:marketplace-draft": "drizzle-kit generate --config=drizzle.marketplace.config.ts",
+    "dev:marketplace": "wrangler dev --config wrangler.marketplace.jsonc",
+    "build:marketplace": "wrangler deploy --dry-run --config wrangler.marketplace.jsonc --outdir=dist/marketplace-worker"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.23",

@@ -34,7 +34,7 @@ CREATE UNIQUE INDEX "reward_programs_one_active_key_uidx"
 ALTER TABLE "reward_programs"
   ADD COLUMN "approval_reference" varchar(128),
   ADD CONSTRAINT "reward_programs_active_approval_check"
-  CHECK ("status" <> 'active' OR ("approval_reference" IS NOT NULL AND "approved_by" IS NOT NULL AND "approved_at" IS NOT NULL));
+  CHECK ("status" <> 'active' OR ("approval_reference" IS NOT NULL AND btrim("approval_reference") <> '' AND "approved_by" IS NOT NULL AND btrim("approved_by") <> '' AND "approved_at" IS NOT NULL));
 --> statement-breakpoint
 ALTER TABLE "reward_payout_intents"
   ADD COLUMN "treasury_account_id" uuid NOT NULL REFERENCES "treasury_accounts"("id") ON DELETE RESTRICT,

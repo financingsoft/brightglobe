@@ -75,7 +75,7 @@ function audit(input: { actorId: string; action: string; targetType: string; tar
 }
 
 async function requireOrganizationRole(
-  db: Database,
+  db: Parameters<Parameters<Database["transaction"]>[0]>[0] | Database,
   developerId: string,
   actorId: string,
   roles: MarketplaceAppRole[]
@@ -144,7 +144,7 @@ function normalizeLocalization(input: AppLocalizationInput) {
   };
 }
 
-async function validateActiveCategories(db: Database, categoryIds: string[]) {
+async function validateActiveCategories(db: Parameters<Parameters<Database["transaction"]>[0]>[0] | Database, categoryIds: string[]) {
   validateCategories(categoryIds);
   if (!categoryIds.length) return;
   const found = await db.select({ id: categories.id }).from(categories)
@@ -163,9 +163,6 @@ export async function createMarketplaceApp(db: Database, input: CreateMarketplac
   validatePlatforms(platforms);
   const categoryIds = input.categoryIds ?? [];
   validateCategories(categoryIds);
-  await requireOrganizationRole(db, input.developerId, input.actorCanonicalUserId, ["owner", "admin", "release_manager"]);
-  await validateActiveCategories(db, categoryIds);
-
   const appId = createUuidV7(now.getTime());
   const revisionIds = localizations.map(() => createUuidV7(now.getTime()));
   return db.transaction(async (tx) => {
@@ -174,6 +171,8 @@ export async function createMarketplaceApp(db: Database, input: CreateMarketplac
     if (!organization || organization.status === "suspended" || organization.status === "closed") {
       throw new MarketplaceAppError("NOT_FOUND", "Developer organization was not found.");
     }
+    await requireOrganizationRole(tx, input.developerId, input.actorCanonicalUserId, ["owner", "admin", "release_manager"]);
+    await validateActiveCategories(tx, categoryIds);
     const [app] = await tx.insert(apps).values({
       id: appId, developerId: input.developerId, slug, appType: input.appType,
       status: "draft", createdByCanonicalUserId: input.actorCanonicalUserId,
@@ -270,13 +269,18 @@ export async function updateMarketplaceAppDraft(db: Database, input: {
   const now = input.now ?? new Date();
   const locale = normalizeLocale(input.locale);
   const listing = normalizeLocalization({ locale, ...input.listing });
-  await requireOrganizationRole(db, input.developerId, input.actorCanonicalUserId, ["owner", "admin", "release_manager"]);
   const categoryIds = input.categoryIds;
-  if (categoryIds) await validateActiveCategories(db, categoryIds);
   if (input.platforms) validatePlatforms(input.platforms);
   const nextSlug = input.slug === undefined ? undefined : normalizeSlug(input.slug);
 
   return db.transaction(async (tx) => {
+    const [organization] = await tx.select({ id: developers.id, status: developers.status }).from(developers)
+      .where(eq(developers.id, input.developerId)).for("update").limit(1);
+    if (!organization || organization.status === "suspended" || organization.status === "closed") {
+      throw new MarketplaceAppError("NOT_FOUND", "Developer organization was not found.");
+    }
+    await requireOrganizationRole(tx, input.developerId, input.actorCanonicalUserId, ["owner", "admin", "release_manager"]);
+    if (categoryIds) await validateActiveCategories(tx, categoryIds);
     const [app] = await tx.select().from(apps).where(and(
       eq(apps.id, input.appId), eq(apps.developerId, input.developerId)
     )).for("update").limit(1);
@@ -290,7 +294,17 @@ export async function updateMarketplaceAppDraft(db: Database, input: {
       eq(appListingRevisions.status, "draft")
     )).orderBy(desc(appListingRevisions.revisionNumber)).for("update").limit(1);
     if (!revision) throw new MarketplaceAppError("NOT_FOUND", "An editable draft for this locale was not found.");
-    const metadata = { ...listing, categoryIds: categoryIds ?? [], platforms: input.platforms ?? [] };
+    const [existingCategories, existingPlatforms] = await Promise.all([
+      tx.select({ categoryId: appListingRevisionCategories.categoryId }).from(appListingRevisionCategories)
+        .where(eq(appListingRevisionCategories.revisionId, revision.id)),
+      tx.select({ platform: appListingPlatformTargets.platform }).from(appListingPlatformTargets)
+        .where(eq(appListingPlatformTargets.revisionId, revision.id))
+    ]);
+    const metadata = {
+      ...listing,
+      categoryIds: [...(categoryIds ?? existingCategories.map((row) => row.categoryId))].sort(),
+      platforms: [...(input.platforms ?? existingPlatforms.map((row) => row.platform as AppPlatform))].sort()
+    };
     await tx.update(appListingRevisions).set({
       name: listing.name, tagline: listing.tagline, description: listing.description,
       websiteUrl: listing.websiteUrl, privacyPolicyUrl: listing.privacyPolicyUrl,

@@ -22,6 +22,16 @@ export class MarketplaceAppError extends Error {
   }
 }
 
+function translateAppDatabaseError(error: unknown): never {
+  if (error && typeof error === "object" && "code" in error && (error as { code?: unknown }).code === "23505") {
+    const constraint = "constraint" in error ? String((error as { constraint?: unknown }).constraint ?? "") : "";
+    if (constraint === "apps_slug_uidx") {
+      throw new MarketplaceAppError("CONFLICT", "This app slug is already reserved.");
+    }
+  }
+  throw error;
+}
+
 function invalid(message: string): never {
   throw new MarketplaceAppError("INVALID_INPUT", message);
 }
@@ -207,7 +217,7 @@ export async function createMarketplaceApp(db: Database, input: CreateMarketplac
       metadata: { developerId: input.developerId, slug, appType: input.appType, locales: localizations.map((item) => item.locale) }
     }));
     return { id: appId, developerId: input.developerId, slug, appType: input.appType, status: "draft", createdAt: now };
-  });
+  }).catch(translateAppDatabaseError);
 }
 
 export async function listMarketplaceApps(db: Database, input: { developerId: string; actorCanonicalUserId: string }) {
@@ -341,5 +351,5 @@ export async function updateMarketplaceAppDraft(db: Database, input: {
       metadata: { locale, changedCategories: Boolean(categoryIds), changedPlatforms: Boolean(input.platforms), slugChanged: Boolean(nextSlug && nextSlug !== app.slug) }
     }));
     return { appId: input.appId, revisionId: revision.id, locale, updatedAt: now };
-  });
+  }).catch(translateAppDatabaseError);
 }

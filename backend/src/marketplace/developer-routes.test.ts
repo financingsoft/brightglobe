@@ -24,6 +24,8 @@ const invitation: DeveloperInvitationRecord = {
 function dependencies(overrides: Partial<DeveloperRouteDependencies> = {}) {
   const calls: string[] = [];
   const transactions: DeveloperTransactionService = {
+    listOrganizations: async () => [],
+    getWorkspace: async () => { throw new Error("not used"); },
     createOrganization: async (input) => ({
       id: developerId,
       slug: input.slug,

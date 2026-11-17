@@ -33,6 +33,11 @@ GRANT SELECT ON TABLE public.wallet_sessions TO brightglobe_play_developer_app;
 GRANT UPDATE (last_seen_at)
   ON TABLE public.wallet_sessions TO brightglobe_play_developer_app;
 
+-- Developer workspace display names are public-profile fields; do not expose
+-- profile email, biography, locale or other account data to this role.
+GRANT SELECT (canonical_user_id, display_name)
+  ON TABLE public.canonical_user_profiles TO brightglobe_play_developer_app;
+
 -- Marketplace organization source tables only.
 GRANT SELECT ON TABLE marketplace.developers TO brightglobe_play_developer_app;
 GRANT INSERT (

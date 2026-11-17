@@ -48,7 +48,8 @@ export class BgTaskVerifierError extends Error {
 }
 
 const KEY_PATTERN = /^[a-z][a-z0-9._-]{2,63}$/;
-const EVIDENCE_ID_PATTERN = /^[A-Za-z0-9._:-]{1,160}$/;
+const EVIDENCE_ID_PATTERN = /^[A-Za-z0-9._-]{1,32}$/;
+const TASK_ID_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
 const SOURCE_PATTERN = /^[a-z][a-z0-9._-]{1,63}$/;
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 
@@ -69,6 +70,9 @@ export class BgTaskVerifierRegistry {
       }
       if (!Number.isSafeInteger(verifier.maxEvidenceAgeMs) || verifier.maxEvidenceAgeMs <= 0) {
         throw new BgTaskVerifierError("INVALID_REQUEST", "Task verifier evidence age must be positive.");
+      }
+      if ((verifier.reviewMode !== "automatic" && verifier.reviewMode !== "manual") || typeof verifier.repeatable !== "boolean") {
+        throw new BgTaskVerifierError("INVALID_REQUEST", "Task verifier review and repeatability policies must be explicit.");
       }
       this.verifiers.set(verifier.key, verifier);
     }
@@ -94,8 +98,7 @@ export async function verifyBgTaskCompletion(
 ): Promise<BgTaskVerification> {
   if (
     !isUuidV7(input.canonicalUserId) ||
-    input.taskId.trim().length === 0 ||
-    input.taskId.length > 128 ||
+    !TASK_ID_PATTERN.test(input.taskId) ||
     !Number.isSafeInteger(input.taskVersion) ||
     input.taskVersion < 1 ||
     !KEY_PATTERN.test(input.verifierKey) ||
@@ -145,7 +148,7 @@ export async function verifyBgTaskCompletion(
 
   const baseKey = `bg-task:${input.canonicalUserId}:${input.taskId}:${input.taskVersion}`;
   const idempotencyKey = verifier.repeatable ? `${baseKey}:${evidence.evidenceId}` : baseKey;
-  if (idempotencyKey.length > 320) {
+  if (idempotencyKey.length > 160) {
     throw new BgTaskVerifierError("EVIDENCE_INVALID", "The task idempotency key exceeds the supported length.");
   }
 

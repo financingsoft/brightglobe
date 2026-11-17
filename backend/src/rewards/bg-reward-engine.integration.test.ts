@@ -162,6 +162,21 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
         .where(eq(rewardPayoutIntents.rewardEventId, first.rewardEventId));
       assert.equal(events.length, 1);
       assert.equal(payouts.length, 1);
+      await assert.rejects(
+        () => pool.query(
+          "UPDATE public.reward_events SET amount_base_units = 999 WHERE id = $1",
+          [first.rewardEventId]
+        ),
+        /immutable/
+      );
+      await assert.rejects(
+        () => pool.query("DELETE FROM public.reward_events WHERE id = $1", [first.rewardEventId]),
+        /immutable/
+      );
+      await assert.rejects(
+        () => pool.query("DELETE FROM public.reward_programs WHERE id = $1", [programId]),
+        /retired instead of deleting/
+      );
     });
 
     await t.test("daily uniqueness survives a new rule version on the same UTC day", async () => {

@@ -10,14 +10,14 @@ This document is a proposal, not an approval. It does not authorize code changes
 
 The current public read Worker is `marketplace-api`. It is separate from the private Developer Worker at `backend/src/marketplace-worker.ts`.
 
-Current public GET implementation:
+Current public GET implementation (verified in `marketplace-api/src/app.ts`):
 - `GET /api/v1/play/apps/:slug`
 - `GET /api/v1/play/apps/:slug/reviews`
 - `GET /health/live`
 
 The public app detail and reviews routes read precomputed projection tables, validate payloads with strict Zod schemas, return request IDs and ETags, and emit targeted `Cache-Tag` headers. The Worker does not hold purge credentials.
 
-The projection event schema and dependency-injected projector core exist. The production outbox writer, relay, Queue consumer, Neon event-store adapter, Cloudflare purge adapter, replay/operations and Staging proof remain incomplete.
+The projection event schema and dependency-injected batch projector core exist. The core defines atomic store application and idempotent purge orchestration, but no concrete Neon event-store adapter, durable outbox relay, Queue consumer binding/handler, Cloudflare purge adapter, replay/operations or Staging proof has been verified.
 
 ## 1A. Additional source-schema and authorization evidence (verified 2026-11-17)
 
@@ -42,9 +42,9 @@ The proposals below must refine existing contracts, not silently replace them. T
 | Categories (P4) | The data contract already lists `GET /api/v1/play/categories`; the route manifest already reserves a public category-detail page. | Keep category index as an existing API inventory item. Specify its response contract and decide whether category detail is metadata-plus-list or reuses the catalogue endpoint. |
 | Search (P5) | The discovery contract selects PostgreSQL full-text search plus indexed filters as V1 baseline; Chinese/Japanese segmentation and analyzers must be tested. Typo tolerance is only “where feasible”. | Do not introduce a new search engine or promise typo tolerance. Define the API envelope, bounded query/filter semantics, deterministic ranking/tie-breaker and locale analyzer acceptance tests on the existing baseline. |
 | Editorial collections (P6) | The data contract assigns editorial collections and editorial content to Payload CMS; Marketplace owns app/publisher/release truth. | This ownership is already established. Only define safe composition of CMS collection metadata with currently published Marketplace app cards. Do not create a second collection source of truth. |
-| Before/after invalidation (P2) | The Projection Pipeline Contract already requires previous and current publisher/category tags on app events, including prior relationships for delete/takedown. | This is implementation conformance, not a new product decision. The event schema/source builder must prove it; do not weaken the existing rule to current relationships only. |
+| Before/after invalidation (P2) | The Projection Pipeline Contract already requires previous and current publisher/category tags on app events, including prior relationships for delete/takedown. However, the current Zod event schema only validates current relationships on upsert and has no previous-relationship field or source builder. | This is implementation conformance, not a new product decision. Add an enforceable event representation and source builder; do not weaken the existing rule to current relationships only. |
 | Event delivery and purge (P8) | The Projection Pipeline Contract already defines leased `SKIP LOCKED` relay, at-least-once Queue delivery, atomic projection+receipt, retryable pending purge, bounded batch coalescing and chunks of at most 100 tags per purge request. | Implement the defined semantics in concrete adapters. Keep the separate distinction between the SQL draft's per-event tag cap (50) and Cloudflare purge request chunk cap (100). |
-| Rating tags (P1) | Event schema requires app rating invalidation; detailed API and pipeline tag lists omit it; route manifest includes rating for review routes but not app-detail API. | This is a real cross-contract inconsistency. Align event tags, app-detail/reviews response headers and route policy so every representation containing a rating emits the rating tag. |
+| Rating tags (P1) | Event schema requires app rating invalidation. `marketplace-api/src/app.ts` app-detail Cache-Tag omits rating; reviews response contains rating but its Cache-Tag also omits rating. The route manifest includes rating on the reviews API but not app-detail API. | This is a verified runtime-source inconsistency. Align event tags, app-detail/reviews response headers and route policy so every representation containing a rating emits the rating tag. |
 | SSR error behavior (P7) | Public API contract defines a 404 envelope; master contract prohibits soft-404 and requires accurate status codes. | Define the web data-access result mapping so only an upstream public 404 becomes `notFound()`; outages, invalid responses and missing configuration remain distinguishable failures. |
 
 Important boundary: the master contract requires public reads to use derived, versioned projections and prohibits Neon per-page-view aggregation. Nothing in this reconciliation authorizes bypassing that architecture, querying transactional tables for catalogue pages, adding a search cluster, or giving the public Worker write/purge permissions.
@@ -66,9 +66,9 @@ Important boundary: the master contract requires public reads to use derived, ve
 
 ### Observed mismatch
 
-- `projection-events.ts` requires all app/review events to include `app:{slug}`, `app:{slug}:reviews`, `app:{slug}:rating` and `locale:{locale}`.
+- `marketplace-api/src/projection-events.ts` requires all app/review events to include `app:{slug}`, `app:{slug}:reviews`, `app:{slug}:rating` and `locale:{locale}`.
 - `PLAY_PROJECTION_PIPELINE_CONTRACT.md` and `PLAY_PUBLIC_READ_API_CONTRACT.md` initial tag lists omit the rating tag.
-- The app detail response contains a precomputed rating when present, but emits no `app:{slug}:rating` Cache-Tag.
+- `marketplace-api/src/app.ts` app-detail response contains a precomputed rating when present, but emits no `app:{slug}:rating` Cache-Tag.
 - The reviews response also contains the rating summary, but emits no `app:{slug}:rating` Cache-Tag.
 
 ### Proposed resolution
@@ -91,7 +91,7 @@ Every mutation event should carry the union of tags that cover all representatio
 The projection contract requires both previous and current developer/category relationships when an app changes publisher or category. The current event schema can validate current relationships from the new projection but cannot prove previous relationships are included.
 
 Proposed rule:
-- For app upsert events, satisfy the existing Projection Pipeline Contract by carrying the prior developer/category relationships from the transaction's locked pre-update state. A versioned `previousRelationships` field is the proposed representation (nullable for first publication).
+- For app upsert events, satisfy the existing Projection Pipeline Contract by carrying the prior developer/category relationships from the transaction's locked pre-update state. A versioned `previousRelationships` field is the proposed representation (nullable for first publication); the current event schema does not yet define this field.
 - Derive invalidation tags from the union of prior and new relationships, plus app, rating, reviews and locale tags.
 - For delete/takedown, include the last published developer/category relationships, not relationships from an unpublished draft.
 - Validate exact canonical tag construction and uniqueness. The event payload must remain sanitized; no user identity, private publisher evidence or internal moderation data.

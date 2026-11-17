@@ -6,7 +6,7 @@ import { and, eq } from "drizzle-orm";
 import type { Database } from "../db/client.js";
 import { schema } from "../db/schema.js";
 import {
-  apps, appListingRevisions, auditEvents, developerMemberships, marketplaceSchema
+  apps, appListingRevisions, auditEvents, marketplaceSchema
 } from "../db/marketplace-schema.js";
 import { createUuidV7 } from "../identity/ids.js";
 import { createDeveloperOrganization } from "./marketplace-developers.js";

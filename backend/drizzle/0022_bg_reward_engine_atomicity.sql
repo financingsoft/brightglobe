@@ -35,7 +35,7 @@ ALTER TABLE "reward_programs"
   ADD CONSTRAINT "reward_programs_active_approval_check"
   CHECK ("status" <> 'active' OR ("approved_by" IS NOT NULL AND "approved_at" IS NOT NULL));
 --> statement-breakpoint
-CREATE OR REPLACE FUNCTION prevent_reward_program_rule_mutation() RETURNS trigger AS $$
+CREATE OR REPLACE FUNCTION prevent_reward_program_rule_mutation() RETURNS trigger AS $bg$
 BEGIN
   IF OLD."status" <> 'draft' AND (
     NEW."status" = 'draft' OR
@@ -55,7 +55,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$bg$ LANGUAGE plpgsql;
 --> statement-breakpoint
 CREATE TRIGGER "reward_program_rule_immutable"
   BEFORE UPDATE ON "reward_programs"

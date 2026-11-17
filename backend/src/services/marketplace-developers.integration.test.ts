@@ -29,13 +29,9 @@ test("Marketplace developer transactions preserve tenant, invitation and owner i
 }, async (t) => {
   const pool = new PgPool({ connectionString });
   const db = drizzle(pool, { schema: { ...schema, ...marketplaceSchema } }) as unknown as Database;
-  const userIds: string[] = [];
-  const developerIds: string[] = [];
-
   async function addCanonicalUser() {
     const id = createUuidV7();
     await pool.query("INSERT INTO public.canonical_users (id) VALUES ($1)", [id]);
-    userIds.push(id);
     return id;
   }
 
@@ -45,7 +41,6 @@ test("Marketplace developer transactions preserve tenant, invitation and owner i
       slug,
       displayName: slug.replace(/-/g, " ")
     });
-    developerIds.push(organization.id);
     return organization;
   }
 
@@ -231,19 +226,9 @@ test("Marketplace developer transactions preserve tenant, invitation and owner i
       assert.equal(revoked.invitationId, transfer.invitationId);
     });
   } finally {
-    for (const developerId of developerIds) {
-      await pool.query(
-        "DELETE FROM marketplace.audit_events WHERE target_id = $1 OR actor_canonical_user_id = ANY($2::uuid[])",
-        [developerId, userIds]
-      );
-      await pool.query("DELETE FROM marketplace.developer_invitations WHERE developer_id = $1", [developerId]);
-      await pool.query("UPDATE marketplace.developers SET status = 'pending' WHERE id = $1", [developerId]);
-      await pool.query("DELETE FROM marketplace.developer_memberships WHERE developer_id = $1", [developerId]);
-      await pool.query("DELETE FROM marketplace.developers WHERE id = $1", [developerId]);
-    }
-    for (const userId of userIds) {
-      await pool.query("DELETE FROM public.canonical_users WHERE id = $1", [userId]);
-    }
+    // Audit events are intentionally append-only and canonical identities are
+    // retained by their foreign keys. This database is disposable CI state;
+    // unique UUIDv7 IDs and slugs isolate each run without destructive cleanup.
     await pool.end();
   }
 });

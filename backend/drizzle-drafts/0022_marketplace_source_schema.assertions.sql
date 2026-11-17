@@ -88,6 +88,14 @@ $assertions$;
   END IF;
 
   IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes
+    WHERE schemaname = 'marketplace'
+      AND indexname = 'developer_invitations_one_pending_owner_transfer_uidx'
+  ) THEN
+    RAISE EXCEPTION 'missing single pending owner transfer index';
+  END IF;
+
+  IF NOT EXISTS (
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'marketplace'

@@ -69,6 +69,21 @@ test("private API rejects non-JSON mutations", async () => {
   assert.deepEqual(calls, []);
 });
 
+test("private API rejects oversized mutation payloads before route execution", async () => {
+  const { app, calls } = createApp();
+  const response = await app.request("/api/v1/play/developers", {
+    method: "POST",
+    headers: {
+      Origin: "https://test.globeapps.com",
+      "Content-Type": "application/json",
+      "CF-Connecting-IP": "192.0.2.10"
+    },
+    body: JSON.stringify({ slug: "example-publisher", displayName: "x".repeat(40000) })
+  });
+  assert.equal(response.status, 413);
+  assert.deepEqual(calls, []);
+});
+
 test("private API rate limits by edge client IP", async () => {
   const { app, calls } = createApp({ rateAllowed: false });
   const response = await app.request("/api/v1/play/developers", {

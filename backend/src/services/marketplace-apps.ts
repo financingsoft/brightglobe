@@ -212,35 +212,30 @@ export async function createMarketplaceApp(db: Database, input: CreateMarketplac
 
 export async function listMarketplaceApps(db: Database, input: { developerId: string; actorCanonicalUserId: string }) {
   await requireOrganizationRole(db, input.developerId, input.actorCanonicalUserId, ["owner", "admin", "release_manager", "analyst", "support_readonly"]);
-  const rows = await db.select({
+  const appRows = await db.select({
     id: apps.id, slug: apps.slug, appType: apps.appType, status: apps.status,
-    createdAt: apps.createdAt, updatedAt: apps.updatedAt,
-    locale: appListingRevisions.contentLocale, name: appListingRevisions.name,
-    revisionStatus: appListingRevisions.status, revisionNumber: appListingRevisions.revisionNumber
-  }).from(apps).leftJoin(appListingRevisions, eq(appListingRevisions.appId, apps.id))
-    .where(eq(apps.developerId, input.developerId))
-    .orderBy(desc(apps.updatedAt), asc(apps.id), asc(appListingRevisions.contentLocale), desc(appListingRevisions.revisionNumber))
+    createdAt: apps.createdAt, updatedAt: apps.updatedAt
+  }).from(apps).where(eq(apps.developerId, input.developerId))
+    .orderBy(desc(apps.updatedAt), asc(apps.id)).limit(100);
+  if (!appRows.length) return [];
+  const revisions = await db.select({
+    appId: appListingRevisions.appId, locale: appListingRevisions.contentLocale,
+    name: appListingRevisions.name, status: appListingRevisions.status,
+    revisionNumber: appListingRevisions.revisionNumber
+  }).from(appListingRevisions).where(inArray(appListingRevisions.appId, appRows.map((app) => app.id)))
+    .orderBy(asc(appListingRevisions.appId), asc(appListingRevisions.contentLocale), desc(appListingRevisions.revisionNumber))
     .limit(800);
-  const grouped = new Map<string, {
-    id: string; slug: string; appType: string; status: string; createdAt: Date; updatedAt: Date;
-    localizations: Array<{ locale: string; name: string; status: string; revisionNumber: number }>;
-  }>();
+  const byApp = new Map<string, Array<{ locale: string; name: string; status: string; revisionNumber: number }>>();
   const seenLocales = new Set<string>();
-  for (const row of rows) {
-    let app = grouped.get(row.id);
-    if (!app) {
-      app = { id: row.id, slug: row.slug, appType: row.appType, status: row.status, createdAt: row.createdAt, updatedAt: row.updatedAt, localizations: [] };
-      grouped.set(row.id, app);
-    }
-    if (row.locale) {
-      const key = row.id + ":" + row.locale;
-      if (!seenLocales.has(key)) {
-        seenLocales.add(key);
-        app.localizations.push({ locale: row.locale, name: row.name ?? "", status: row.revisionStatus ?? "draft", revisionNumber: row.revisionNumber ?? 1 });
-      }
-    }
+  for (const revision of revisions) {
+    const key = revision.appId + ":" + revision.locale;
+    if (seenLocales.has(key)) continue;
+    seenLocales.add(key);
+    const entries = byApp.get(revision.appId) ?? [];
+    entries.push({ locale: revision.locale, name: revision.name, status: revision.status, revisionNumber: revision.revisionNumber });
+    byApp.set(revision.appId, entries);
   }
-  return [...grouped.values()].slice(0, 100);
+  return appRows.map((app) => ({ ...app, localizations: byApp.get(app.id) ?? [] }));
 }
 
 export async function getMarketplaceApp(db: Database, input: { developerId: string; appId: string; actorCanonicalUserId: string }) {

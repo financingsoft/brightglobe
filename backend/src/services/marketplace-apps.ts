@@ -23,11 +23,16 @@ export class MarketplaceAppError extends Error {
 }
 
 function translateAppDatabaseError(error: unknown): never {
-  if (error && typeof error === "object" && "code" in error && (error as { code?: unknown }).code === "23505") {
-    const constraint = "constraint" in error ? String((error as { constraint?: unknown }).constraint ?? "") : "";
-    if (constraint === "apps_slug_uidx") {
-      throw new MarketplaceAppError("CONFLICT", "This app slug is already reserved.");
+  let current: unknown = error;
+  for (let depth = 0; depth < 4 && current && typeof current === "object"; depth += 1) {
+    const candidate = current as { code?: unknown; cause?: unknown; constraint?: unknown };
+    if (candidate.code === "23505") {
+      const constraint = String(candidate.constraint ?? "");
+      if (!constraint || constraint === "apps_slug_uidx") {
+        throw new MarketplaceAppError("CONFLICT", "This app slug or draft identity is already reserved.");
+      }
     }
+    current = candidate.cause;
   }
   throw error;
 }

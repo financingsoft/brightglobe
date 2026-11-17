@@ -4,12 +4,11 @@ import { Pool as PgPool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { and, eq } from "drizzle-orm";
 import type { Database } from "../db/client.js";
-import { canonicalUsers, schema } from "../db/schema.js";
+import { schema } from "../db/schema.js";
 import {
   auditEvents,
   developerInvitations,
   developerMemberships,
-  developers,
   marketplaceSchema
 } from "../db/marketplace-schema.js";
 import { createUuidV7 } from "../identity/ids.js";
@@ -197,8 +196,15 @@ test("Marketplace developer transactions preserve tenant, invitation and owner i
 
     await t.test("only the initiating Owner can revoke a pending owner-transfer invitation", async () => {
       const oldOwnerId = await addCanonicalUser();
-      const replacementId = await addCanonicalUser();
+      const adminId = await addCanonicalUser();
       const organization = await createOrganization(oldOwnerId, "pg-revoke-" + oldOwnerId.slice(-8));
+      await db.insert(developerMemberships).values({
+        developerId: organization.id,
+        canonicalUserId: adminId,
+        role: "admin",
+        status: "active",
+        createdByCanonicalUserId: oldOwnerId
+      });
       const transfer = await initiateDeveloperOwnerTransfer(db, {
         developerId: organization.id,
         actorCanonicalUserId: oldOwnerId,
@@ -209,7 +215,7 @@ test("Marketplace developer transactions preserve tenant, invitation and owner i
         () => revokeDeveloperInvitation(db, {
           developerId: organization.id,
           invitationId: transfer.invitationId,
-          actorCanonicalUserId: replacementId
+          actorCanonicalUserId: adminId
         }),
         (error: unknown) => error instanceof MarketplaceDeveloperError && error.code === "FORBIDDEN"
       );

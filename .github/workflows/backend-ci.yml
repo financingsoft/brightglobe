@@ -19,6 +19,20 @@ concurrency:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: brightglobe_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d brightglobe_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     defaults:
       run:
         working-directory: backend
@@ -39,6 +53,20 @@ jobs:
 
       - name: Unit tests
         run: npm test
+
+      - name: Validate Marketplace SQL draft on ephemeral PostgreSQL
+        env:
+          LOCAL_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/brightglobe_ci
+        run: |
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public.canonical_users (id uuid PRIMARY KEY);'
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle-drafts/0022_marketplace_source_schema.sql
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle-drafts/0022_marketplace_source_schema.assertions.sql
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle-drafts/0022_marketplace_source_schema.behavior.sql
+
+      - name: Marketplace Drizzle schema generation (draft only)
+        run: |
+          npm run db:generate:marketplace-draft
+          test -n "$(find drizzle-drafts/generated -type f -name '*.sql' -print -quit)"
 
       - name: Cloudflare Worker dry run
         run: npm run build

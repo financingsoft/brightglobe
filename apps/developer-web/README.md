@@ -19,7 +19,7 @@ npm run typecheck
 npm run build
 ```
 
-The default example endpoints target the existing Staging API host. The portal origin must be allowlisted by both Better Auth and the private Worker. Staging browser access is expected from `https://test.globeapps.com`.
+The default example endpoints target the existing Staging API host. The portal origin must be allowlisted by both Better Auth and the private Worker. The dedicated Staging developer portal origin is `https://open-staging.globeapps.com`; the public marketplace H5 remains at `https://test.globeapps.com`. DNS and deployment are separate approval steps.
 
 ## Security
 - Every page is private, no-store and noindex.

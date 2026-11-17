@@ -63,6 +63,7 @@ jobs:
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0021_bg_reward_foundation.sql
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0022_bg_reward_engine_atomicity.sql
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0023_bg_task_evidence_review.sql
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0023_bg_task_evidence_review.assertions.sql
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public."user" (id text PRIMARY KEY, email text NOT NULL);'
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public."session" (id text PRIMARY KEY, token text NOT NULL, updated_at timestamptz NOT NULL DEFAULT now());'
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public.provider_identities (id uuid PRIMARY KEY, canonical_user_id uuid NOT NULL, provider varchar(32) NOT NULL, provider_subject varchar(256) NOT NULL, verified_at timestamptz, created_at timestamptz NOT NULL DEFAULT now());'

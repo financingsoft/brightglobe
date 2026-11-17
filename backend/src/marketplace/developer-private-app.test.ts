@@ -42,6 +42,7 @@ function createApp(options: {
   };
   const app = createDeveloperPrivateApp({
     dependencies,
+    appDependencies,
     allowedOrigins: ["https://test.globeapps.com"],
     rateLimiter: { limit: async () => ({ success: options.rateAllowed !== false }) }
   });

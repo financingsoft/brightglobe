@@ -188,6 +188,7 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
       assert.equal(payouts[0]?.treasuryAccountId, treasuryAccountId);
       assert.equal(payouts[0]?.tokenProgram, CLASSIC_SPL_TOKEN_PROGRAM_ID);
       assert.equal(payouts[0]?.feePayerAddress, feePayerAddress);
+      assert.equal(payouts[0]?.treasuryAuthorityAddress, treasuryWalletAddress);
       assert.equal(payouts[0]?.recentBlockhash, null);
       assert.equal(payouts[0]?.lastValidBlockHeight, null);
       await assert.rejects(
@@ -294,6 +295,20 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
       await assert.rejects(
         () => reserveBgDailyReward(db, { canonicalUserId: riskRejectedUser, now }, denyRisk),
         (error: unknown) => error instanceof BgRewardReservationError && error.code === "BG_REWARD_RISK_REJECTED"
+      );
+
+      const feePayerCollisionUser = await addUser(0);
+      await db.insert(walletOwnerships).values({
+        id: createUuidV7(now.getTime()),
+        canonicalUserId: feePayerCollisionUser,
+        network: "devnet",
+        address: feePayerAddress,
+        verifiedAt: now,
+        createdAt: now
+      });
+      await assert.rejects(
+        () => reserveBgDailyReward(db, { canonicalUserId: feePayerCollisionUser, now }, allowRisk),
+        (error: unknown) => error instanceof BgRewardReservationError && error.code === "BG_WALLET_SELECTION_REQUIRED"
       );
 
       const [program] = await db.select().from(rewardPrograms).where(eq(rewardPrograms.id, programId));

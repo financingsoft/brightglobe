@@ -60,7 +60,7 @@ Exception states:
 - `cancelled`: operator paused/cancelled before a transaction was signed or submitted.
 - `failed`: definitive on-chain failure proven by reconciliation.
 - `expired`: claim window expired before submission.
-- `reconciliation_required`: broadcast outcome is ambiguous or evidence is incomplete.
+- `reconciliation_required`: broadcast outcome is ambiguous or evidence is incomplete. Keep the original transaction signature and reservation; do not create or sign a replacement transaction until reconciliation proves the original transaction cannot land.
 - `quarantined`: mint, token program, source, destination, amount, signature or chain evidence mismatch.
 
 Rules:

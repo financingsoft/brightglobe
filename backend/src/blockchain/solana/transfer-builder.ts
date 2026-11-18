@@ -17,7 +17,11 @@ import {
 } from "@solana-program/token";
 
 export interface ClassicSplTransferBuildInput {
+  /** Pays the network fee and destination ATA rent. Must not own the treasury ATA. */
   feePayerAddress: string;
+  /** Owner/transfer authority of the pre-funded treasury source ATA. */
+  treasuryAuthorityAddress?: string;
+  /** Self-custodial recipient wallet owner. */
   destinationOwnerAddress: string;
   mintAddress: string;
   amountBaseUnits: bigint;
@@ -30,6 +34,8 @@ export interface ClassicSplTransferBuildResult {
   transactionBase64: string;
   sourceTokenAccount: string;
   destinationTokenAccount: string;
+  feePayerAddress: string;
+  treasuryAuthorityAddress: string;
 }
 
 /**
@@ -78,18 +84,27 @@ export async function deriveClassicSplAssociatedTokenAccounts(input: {
 }
 
 /**
- * Build an unsigned v0 transaction containing an idempotent destination ATA
- * creation followed by a checked classic SPL Token transfer.
+ * Build an unsigned v0 transaction with distinct signing roles:
+ * - Fee Payer pays transaction fees and destination ATA rent.
+ * - Treasury Authority owns the source ATA and authorizes TransferChecked.
+ * - Recipient owns the destination ATA and never signs this payout.
  *
- * The noop signer is only a signer marker. It never signs; the connected
- * external wallet receives the serialized message and performs the signature
- * and broadcast itself.
+ * Both signers are noop markers only. A constrained external signer must
+ * independently decode and approve the exact message before signing. This
+ * function never signs or broadcasts a transaction.
  */
 export async function buildClassicSplTransferTransaction(
   input: ClassicSplTransferBuildInput
 ): Promise<ClassicSplTransferBuildResult> {
-  if (input.feePayerAddress === input.destinationOwnerAddress) {
-    throw new TypeError("The transfer source and destination must be different.");
+  const treasuryAuthorityAddress = input.treasuryAuthorityAddress ?? input.feePayerAddress;
+  if (
+    input.feePayerAddress === input.destinationOwnerAddress ||
+    (input.treasuryAuthorityAddress !== undefined && (
+      input.feePayerAddress === treasuryAuthorityAddress ||
+      treasuryAuthorityAddress === input.destinationOwnerAddress
+    ))
+  ) {
+    throw new TypeError("Payout fee payer, treasury authority and recipient must be three different wallets.");
   }
   if (input.amountBaseUnits <= 0n || input.amountBaseUnits > 18446744073709551615n) {
     throw new RangeError("Classic SPL Token transfer amount must fit a positive u64.");
@@ -102,9 +117,10 @@ export async function buildClassicSplTransferTransaction(
   }
 
   const feePayer = createNoopSigner(address(input.feePayerAddress));
+  const treasuryAuthority = createNoopSigner(address(treasuryAuthorityAddress));
   const mint = address(input.mintAddress);
   const [sourceAta] = await findAssociatedTokenPda({
-    owner: feePayer.address,
+    owner: treasuryAuthority.address,
     tokenProgram: TOKEN_PROGRAM_ADDRESS,
     mint
   });
@@ -125,7 +141,7 @@ export async function buildClassicSplTransferTransaction(
     source: sourceAta,
     mint,
     destination: destinationAta,
-    authority: feePayer,
+    authority: treasuryAuthority,
     amount: input.amountBaseUnits,
     decimals: input.decimals
   });
@@ -145,6 +161,8 @@ export async function buildClassicSplTransferTransaction(
   return {
     transactionBase64: getBase64EncodedWireTransaction(transaction),
     sourceTokenAccount: sourceAta,
-    destinationTokenAccount: destinationAta
+    destinationTokenAccount: destinationAta,
+    feePayerAddress: input.feePayerAddress,
+    treasuryAuthorityAddress
   };
 }

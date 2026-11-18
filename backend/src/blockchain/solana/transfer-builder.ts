@@ -18,6 +18,7 @@ import {
 
 export interface ClassicSplTransferBuildInput {
   feePayerAddress: string;
+  sourceOwnerAddress: string;
   destinationOwnerAddress: string;
   mintAddress: string;
   amountBaseUnits: bigint;
@@ -88,7 +89,7 @@ export async function deriveClassicSplAssociatedTokenAccounts(input: {
 export async function buildClassicSplTransferTransaction(
   input: ClassicSplTransferBuildInput
 ): Promise<ClassicSplTransferBuildResult> {
-  if (input.feePayerAddress === input.destinationOwnerAddress) {
+  if (input.sourceOwnerAddress === input.destinationOwnerAddress) {
     throw new TypeError("The transfer source and destination must be different.");
   }
   if (input.amountBaseUnits <= 0n || input.amountBaseUnits > 18446744073709551615n) {
@@ -102,9 +103,10 @@ export async function buildClassicSplTransferTransaction(
   }
 
   const feePayer = createNoopSigner(address(input.feePayerAddress));
+  const sourceAuthority = createNoopSigner(address(input.sourceOwnerAddress));
   const mint = address(input.mintAddress);
   const [sourceAta] = await findAssociatedTokenPda({
-    owner: feePayer.address,
+    owner: sourceAuthority.address,
     tokenProgram: TOKEN_PROGRAM_ADDRESS,
     mint
   });
@@ -125,7 +127,7 @@ export async function buildClassicSplTransferTransaction(
     source: sourceAta,
     mint,
     destination: destinationAta,
-    authority: feePayer,
+    authority: sourceAuthority,
     amount: input.amountBaseUnits,
     decimals: input.decimals
   });

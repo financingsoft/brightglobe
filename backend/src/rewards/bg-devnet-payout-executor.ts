@@ -6,6 +6,7 @@ import {
 import { buildClassicSplTransferTransaction } from "../blockchain/solana/transfer-builder.js";
 import { SOLANA_DEVNET_GENESIS_HASH } from "../blockchain/solana/gateway.js";
 import { decodeFinalizedClassicTokenEvents } from "../blockchain/solana/transaction-decoder.js";
+import { matchesFinalizedTransactionEnvelope } from "../indexer/transaction-verifier.js";
 import {
   validateBgPayoutSigningRequest,
   type BgPayoutSigner
@@ -89,6 +90,7 @@ export interface BgDevnetPayoutExecutorConfig {
 export type BgDevnetPayoutExecutionResult =
   | { outcome: "disabled" }
   | { outcome: "empty" }
+  | { outcome: "failed"; payoutIntentId: string; errorCode: string }
   | { outcome: "submitted"; payoutIntentId: string; signature: string }
   | { outcome: "confirmed"; payoutIntentId: string; signature: string; slot: bigint }
   | { outcome: "paid"; payoutIntentId: string; signature: string; slot: bigint }
@@ -102,7 +104,8 @@ function isSafeLamports(value: number): boolean {
 function hasExactFinalizedTransfer(
   transaction: unknown,
   signature: string,
-  intent: BgDevnetPayoutIntent
+  intent: BgDevnetPayoutIntent,
+  recentBlockhash: string
 ): bigint | null {
   if (typeof transaction !== "object" || transaction === null || Array.isArray(transaction)) return null;
   const root = transaction as Record<string, unknown>;
@@ -116,6 +119,7 @@ function hasExactFinalizedTransfer(
   if (typeof meta !== "object" || meta === null || Array.isArray(meta) ||
       (meta as Record<string, unknown>).err !== null) return null;
 
+  if (!matchesFinalizedTransactionEnvelope(transaction, signature, recentBlockhash, BigInt(root.slot))) return null;
   const events = decodeFinalizedClassicTokenEvents(signature, transaction);
   const exact = events.some((event) => {
     const p = event.payload;
@@ -195,7 +199,7 @@ export async function executeNextBgDevnetPayout(input: {
       ]);
     if (!mintAccount || mintAccount.executable || !sourceAccount || sourceAccount.executable) {
       await failBeforeBroadcast("PAYOUT_REQUIRED_ACCOUNT_MISSING");
-      return { outcome: "quarantined", payoutIntentId: intent.id, reason: "mint_or_source_account_missing" };
+      return { outcome: "failed", payoutIntentId: intent.id, errorCode: "PAYOUT_REQUIRED_ACCOUNT_MISSING" };
     }
     const mint = parseClassicSplMint({ owner: mintAccount.owner, dataBase64: mintAccount.dataBase64 });
     const source = parseClassicSplTokenAccount({ owner: sourceAccount.owner, dataBase64: sourceAccount.dataBase64 });
@@ -222,7 +226,7 @@ export async function executeNextBgDevnetPayout(input: {
     }
     if (!isSafeLamports(feePayerLamports) || !isSafeLamports(ataRent)) {
       await failBeforeBroadcast("PAYOUT_INVALID_FEE_BUDGET");
-      return { outcome: "quarantined", payoutIntentId: intent.id, reason: "invalid_fee_payer_budget" };
+      return { outcome: "failed", payoutIntentId: intent.id, errorCode: "PAYOUT_INVALID_FEE_BUDGET" };
     }
 
     const built = await buildClassicSplTransferTransaction({
@@ -245,12 +249,12 @@ export async function executeNextBgDevnetPayout(input: {
     if (!isSafeLamports(fee) || !Number.isSafeInteger(requiredLamports) ||
         requiredLamports < 0 || feePayerLamports < requiredLamports) {
       await failBeforeBroadcast("PAYOUT_FEE_PAYER_INSUFFICIENT_SOL");
-      return { outcome: "quarantined", payoutIntentId: intent.id, reason: "fee_payer_sol_budget_insufficient" };
+      return { outcome: "failed", payoutIntentId: intent.id, errorCode: "PAYOUT_FEE_PAYER_INSUFFICIENT_SOL" };
     }
     const simulation = await rpc.simulateTransaction(built.transactionBase64);
     if (simulation.err !== null) {
       await failBeforeBroadcast("PAYOUT_SIMULATION_FAILED");
-      return { outcome: "quarantined", payoutIntentId: intent.id, reason: "unsigned_transaction_simulation_failed" };
+      return { outcome: "failed", payoutIntentId: intent.id, errorCode: "PAYOUT_SIMULATION_FAILED" };
     }
 
     const signingRequest = {
@@ -329,7 +333,7 @@ export async function executeNextBgDevnetPayout(input: {
         errorCode: "PAYOUT_CHAIN_TRANSACTION_FAILED",
         evidence: { definitiveFailureVerified: true, chainError: status.err }
       });
-      return { outcome: "reconciliation_required", payoutIntentId: intent.id, signature: persistedSignature };
+      return { outcome: "failed", payoutIntentId: intent.id, errorCode: "PAYOUT_CHAIN_TRANSACTION_FAILED" };
     }
     if (status.confirmationStatus === "processed" || status.confirmationStatus === "confirmed") {
       const to = status.confirmationStatus;
@@ -360,7 +364,7 @@ export async function executeNextBgDevnetPayout(input: {
     const finalizedTransaction = await rpc.getFinalizedTransaction(persistedSignature);
     const finalizedSlot = finalizedTransaction === null
       ? null
-      : hasExactFinalizedTransfer(finalizedTransaction, persistedSignature, intent);
+      : hasExactFinalizedTransfer(finalizedTransaction, persistedSignature, intent, blockhash.blockhash);
     if (finalizedSlot === null || finalizedSlot !== BigInt(status.slot)) {
       await repository.transition({
         payoutIntentId: intent.id,

@@ -71,7 +71,7 @@ jobs:
         env:
           CHANGE_REASON: ${{ inputs.change_reason }}
         run: |
-          printf 'H5 Staging deployment explicitly authorized. Reason/reference: %s\\n' "$CHANGE_REASON"
+          printf 'H5 Staging deployment explicitly authorized. Reason/reference: %s\n' "$CHANGE_REASON"
 
       - name: Deploy H5 Worker Static Assets
         working-directory: app

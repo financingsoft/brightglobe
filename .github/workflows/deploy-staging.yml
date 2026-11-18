@@ -1,11 +1,16 @@
 name: Deploy BrightGlobe Staging
 on:
-  push:
-    branches: [main]
-    paths:
-      - "backend/**"
-      - ".github/workflows/deploy-staging.yml"
   workflow_dispatch:
+    inputs:
+      confirm_staging_deploy:
+        description: "Explicitly authorize the Staging database migration and Worker deployment."
+        required: true
+        type: boolean
+        default: false
+      change_reason:
+        description: "Reason or approval reference for this Staging operation."
+        required: true
+        type: string
 permissions:
   contents: read
 
@@ -36,7 +41,7 @@ jobs:
 
   deploy:
     needs: validate
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && inputs.confirm_staging_deploy == true && inputs.change_reason != ''
     runs-on: ubuntu-latest
     environment: staging
     env:
@@ -57,6 +62,11 @@ jobs:
           test -n "$DATABASE_URL"
           test -n "$CLOUDFLARE_API_TOKEN"
           test -n "$CLOUDFLARE_ACCOUNT_ID"
+      - name: Record explicit Staging authorization
+        env:
+          CHANGE_REASON: ${{ inputs.change_reason }}
+        run: |
+          printf 'Staging migration/deployment explicitly authorized. Reason/reference: %s\n' "$CHANGE_REASON"
       - name: Apply Staging database migrations
         working-directory: backend
         env:

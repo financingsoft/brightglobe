@@ -642,6 +642,7 @@ export function createAssetRoutes(db: Database, auth: BetterAuthInstance, env: A
 
       const transaction = await buildClassicSplTransferTransaction({
         feePayerAddress: body.fromAddress,
+        sourceOwnerAddress: body.fromAddress,
         destinationOwnerAddress: body.toAddress,
         mintAddress,
         amountBaseUnits,

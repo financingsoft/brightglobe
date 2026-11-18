@@ -763,18 +763,28 @@ async function verifyMintAndTokenAccounts(
     gateway.getAccountInfo(payout.feePayerAddress, "confirmed")
   ]);
   if (!mintInfo.account) throw new PayoutQuarantineError("BG_MINT_ACCOUNT_MISSING");
-  const mint = parseClassicSplMint({
-    owner: mintInfo.account.owner,
-    dataBase64: mintInfo.account.data[0]
-  });
+  let mint;
+  try {
+    mint = parseClassicSplMint({
+      owner: mintInfo.account.owner,
+      dataBase64: mintInfo.account.data[0]
+    });
+  } catch {
+    throw new PayoutQuarantineError("BG_MINT_ACCOUNT_INVALID");
+  }
   if (!mint.initialized || mint.decimals !== asset.decimals) {
     throw new PayoutQuarantineError("BG_MINT_ACCOUNT_MISMATCH");
   }
   if (!sourceInfo.account) throw new PayoutQuarantineError("TREASURY_TOKEN_ACCOUNT_MISSING");
-  const source = parseClassicSplTokenAccount({
-    owner: sourceInfo.account.owner,
-    dataBase64: sourceInfo.account.data[0]
-  });
+  let source;
+  try {
+    source = parseClassicSplTokenAccount({
+      owner: sourceInfo.account.owner,
+      dataBase64: sourceInfo.account.data[0]
+    });
+  } catch {
+    throw new PayoutQuarantineError("TREASURY_TOKEN_ACCOUNT_INVALID");
+  }
   if (
     source.owner !== treasury.treasuryWalletAddress ||
     source.mint !== mintAddress ||
@@ -786,10 +796,15 @@ async function verifyMintAndTokenAccounts(
     throw new PayoutDeferredError("TREASURY_BALANCE_INSUFFICIENT");
   }
   if (destinationInfo.account) {
-    const destination = parseClassicSplTokenAccount({
-      owner: destinationInfo.account.owner,
-      dataBase64: destinationInfo.account.data[0]
-    });
+    let destination;
+    try {
+      destination = parseClassicSplTokenAccount({
+        owner: destinationInfo.account.owner,
+        dataBase64: destinationInfo.account.data[0]
+      });
+    } catch {
+      throw new PayoutQuarantineError("DESTINATION_TOKEN_ACCOUNT_INVALID");
+    }
     if (
       destination.owner !== payout.destinationWallet ||
       destination.mint !== mintAddress ||

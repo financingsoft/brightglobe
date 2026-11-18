@@ -9,13 +9,15 @@ import {
   rewardPrograms,
   treasuryAccounts
 } from "../db/schema.js";
-import { SOLANA_DEVNET_GENESIS_HASH, type SolanaGateway } from "../blockchain/solana/gateway.js";
+import { SOLANA_DEVNET_GENESIS_HASH, type SolanaPayoutGateway } from "../blockchain/solana/gateway.js";
 import { decodeSolanaAddress, isValidSolanaAddress } from "../blockchain/solana/address.js";
 import { verifySolanaMessageSignature } from "../blockchain/solana/signature.js";
 import {
   CLASSIC_SPL_TOKEN_PROGRAM_ID,
   parseClassicSplMint,
-  parseClassicSplTokenAccount
+  parseClassicSplTokenAccount,
+  type ParsedSplMint,
+  type ParsedSplTokenAccount
 } from "../blockchain/solana/token/classic-token.js";
 import {
   buildClassicSplTransferTransaction,
@@ -751,7 +753,7 @@ function validatePayoutContext(
 
 async function verifyMintAndTokenAccounts(
   context: PayoutContext,
-  gateway: SolanaGateway,
+  gateway: SolanaPayoutGateway,
   requireSourceBalance: boolean
 ): Promise<void> {
   const { payout, asset, treasury } = context;
@@ -763,7 +765,7 @@ async function verifyMintAndTokenAccounts(
     gateway.getAccountInfo(payout.feePayerAddress, "confirmed")
   ]);
   if (!mintInfo.account) throw new PayoutQuarantineError("BG_MINT_ACCOUNT_MISSING");
-  let mint;
+  let mint: ParsedSplMint;
   try {
     mint = parseClassicSplMint({
       owner: mintInfo.account.owner,
@@ -776,7 +778,7 @@ async function verifyMintAndTokenAccounts(
     throw new PayoutQuarantineError("BG_MINT_ACCOUNT_MISMATCH");
   }
   if (!sourceInfo.account) throw new PayoutQuarantineError("TREASURY_TOKEN_ACCOUNT_MISSING");
-  let source;
+  let source: ParsedSplTokenAccount;
   try {
     source = parseClassicSplTokenAccount({
       owner: sourceInfo.account.owner,
@@ -796,7 +798,7 @@ async function verifyMintAndTokenAccounts(
     throw new PayoutDeferredError("TREASURY_BALANCE_INSUFFICIENT");
   }
   if (destinationInfo.account) {
-    let destination;
+    let destination: ParsedSplTokenAccount;
     try {
       destination = parseClassicSplTokenAccount({
         owner: destinationInfo.account.owner,
@@ -923,7 +925,7 @@ async function buildUnsignedTransaction(
 
 async function verifyFinalizedTransfer(
   context: PayoutContext,
-  gateway: SolanaGateway,
+  gateway: SolanaPayoutGateway,
   signature: string,
   slot: bigint
 ): Promise<{ valid: true; metadata: Record<string, unknown> } | { valid: false; retryable: true } | { valid: false; retryable: false; code: string }> {
@@ -1011,7 +1013,7 @@ async function verifyFinalizedTransfer(
 async function processExistingSignature(
   db: Database,
   context: PayoutContext,
-  gateway: SolanaGateway,
+  gateway: SolanaPayoutGateway,
   signer: BgDevnetPayoutSigner,
   input: { now: Date; leaseMs: number; retryMs: number; allowTestSigner: boolean }
 ): Promise<BgDevnetPayoutResult> {
@@ -1105,7 +1107,7 @@ async function processExistingSignature(
  */
 export async function processBgDevnetPayoutIntent(
   db: Database,
-  gateway: SolanaGateway,
+  gateway: SolanaPayoutGateway,
   signer: BgDevnetPayoutSigner,
   input: {
     payoutIntentId: string;
@@ -1218,7 +1220,7 @@ export async function processBgDevnetPayoutIntent(
  */
 export async function processBgDevnetPayoutBatch(
   db: Database,
-  gateway: SolanaGateway,
+  gateway: SolanaPayoutGateway,
   signer: BgDevnetPayoutSigner,
   input: { limit?: number; now?: Date; allowTestSigner?: boolean } = {}
 ): Promise<{ selected: number; paid: number; deferred: number; quarantined: number; failed: number }> {
@@ -1264,7 +1266,7 @@ export async function processBgDevnetPayoutBatch(
  */
 export async function reconcileBgDevnetTreasury(
   db: Database,
-  gateway: SolanaGateway,
+  gateway: SolanaPayoutGateway,
   input: { treasuryAccountId: string; now?: Date }
 ): Promise<{
   runId: string;

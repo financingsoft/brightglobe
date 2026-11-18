@@ -17,6 +17,22 @@ BEGIN
 END;
 $bg$;
 --> statement-breakpoint
+DO $bg$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM "reward_payout_intents"
+    WHERE "treasury_authority_address" IS NOT NULL
+      AND (
+        "fee_payer_address" = "treasury_authority_address"
+        OR "fee_payer_address" = "destination_wallet"
+        OR "treasury_authority_address" = "destination_wallet"
+      )
+  ) THEN
+    RAISE EXCEPTION 'Existing BG payout intents have overlapping Fee Payer, Treasury Authority or Recipient roles; reconcile them before applying migration 0024';
+  END IF;
+END;
+$bg$;
+--> statement-breakpoint
 ALTER TABLE "reward_payout_intents"
   ALTER COLUMN "treasury_authority_address" SET NOT NULL,
   DROP CONSTRAINT "reward_payout_intents_status_check",

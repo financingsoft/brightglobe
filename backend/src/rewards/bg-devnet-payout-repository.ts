@@ -31,7 +31,8 @@ const ACTIVE_OUTFLOW_STATUSES = [
   "confirmed",
   "finalized",
   "paid",
-  "reconciliation_required"
+  "reconciliation_required",
+  "quarantined"
 ] as const;
 
 function isSignerProvider(value: string): value is "kms" | "hsm" | "external" {
@@ -217,6 +218,25 @@ export function createDrizzleBgDevnetPayoutRepository(db: Database): BgDevnetPay
         if (updated.length !== 1) return false;
 
         const eventStatus = eventStatusForPayout(input.to);
+        if (input.to === "failed" || input.to === "expired" || input.to === "cancelled") {
+          const [event] = await tx.select({ programId: rewardEvents.programId })
+            .from(rewardEvents)
+            .where(eq(rewardEvents.id, current.rewardEventId))
+            .limit(1)
+            .for("update");
+          if (!event) throw new Error("BG reward event was not found while releasing reserved budget.");
+          const [released] = await tx.update(rewardPrograms)
+            .set({
+              reservedBaseUnits: sql`${rewardPrograms.reservedBaseUnits} - ${current.amountBaseUnits}`,
+              updatedAt: now
+            })
+            .where(and(
+              eq(rewardPrograms.id, event.programId),
+              gte(rewardPrograms.reservedBaseUnits, current.amountBaseUnits)
+            ))
+            .returning({ id: rewardPrograms.id });
+          if (!released) throw new Error("BG reward reservation could not be released for a terminal unpaid payout.");
+        }
         if (eventStatus) {
           await tx.update(rewardEvents)
             .set({ status: eventStatus, updatedAt: now })

@@ -54,6 +54,8 @@ export interface SolanaGateway {
     confirmationStatus?: "processed" | "confirmed" | "finalized";
   }>>;
   getSignatureStatuses(signatures: readonly string[]): ReturnType<SolanaRpcClient["getSignatureStatuses"]>;
+  simulateTransaction(transactionBase64: string): Promise<{ err: unknown | null; logs: string[]; unitsConsumed: number | null; contextSlot: number }>;
+  sendTransaction(transactionBase64: string): Promise<string>;
 }
 
 export function createSolanaGateway(
@@ -164,6 +166,43 @@ export function createSolanaGateway(
           confirmationStatus: z.enum(["processed", "confirmed", "finalized"]).optional()
         }).nullable())
       }).parse(raw);
+    },
+
+    async simulateTransaction(transactionBase64) {
+      const raw = await rpc.request<unknown>("simulateTransaction", [transactionBase64, {
+        encoding: "base64",
+        commitment: "confirmed",
+        sigVerify: false,
+        replaceRecentBlockhash: false,
+        innerInstructions: true
+      }]);
+      const parsed = z.object({
+        context: z.object({ slot: z.number().int().nonnegative() }),
+        value: z.object({
+          err: z.unknown().nullable(),
+          logs: z.array(z.string()).nullable().optional(),
+          unitsConsumed: z.number().int().nonnegative().nullable().optional()
+        })
+      }).parse(raw);
+      return {
+        err: parsed.value.err,
+        logs: parsed.value.logs ?? [],
+        unitsConsumed: parsed.value.unitsConsumed ?? null,
+        contextSlot: parsed.context.slot
+      };
+    },
+
+    async sendTransaction(transactionBase64) {
+      const raw = await rpc.request<unknown>("sendTransaction", [transactionBase64, {
+        encoding: "base64",
+        skipPreflight: false,
+        preflightCommitment: "confirmed",
+        maxRetries: 0
+      }]);
+      if (typeof raw !== "string" || !/^[1-9A-HJ-NP-Za-km-z]{80,90}$/.test(raw)) {
+        throw new TypeError("Solana RPC returned an invalid transaction signature.");
+      }
+      return raw;
     }
   };
 }

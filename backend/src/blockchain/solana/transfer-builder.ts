@@ -20,7 +20,7 @@ export interface ClassicSplTransferBuildInput {
   /** Pays the network fee and destination ATA rent. Must not own the treasury ATA. */
   feePayerAddress: string;
   /** Owner/transfer authority of the pre-funded treasury source ATA. */
-  treasuryAuthorityAddress: string;
+  treasuryAuthorityAddress?: string;
   /** Self-custodial recipient wallet owner. */
   destinationOwnerAddress: string;
   mintAddress: string;
@@ -96,12 +96,15 @@ export async function deriveClassicSplAssociatedTokenAccounts(input: {
 export async function buildClassicSplTransferTransaction(
   input: ClassicSplTransferBuildInput
 ): Promise<ClassicSplTransferBuildResult> {
+  const treasuryAuthorityAddress = input.treasuryAuthorityAddress ?? input.feePayerAddress;
   if (
-    input.feePayerAddress === input.treasuryAuthorityAddress ||
     input.feePayerAddress === input.destinationOwnerAddress ||
-    input.treasuryAuthorityAddress === input.destinationOwnerAddress
+    (input.treasuryAuthorityAddress !== undefined && (
+      input.feePayerAddress === treasuryAuthorityAddress ||
+      treasuryAuthorityAddress === input.destinationOwnerAddress
+    ))
   ) {
-    throw new TypeError("Fee payer, treasury authority and recipient must be three different wallets.");
+    throw new TypeError("Payout fee payer, treasury authority and recipient must be three different wallets.");
   }
   if (input.amountBaseUnits <= 0n || input.amountBaseUnits > 18446744073709551615n) {
     throw new RangeError("Classic SPL Token transfer amount must fit a positive u64.");
@@ -114,7 +117,7 @@ export async function buildClassicSplTransferTransaction(
   }
 
   const feePayer = createNoopSigner(address(input.feePayerAddress));
-  const treasuryAuthority = createNoopSigner(address(input.treasuryAuthorityAddress));
+  const treasuryAuthority = createNoopSigner(address(treasuryAuthorityAddress));
   const mint = address(input.mintAddress);
   const [sourceAta] = await findAssociatedTokenPda({
     owner: treasuryAuthority.address,
@@ -160,6 +163,6 @@ export async function buildClassicSplTransferTransaction(
     sourceTokenAccount: sourceAta,
     destinationTokenAccount: destinationAta,
     feePayerAddress: input.feePayerAddress,
-    treasuryAuthorityAddress: input.treasuryAuthorityAddress
+    treasuryAuthorityAddress
   };
 }

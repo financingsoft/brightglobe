@@ -112,7 +112,7 @@ export function createDrizzleBgDevnetPayoutRepository(db: Database): BgDevnetPay
         if (
           !isSignerProvider(candidate.treasury.signerProvider) ||
           !candidate.treasury.signerKeyReference ||
-          !candidate.asset.decimals ||
+          candidate.asset.decimals === null ||
           candidate.payout.amountBaseUnits > remaining
         ) return null;
 

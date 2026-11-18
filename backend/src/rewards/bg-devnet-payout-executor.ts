@@ -159,7 +159,7 @@ export async function executeNextBgDevnetPayout(input: {
       from: "signing",
       to: "quarantined",
       errorCode: "PAYOUT_INTEGRITY_MISMATCH",
-      evidence: { reason }
+      evidence: { reason, integrityMismatch: true }
     });
     return { outcome: "quarantined", payoutIntentId: intent.id, reason };
   };

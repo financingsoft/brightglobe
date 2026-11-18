@@ -156,3 +156,52 @@ export function formatAssetBaseUnits(value: string, decimals: number | null): st
   const fraction = (amount % scale).toString().padStart(decimals, "0").replace(/0+$/, "");
   return fraction ? whole.toString() + "." + fraction : whole.toString();
 }
+
+
+export type BgRewardDashboard = {
+  assetCode: "BG";
+  network: "devnet";
+  accountingUnit: "base_units";
+  dailyCollection: {
+    status: string;
+    amountBaseUnits: string | null;
+    payoutStatus: string | null;
+    chainSignature: string | null;
+    finalizedAt: string | null;
+    createdAt: string | null;
+  };
+  totals: {
+    rewardCount: string;
+    reservedBaseUnits: string;
+    paidBaseUnits: string;
+  };
+  claimAvailability: "not_assessed";
+  onChainBalanceIncluded: false;
+};
+
+export type BgRewardActivityItem = {
+  id: string;
+  actionType: string;
+  amountBaseUnits: string;
+  ruleVersion: number;
+  periodKey: string | null;
+  rewardStatus: string;
+  payoutStatus: string | null;
+  chainSignature: string | null;
+  submittedAt: string | null;
+  finalizedAt: string | null;
+  failureCode: string | null;
+  createdAt: string;
+};
+
+export async function getBgRewardDashboard(): Promise<BgRewardDashboard> {
+  return apiRequest<BgRewardDashboard>("/api/v1/assets/BG/rewards");
+}
+
+export async function getBgRewardActivity(limit = 30): Promise<BgRewardActivityItem[]> {
+  const safeLimit = Number.isInteger(limit) ? Math.min(Math.max(limit, 1), 50) : 30;
+  const result = await apiRequest<{ items: BgRewardActivityItem[] }>(
+    "/api/v1/assets/BG/rewards/activity?limit=" + safeLimit
+  );
+  return result.items;
+}

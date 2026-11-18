@@ -148,6 +148,12 @@ export default function ProfileScreen() {
         </Pressable>
       </View>
 
+      <Pressable onPress={() => { if (!isAuthenticated) router.push("/login"); else router.push("/bg-rewards"); }} style={styles.menuRow}>
+        <ProfileGlyph kind="force" />
+        <Text style={styles.menuTitle}>{t("BG 奖励记录", "BG reward activity")}</Text>
+        <Text style={styles.menuValue}>{t("Devnet", "Devnet")}</Text>
+        <Text style={styles.chevron}>›</Text>
+      </Pressable>
       <Pressable onPress={() => openProtected("/force-record")} style={styles.menuRow}>
         <ProfileGlyph kind="force" />
         <Text style={styles.menuTitle}>{t("我的原力值", "My Contribution Power")}</Text>

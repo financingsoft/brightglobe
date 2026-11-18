@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildClassicSplTransferTransaction } from "./transfer-builder.js";
+import { buildClassicSplTransferTransaction, deriveClassicSplAssociatedTokenAddress } from "./transfer-builder.js";
 
 const SOURCE = "11111111111111111111111111111111";
 const DESTINATION = "Vote111111111111111111111111111111111111111";
@@ -52,4 +52,24 @@ test("rejects zero amounts and identical source and destination wallets", async 
     }),
     /must be different/
   );
+});
+
+test("derives the source ATA from the treasury authority, not the SOL fee payer", async () => {
+  const feePayer = SOURCE;
+  const sourceOwner = "Stake11111111111111111111111111111111111111";
+  const transaction = await buildClassicSplTransferTransaction({
+    feePayerAddress: feePayer,
+    sourceOwnerAddress: sourceOwner,
+    destinationOwnerAddress: DESTINATION,
+    mintAddress: MINT,
+    amountBaseUnits: 100n,
+    decimals: 6,
+    recentBlockhash: SOURCE,
+    lastValidBlockHeight: 1234n
+  });
+  const expectedSource = await deriveClassicSplAssociatedTokenAddress({
+    ownerAddress: sourceOwner,
+    mintAddress: MINT
+  });
+  assert.equal(transaction.sourceTokenAccount, expectedSource);
 });

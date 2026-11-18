@@ -295,7 +295,8 @@ export async function reserveBgDailyReward(
       treasury.hotWalletCapBaseUnits < program.rewardBaseUnits ||
       !isValidSolanaAddress(treasury.treasuryWalletAddress) ||
       !isValidSolanaAddress(treasury.tokenAccountAddress) ||
-      !isValidSolanaAddress(treasury.feePayerAddress)
+      !isValidSolanaAddress(treasury.feePayerAddress) ||
+      treasury.feePayerAddress === treasury.treasuryWalletAddress
     ) {
       throw new BgRewardReservationError(
         "BG_TREASURY_NOT_CONFIGURED",
@@ -423,6 +424,7 @@ export async function reserveBgDailyReward(
       tokenProgram: asset.tokenProgram,
       sourceTokenAccount: treasury.tokenAccountAddress,
       feePayerAddress: treasury.feePayerAddress,
+      treasuryAuthorityAddress: treasury.treasuryWalletAddress,
       destinationWallet: wallet.address,
       destinationTokenAccount,
       amountBaseUnits: program.rewardBaseUnits,

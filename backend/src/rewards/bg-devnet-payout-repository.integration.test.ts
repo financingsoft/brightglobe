@@ -220,6 +220,59 @@ test("Neon BG payout repository claims once and settles the reward ledger atomic
       [payoutId]
     );
     assert.equal(postings.rows[0]?.count, 2);
+
+    // A definitive pre-broadcast failure releases the program reservation,
+    // while the prior paid payout remains in the rolling outflow window.
+    const failedEventId = createUuidV7(now.getTime());
+    const failedPayoutId = createUuidV7(now.getTime());
+    const nextPeriod = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    await db.update(rewardPrograms)
+      .set({ reservedBaseUnits: amount, updatedAt: new Date() })
+      .where(eq(rewardPrograms.id, programId));
+    await db.insert(rewardEvents).values({
+      id: failedEventId,
+      programId,
+      canonicalUserId,
+      actionType: "daily_collection",
+      evidenceRef: null,
+      idempotencyKey: "bg-payout-repository-failed:" + id,
+      amountBaseUnits: amount,
+      ruleVersion: 1,
+      periodKey: nextPeriod,
+      status: "reserved",
+      createdAt: now,
+      updatedAt: now
+    });
+    await db.insert(rewardPayoutIntents).values({
+      id: failedPayoutId,
+      rewardEventId: failedEventId,
+      treasuryAccountId,
+      network: "devnet",
+      mintAddress,
+      tokenProgram: CLASSIC_SPL_TOKEN_PROGRAM_ID,
+      sourceTokenAccount,
+      feePayerAddress,
+      treasuryAuthorityAddress: treasuryWalletAddress,
+      destinationWallet: testAddress(900_009),
+      destinationTokenAccount: testAddress(900_010),
+      amountBaseUnits: amount,
+      status: "queued",
+      createdAt: new Date(now.getTime() + 1),
+      updatedAt: now
+    });
+    const failedClaim = await repository.claimNextQueued("failure-test-worker");
+    assert.equal(failedClaim?.id, failedPayoutId);
+    assert.equal(await repository.transition({
+      payoutIntentId: failedPayoutId,
+      from: "signing",
+      to: "failed",
+      errorCode: "PAYOUT_PREFLIGHT_REJECTED",
+      evidence: { notBroadcastVerified: true }
+    }), true);
+    const [releasedProgram] = await db.select().from(rewardPrograms).where(eq(rewardPrograms.id, programId));
+    const [failedEvent] = await db.select().from(rewardEvents).where(eq(rewardEvents.id, failedEventId));
+    assert.equal(releasedProgram?.reservedBaseUnits, 0n);
+    assert.equal(failedEvent?.status, "failed");
   } finally {
     await pool.end();
   }

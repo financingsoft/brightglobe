@@ -699,6 +699,9 @@ function validatePayoutContext(
     throw new PayoutQuarantineError("PAYOUT_TREASURY_CONFIGURATION_MISMATCH");
   }
   if (
+    !isValidSolanaAddress(asset.mintAddress) ||
+    asset.decimals < 0 || asset.decimals > 18 ||
+    !["reserved", "submitted", "confirmed", "finalized", "reconciliation_required"].includes(event.status) ||
     !isValidSolanaAddress(payout.destinationWallet) ||
     !isValidSolanaAddress(payout.destinationTokenAccount) ||
     payout.destinationWallet === treasury.treasuryWalletAddress ||
@@ -758,6 +761,13 @@ async function verifyMintAndTokenAccounts(
 ): Promise<void> {
   const { payout, asset, treasury } = context;
   const mintAddress = asset.mintAddress!;
+  const [expectedSourceAta, expectedDestinationAta] = await Promise.all([
+    deriveClassicSplAssociatedTokenAddress({ ownerAddress: treasury.treasuryWalletAddress!, mintAddress }),
+    deriveClassicSplAssociatedTokenAddress({ ownerAddress: payout.destinationWallet, mintAddress })
+  ]);
+  if (expectedSourceAta !== payout.sourceTokenAccount || expectedDestinationAta !== payout.destinationTokenAccount) {
+    throw new PayoutQuarantineError("DERIVED_TOKEN_ACCOUNT_MISMATCH");
+  }
   const [mintInfo, sourceInfo, destinationInfo, feePayerInfo] = await Promise.all([
     gateway.getAccountInfo(mintAddress, "finalized"),
     gateway.getAccountInfo(payout.sourceTokenAccount, "finalized"),
@@ -1015,9 +1025,9 @@ async function processExistingSignature(
   context: PayoutContext,
   gateway: SolanaPayoutGateway,
   signer: BgDevnetPayoutSigner,
-  input: { now: Date; leaseMs: number; retryMs: number; allowTestSigner: boolean }
+  input: { now: Date; retryMs: number; allowTestSigner: boolean }
 ): Promise<BgDevnetPayoutResult> {
-  const { payout, treasury } = context;
+  const { payout } = context;
   const signature = payout.chainSignature;
   if (
     !signature ||
@@ -1196,7 +1206,6 @@ export async function processBgDevnetPayoutIntent(
 
     return await processExistingSignature(db, context, gateway, signer, {
       now,
-      leaseMs,
       retryMs,
       allowTestSigner: input.allowTestSigner === true
     });

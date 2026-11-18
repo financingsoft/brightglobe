@@ -188,6 +188,7 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
       assert.equal(payouts[0]?.treasuryAccountId, treasuryAccountId);
       assert.equal(payouts[0]?.tokenProgram, CLASSIC_SPL_TOKEN_PROGRAM_ID);
       assert.equal(payouts[0]?.feePayerAddress, feePayerAddress);
+      assert.equal(payouts[0]?.treasuryAuthorityAddress, treasuryWalletAddress);
       assert.equal(payouts[0]?.recentBlockhash, null);
       assert.equal(payouts[0]?.lastValidBlockHeight, null);
       await assert.rejects(

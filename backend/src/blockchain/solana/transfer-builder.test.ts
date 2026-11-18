@@ -9,6 +9,7 @@ const MINT = "So11111111111111111111111111111111111111112";
 test("builds an unsigned classic SPL TransferChecked transaction with a destination ATA", async () => {
   const transaction = await buildClassicSplTransferTransaction({
     feePayerAddress: SOURCE,
+    sourceOwnerAddress: SOURCE,
     destinationOwnerAddress: DESTINATION,
     mintAddress: MINT,
     amountBaseUnits: 1500000n,
@@ -27,6 +28,7 @@ test("rejects zero amounts and identical source and destination wallets", async 
   await assert.rejects(
     buildClassicSplTransferTransaction({
       feePayerAddress: SOURCE,
+      sourceOwnerAddress: SOURCE,
       destinationOwnerAddress: DESTINATION,
       mintAddress: MINT,
       amountBaseUnits: 0n,
@@ -40,6 +42,7 @@ test("rejects zero amounts and identical source and destination wallets", async 
   await assert.rejects(
     buildClassicSplTransferTransaction({
       feePayerAddress: SOURCE,
+      sourceOwnerAddress: SOURCE,
       destinationOwnerAddress: SOURCE,
       mintAddress: MINT,
       amountBaseUnits: 1n,

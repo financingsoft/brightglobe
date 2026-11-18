@@ -181,6 +181,13 @@ test("Neon BG payout repository claims once and settles the reward ledger atomic
     assert.equal(await repository.transition({
       payoutIntentId: payoutId,
       from: "submitted",
+      to: "reconciliation_required",
+      signature: "ci-signed-bg-payout-signature",
+      evidence: { broadcastOutcomeAmbiguous: true }
+    }), true);
+    assert.equal(await repository.transition({
+      payoutIntentId: payoutId,
+      from: "reconciliation_required",
       to: "finalized",
       signature: "ci-signed-bg-payout-signature",
       slot: 456n,

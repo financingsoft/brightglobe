@@ -605,7 +605,7 @@ export const rewardPayoutIntents = pgTable("reward_payout_intents", {
   index("reward_payout_intents_status_created_idx").on(table.status, table.createdAt),
   index("reward_payout_intents_treasury_idx").on(table.treasuryAccountId, table.createdAt),
   check("reward_payout_intents_network_check", sql`${table.network} IN ('devnet', 'mainnet-beta')`),
-  check("reward_payout_intents_status_check", sql`${table.status} IN ('queued', 'signing', 'signed', 'submitted', 'confirmed', 'finalized', 'paid', 'reconciliation_required', 'failed', 'quarantined', 'cancelled')`),
+  check("reward_payout_intents_status_check", sql`${table.status} IN ('queued', 'signing', 'signed', 'submitted', 'confirmed', 'finalized', 'paid', 'reconciliation_required', 'failed', 'expired', 'quarantined', 'cancelled')`),
   check("reward_payout_intents_amount_check", sql`${table.amountBaseUnits} > 0`),
   check("reward_payout_intents_signer_roles_check", sql`${table.feePayerAddress} <> ${table.treasuryAuthorityAddress} AND ${table.feePayerAddress} <> ${table.destinationWallet} AND ${table.treasuryAuthorityAddress} <> ${table.destinationWallet}`),
   check("reward_payout_intents_token_program_check", sql`${table.tokenProgram} = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'`),

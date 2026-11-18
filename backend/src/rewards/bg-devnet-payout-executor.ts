@@ -335,20 +335,20 @@ export async function executeNextBgDevnetPayout(input: {
       });
       return { outcome: "failed", payoutIntentId: intent.id, errorCode: "PAYOUT_CHAIN_TRANSACTION_FAILED" };
     }
-    if (status.confirmationStatus === "processed" || status.confirmationStatus === "confirmed") {
-      const to = status.confirmationStatus;
+    if (status.confirmationStatus === "confirmed" && status.slot !== null) {
       await repository.transition({
         payoutIntentId: intent.id,
         from: "submitted",
-        to,
+        to: "confirmed",
         signature: persistedSignature,
-        ...(status.slot === null ? {} : { slot: BigInt(status.slot) }),
-        evidence: { chainObservation: to }
+        slot: BigInt(status.slot),
+        evidence: { chainObservation: "confirmed" }
       });
-      if (to === "confirmed") persistedState = "confirmed";
-      return to === "confirmed" && status.slot !== null
-        ? { outcome: "confirmed", payoutIntentId: intent.id, signature: persistedSignature, slot: BigInt(status.slot) }
-        : { outcome: "submitted", payoutIntentId: intent.id, signature: persistedSignature };
+      persistedState = "confirmed";
+      return { outcome: "confirmed", payoutIntentId: intent.id, signature: persistedSignature, slot: BigInt(status.slot) };
+    }
+    if (status.confirmationStatus === "processed") {
+      return { outcome: "submitted", payoutIntentId: intent.id, signature: persistedSignature };
     }
     if (status.confirmationStatus !== "finalized" || status.slot === null) {
       await repository.transition({

@@ -559,7 +559,7 @@ export const rewardEvents = pgTable("reward_events", {
   amountBaseUnits: bigint("amount_base_units", { mode: "bigint" }).notNull(),
   ruleVersion: integer("rule_version").notNull(),
   periodKey: date("period_key", { mode: "string" }),
-  status: varchar("status", { length: 16 }).notNull().default("reserved"),
+  status: varchar("status", { length: 32 }).notNull().default("reserved"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
@@ -586,7 +586,7 @@ export const rewardPayoutIntents = pgTable("reward_payout_intents", {
   destinationWallet: varchar("destination_wallet", { length: 44 }).notNull(),
   destinationTokenAccount: varchar("destination_token_account", { length: 44 }).notNull(),
   amountBaseUnits: bigint("amount_base_units", { mode: "bigint" }).notNull(),
-  status: varchar("status", { length: 20 }).notNull().default("queued"),
+  status: varchar("status", { length: 32 }).notNull().default("queued"),
   chainSignature: varchar("chain_signature", { length: 128 }),
   chainSlot: bigint("chain_slot", { mode: "bigint" }),
   recentBlockhash: varchar("recent_blockhash", { length: 44 }),

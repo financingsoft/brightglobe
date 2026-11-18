@@ -60,7 +60,14 @@ function decodeInstruction(
     delegate: stringField(info, "delegate"),
     owner: stringField(info, "owner"),
     amountBaseUnits,
-    decimals: typeof info.decimals === "number" && Number.isInteger(info.decimals) ? info.decimals : null,
+    decimals: typeof info.decimals === "number" && Number.isInteger(info.decimals)
+      ? info.decimals
+      : typeof info.tokenAmount === "object" && info.tokenAmount !== null &&
+          "decimals" in info.tokenAmount &&
+          typeof (info.tokenAmount as { decimals?: unknown }).decimals === "number" &&
+          Number.isInteger((info.tokenAmount as { decimals: number }).decimals)
+        ? (info.tokenAmount as { decimals: number }).decimals
+        : null,
     originalType: type
   };
 

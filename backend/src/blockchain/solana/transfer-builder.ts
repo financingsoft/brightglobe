@@ -82,9 +82,9 @@ export async function deriveClassicSplAssociatedTokenAccounts(input: {
  * Build an unsigned v0 transaction containing an idempotent destination ATA
  * creation followed by a checked classic SPL Token transfer.
  *
- * The noop signer is only a signer marker. It never signs; the connected
- * external wallet receives the serialized message and performs the signature
- * and broadcast itself.
+ * No private key is held here. The noop signers mark the fee payer and token
+ * authority; a constrained Devnet signer may attach signatures after the
+ * server has validated the immutable payout policy.
  */
 export async function buildClassicSplTransferTransaction(
   input: ClassicSplTransferBuildInput

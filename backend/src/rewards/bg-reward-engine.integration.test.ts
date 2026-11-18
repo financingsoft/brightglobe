@@ -297,6 +297,20 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
         (error: unknown) => error instanceof BgRewardReservationError && error.code === "BG_REWARD_RISK_REJECTED"
       );
 
+      const feePayerCollisionUser = await addUser(0);
+      await db.insert(walletOwnerships).values({
+        id: createUuidV7(now.getTime()),
+        canonicalUserId: feePayerCollisionUser,
+        network: "devnet",
+        address: feePayerAddress,
+        verifiedAt: now,
+        createdAt: now
+      });
+      await assert.rejects(
+        () => reserveBgDailyReward(db, { canonicalUserId: feePayerCollisionUser, now }, allowRisk),
+        (error: unknown) => error instanceof BgRewardReservationError && error.code === "BG_WALLET_SELECTION_REQUIRED"
+      );
+
       const [program] = await db.select().from(rewardPrograms).where(eq(rewardPrograms.id, programId));
       assert.equal(program?.reservedBaseUnits, 0n);
     });

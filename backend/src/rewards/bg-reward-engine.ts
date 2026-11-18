@@ -340,7 +340,8 @@ export async function reserveBgDailyReward(
     const wallet = wallets[0]!;
     if (
       !isValidSolanaAddress(wallet.address) ||
-      wallet.address === treasury.treasuryWalletAddress
+      wallet.address === treasury.treasuryWalletAddress ||
+      wallet.address === treasury.feePayerAddress
     ) {
       throw new BgRewardReservationError(
         "BG_WALLET_SELECTION_REQUIRED",

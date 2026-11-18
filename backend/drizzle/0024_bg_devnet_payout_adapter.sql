@@ -59,7 +59,7 @@ BEGIN
   END IF;
   allowed := CASE OLD."status"
     WHEN 'queued' THEN NEW."status" IN ('signing', 'cancelled', 'failed', 'quarantined', 'reconciliation_required')
-    WHEN 'signing' THEN NEW."status" IN ('signed', 'queued', 'failed', 'quarantined', 'reconciliation_required')
+    WHEN 'signing' THEN NEW."status" IN ('signed', 'queued', 'cancelled', 'failed', 'quarantined', 'reconciliation_required')
     WHEN 'signed' THEN NEW."status" IN ('submitted', 'failed', 'quarantined', 'reconciliation_required')
     WHEN 'submitted' THEN NEW."status" IN ('confirmed', 'failed', 'quarantined', 'reconciliation_required')
     WHEN 'confirmed' THEN NEW."status" IN ('finalized', 'failed', 'quarantined', 'reconciliation_required')

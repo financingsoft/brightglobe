@@ -174,14 +174,14 @@ export async function executeNextBgDevnetPayout(input: {
   };
 
   let persistedSignature: string | null = null;
+  let persistedState: "signed" | "submitted" | "confirmed" | "finalized" = "signed";
   try {
     if (intent.network !== "devnet" || intent.tokenProgram !== CLASSIC_SPL_TOKEN_PROGRAM_ID) {
       return await quarantine("network_or_token_program_mismatch");
     }
     const cluster = await rpc.getDevnetStatus();
     if (!cluster.healthy || cluster.genesisHash !== SOLANA_DEVNET_GENESIS_HASH) {
-      await failBeforeBroadcast("DEVNET_CLUSTER_UNAVAILABLE");
-      return { outcome: "quarantined", payoutIntentId: intent.id, reason: "devnet_cluster_unavailable_or_mismatched" };
+      return await quarantine("devnet_cluster_unavailable_or_mismatched");
     }
 
     const [mintAccount, sourceAccount, destinationAccount, feePayerLamports, ataRent, blockhash] =
@@ -317,6 +317,7 @@ export async function executeNextBgDevnetPayout(input: {
       signature: persistedSignature,
       evidence: { broadcastAccepted: true }
     });
+    persistedState = "submitted";
 
     const status = await rpc.getSignatureStatus(persistedSignature);
     if (status.err !== null) {
@@ -340,6 +341,7 @@ export async function executeNextBgDevnetPayout(input: {
         ...(status.slot === null ? {} : { slot: BigInt(status.slot) }),
         evidence: { chainObservation: to }
       });
+      if (to === "confirmed") persistedState = "confirmed";
       return to === "confirmed" && status.slot !== null
         ? { outcome: "confirmed", payoutIntentId: intent.id, signature: persistedSignature, slot: BigInt(status.slot) }
         : { outcome: "submitted", payoutIntentId: intent.id, signature: persistedSignature };
@@ -378,6 +380,7 @@ export async function executeNextBgDevnetPayout(input: {
       slot: finalizedSlot,
       evidence: { finalizedTransferVerified: true }
     });
+    persistedState = "finalized";
     const settled = await repository.settleFinalizedPayoutOnce({
       payoutIntentId: intent.id,
       signature: persistedSignature,
@@ -388,14 +391,16 @@ export async function executeNextBgDevnetPayout(input: {
       : { outcome: "reconciliation_required", payoutIntentId: intent.id, signature: persistedSignature };
   } catch (error) {
     if (persistedSignature) {
-      await repository.transition({
-        payoutIntentId: intent.id,
-        from: "signed",
-        to: "reconciliation_required",
-        signature: persistedSignature,
-        errorCode: "PAYOUT_EXECUTION_INTERRUPTED_AFTER_SIGNING",
-        evidence: { broadcastOutcomeAmbiguous: true, signature: persistedSignature }
-      });
+      if (persistedState !== "finalized") {
+        await repository.transition({
+          payoutIntentId: intent.id,
+          from: persistedState,
+          to: "reconciliation_required",
+          signature: persistedSignature,
+          errorCode: "PAYOUT_EXECUTION_INTERRUPTED_AFTER_SIGNING",
+          evidence: { broadcastOutcomeAmbiguous: true, signature: persistedSignature }
+        });
+      }
       return { outcome: "reconciliation_required", payoutIntentId: intent.id, signature: persistedSignature };
     }
     await failBeforeBroadcast("PAYOUT_PREFLIGHT_OR_SIGNING_FAILED");

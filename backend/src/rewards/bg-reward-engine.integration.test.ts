@@ -20,7 +20,7 @@ import { decodeSolanaAddress } from "../blockchain/solana/address.js";
 import { SOLANA_DEVNET_GENESIS_HASH, type SolanaPayoutGateway } from "../blockchain/solana/gateway.js";
 import { deriveClassicSplAssociatedTokenAddress } from "../blockchain/solana/transfer-builder.js";
 import { createUuidV7 } from "../identity/ids.js";
-import { processBgDevnetPayoutIntent, reconcileBgDevnetTreasury } from "./bg-devnet-payout-service.js";
+import { processBgDevnetPayoutIntent, reconcileBgDevnetTreasury, type BgDevnetPayoutSigner } from "./bg-devnet-payout-service.js";
 import {
   BG_DAILY_COLLECTION_PROGRAM_KEY,
   BgRewardReservationError,
@@ -413,10 +413,6 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
         amountOnChain: bigint,
         options: { finalizedError?: boolean; transferAmount?: bigint; throwAfterAccept?: boolean } = {}
       ) {
-        const destinationAtaPromise = deriveClassicSplAssociatedTokenAddress({
-          ownerAddress: destinationWallet,
-          mintAddress
-        });
         let signature = "";
         let submitted = false;
         let sendCount = 0;
@@ -540,10 +536,10 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
             return signature;
           }
         };
-        const signer = {
-          provider: "devnet_local" as const,
+        const signer: BgDevnetPayoutSigner = {
+          provider: "devnet_local",
           keyReference: signerKeyReference,
-          async signTransaction(input: { unsignedTransactionBase64: string; requiredSigners: readonly string[] }) {
+          async signTransaction(input) {
             const unsigned = new Uint8Array(Buffer.from(input.unsignedTransactionBase64, "base64"));
             const vector = readTransactionSignatureVector(unsigned);
             const messageOffset = vector.next + vector.count * 64;
@@ -561,6 +557,7 @@ test("BG daily reservation is atomic, budget-safe and idempotent in PostgreSQL",
               offset += item.length;
             }
             signed.set(message, offset);
+            signature = encodeBase58(signed.slice(1, 65));
             return { signedTransactionBase64: Buffer.from(signed).toString("base64") };
           }
         };

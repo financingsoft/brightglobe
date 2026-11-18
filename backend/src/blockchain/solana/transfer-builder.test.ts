@@ -29,6 +29,16 @@ test("builds unsigned TransferChecked with separate fee payer and treasury autho
   assert.equal(transaction.treasuryAuthorityAddress, TREASURY_AUTHORITY);
 });
 
+test("preserves the user-signed transfer mode where sender is both fee payer and authority", async () => {
+  const transaction = await buildClassicSplTransferTransaction({
+    ...validInput,
+    treasuryAuthorityAddress: undefined
+  });
+  assert.equal(transaction.feePayerAddress, FEE_PAYER);
+  assert.equal(transaction.treasuryAuthorityAddress, FEE_PAYER);
+  assert.ok(transaction.transactionBase64.length > 100);
+});
+
 test("rejects any overlap between fee payer, treasury authority and recipient", async () => {
   await assert.rejects(
     buildClassicSplTransferTransaction({

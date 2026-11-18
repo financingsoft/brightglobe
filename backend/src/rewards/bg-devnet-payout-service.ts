@@ -336,7 +336,8 @@ async function markSubmitted(db: Database, payoutIntentId: string, signature: st
     if (payout.chainSignature !== signature) {
       throw new PayoutQuarantineError("BROADCAST_SIGNATURE_MISMATCH");
     }
-    if (payout.status === "signed") {
+    const transitioned = payout.status === "signed";
+    if (transitioned) {
       await tx.update(rewardPayoutIntents).set({
         status: "submitted",
         submittedAt: payout.submittedAt ?? now,
@@ -360,7 +361,7 @@ async function markSubmitted(db: Database, payoutIntentId: string, signature: st
       await tx.update(rewardEvents).set({ status: "submitted", updatedAt: now })
         .where(eq(rewardEvents.id, event.id));
     }
-    await tx.insert(rewardAuditEvents).values(makeAuditEvent({
+    if (transitioned) await tx.insert(rewardAuditEvents).values(makeAuditEvent({
       id: createUuidV7(now.getTime()),
       action: "bg.reward.payout.submitted",
       payoutIntentId,
@@ -379,7 +380,8 @@ async function markConfirmed(db: Database, payoutIntentId: string, signature: st
       .for("update");
     if (!payout || ["paid", "failed", "quarantined", "cancelled"].includes(payout.status)) return;
     if (payout.chainSignature !== signature) throw new PayoutQuarantineError("CONFIRMED_SIGNATURE_MISMATCH");
-    if (payout.status === "submitted") {
+    const transitioned = payout.status === "submitted";
+    if (transitioned) {
       await tx.update(rewardPayoutIntents).set({
         status: "confirmed",
         confirmedSlot: slot,
@@ -405,7 +407,7 @@ async function markConfirmed(db: Database, payoutIntentId: string, signature: st
       await tx.update(rewardEvents).set({ status: "confirmed", updatedAt: now })
         .where(eq(rewardEvents.id, event.id));
     }
-    await tx.insert(rewardAuditEvents).values(makeAuditEvent({
+    if (transitioned) await tx.insert(rewardAuditEvents).values(makeAuditEvent({
       id: createUuidV7(now.getTime()),
       action: "bg.reward.payout.confirmed",
       payoutIntentId,
@@ -494,24 +496,6 @@ async function markQuarantined(
   });
 }
 
-async function releaseReservedBudget(
-  tx: Parameters<Parameters<Database["transaction"]>[0]>[0],
-  programId: string,
-  amount: bigint,
-  now: Date
-): Promise<void> {
-  const [program] = await tx.select().from(rewardPrograms)
-    .where(eq(rewardPrograms.id, programId))
-    .limit(1)
-    .for("update");
-  if (!program || program.reservedBaseUnits < amount) {
-    throw new Error("BG reward reserved budget does not cover the terminal payout transition.");
-  }
-  await tx.update(rewardPrograms).set({
-    reservedBaseUnits: program.reservedBaseUnits - amount,
-    updatedAt: now
-  }).where(eq(rewardPrograms.id, programId));
-}
 
 async function markFailed(db: Database, payoutIntentId: string, code: string, now: Date, metadata: Record<string, unknown> = {}): Promise<void> {
   await db.transaction(async (tx) => {
@@ -525,7 +509,17 @@ async function markFailed(db: Database, payoutIntentId: string, code: string, no
       .limit(1)
       .for("update");
     if (!event) throw new Error("BG reward event is missing.");
-    await releaseReservedBudget(tx, event.programId, event.amountBaseUnits, now);
+    const [program] = await tx.select().from(rewardPrograms)
+      .where(eq(rewardPrograms.id, event.programId))
+      .limit(1)
+      .for("update");
+    if (!program || program.reservedBaseUnits < event.amountBaseUnits) {
+      throw new Error("BG reward reserved budget does not cover the failed payout transition.");
+    }
+    await tx.update(rewardPrograms).set({
+      reservedBaseUnits: program.reservedBaseUnits - event.amountBaseUnits,
+      updatedAt: now
+    }).where(eq(rewardPrograms.id, program.id));
     await tx.update(rewardPayoutIntents).set({
       status: "failed",
       lastErrorCode: code,
@@ -558,7 +552,17 @@ async function markCancelled(db: Database, payoutIntentId: string, code: string,
       .limit(1)
       .for("update");
     if (!event || event.status !== "reserved") throw new Error("Only an unsubmitted reserved BG reward can be cancelled.");
-    await releaseReservedBudget(tx, event.programId, event.amountBaseUnits, now);
+    const [program] = await tx.select().from(rewardPrograms)
+      .where(eq(rewardPrograms.id, event.programId))
+      .limit(1)
+      .for("update");
+    if (!program || program.reservedBaseUnits < event.amountBaseUnits) {
+      throw new Error("BG reward reserved budget does not cover cancellation.");
+    }
+    await tx.update(rewardPrograms).set({
+      reservedBaseUnits: program.reservedBaseUnits - event.amountBaseUnits,
+      updatedAt: now
+    }).where(eq(rewardPrograms.id, program.id));
     await tx.update(rewardPayoutIntents).set({
       status: "cancelled",
       lastErrorCode: code,
@@ -623,7 +627,7 @@ async function settlePaid(
       lastErrorCode: null,
       reconciliationMetadata: { ...payout.reconciliationMetadata, finalizedTransfer: verified },
       updatedAt: now
-    }).where(eq(rewardPayoutIntents.id, payoutIntentId);
+    }).where(eq(rewardPayoutIntents.id, payoutIntentId));
     if (event.status !== "finalized") {
       await tx.update(rewardEvents).set({ status: "finalized", updatedAt: now })
         .where(eq(rewardEvents.id, event.id));
@@ -1040,7 +1044,8 @@ async function processExistingSignature(
       }
       await markSubmitted(db, payout.id, signature, input.now);
       return { payoutIntentId: payout.id, status: "submitted", signature };
-    } catch {
+    } catch (error) {
+      if (error instanceof PayoutQuarantineError) throw error;
       await retryPayout(db, payout.id, "BROADCAST_RETRY_PENDING", input.now, input.retryMs);
       return { payoutIntentId: payout.id, status: payout.status as BgDevnetPayoutStatus, signature, reasonCode: "BROADCAST_RETRY_PENDING" };
     }
@@ -1054,10 +1059,13 @@ async function processExistingSignature(
     return { payoutIntentId: payout.id, status: "failed", signature, reasonCode: "FINALIZED_TRANSACTION_FAILED" };
   }
   if (status.confirmationStatus === "confirmed" && status.err === null) {
+    await markSubmitted(db, payout.id, signature, input.now);
     await markConfirmed(db, payout.id, signature, BigInt(status.slot), input.now);
     return { payoutIntentId: payout.id, status: "confirmed", signature };
   }
   if (status.confirmationStatus === "finalized" && status.err === null) {
+    await markSubmitted(db, payout.id, signature, input.now);
+    await markConfirmed(db, payout.id, signature, BigInt(status.slot), input.now);
     const verification = await verifyFinalizedTransfer(context, gateway, signature, BigInt(status.slot));
     if (!verification.valid) {
       if (verification.retryable) {
@@ -1120,15 +1128,15 @@ export async function processBgDevnetPayoutIntent(
     }
     if (!cluster.healthy) throw new PayoutDeferredError("SOLANA_DEVNET_RPC_UNHEALTHY");
 
-    const validated = validatePayoutContext(context, signer, input.allowTestSigner === true);
     const hasExistingSignature = Boolean(payout.chainSignature);
+    if (!hasExistingSignature && (program.status !== "active" || treasury.status !== "active")) {
+      await markCancelled(db, payout.id, "PROGRAM_OR_TREASURY_PAUSED_BEFORE_SIGNING", now);
+      return { payoutIntentId: payout.id, status: "cancelled", reasonCode: "PROGRAM_OR_TREASURY_PAUSED_BEFORE_SIGNING" };
+    }
+    const validated = validatePayoutContext(context, signer, input.allowTestSigner === true);
     if (!hasExistingSignature) {
       if (payout.status !== "signing") {
         throw new PayoutQuarantineError("UNSIGNED_PAYOUT_STATE_INVALID");
-      }
-      if (program.status !== "active" || treasury.status !== "active") {
-        await markCancelled(db, payout.id, "PROGRAM_OR_TREASURY_PAUSED_BEFORE_SIGNING", now);
-        return { payoutIntentId: payout.id, status: "cancelled", reasonCode: "PROGRAM_OR_TREASURY_PAUSED_BEFORE_SIGNING" };
       }
       await verifyMintAndTokenAccounts(context, gateway, true);
       const latest = await gateway.getLatestBlockhash("confirmed");

@@ -21,7 +21,7 @@ ALTER TABLE "reward_payout_intents"
   ALTER COLUMN "treasury_authority_address" SET NOT NULL,
   DROP CONSTRAINT "reward_payout_intents_status_check",
   ADD CONSTRAINT "reward_payout_intents_status_check"
-    CHECK ("status" IN ('queued', 'signing', 'signed', 'submitted', 'confirmed', 'finalized', 'paid', 'reconciliation_required', 'failed', 'quarantined', 'cancelled')),
+    CHECK ("status" IN ('queued', 'signing', 'signed', 'submitted', 'confirmed', 'finalized', 'paid', 'reconciliation_required', 'failed', 'expired', 'quarantined', 'cancelled')),
   ADD CONSTRAINT "reward_payout_intents_signer_roles_check"
     CHECK (
       "fee_payer_address" <> "treasury_authority_address"

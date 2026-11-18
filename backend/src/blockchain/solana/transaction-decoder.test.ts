@@ -29,6 +29,7 @@ test("decodes parsed transferChecked instruction with exact base units", () => {
   assert.equal(events.length, 1);
   assert.equal(events[0]!.eventType, "transfer");
   assert.equal(events[0]!.payload.amountBaseUnits, "9007199254740993123");
+  assert.equal(events[0]!.payload.decimals, 9);
   assert.equal(events[0]!.slot, 100n);
 });
 

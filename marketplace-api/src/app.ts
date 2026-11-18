@@ -100,6 +100,7 @@ export function createPublicReadApp(repository: PublicReadRepository, config: Pu
         meta: { schemaVersion: 1, contentLocale: record.contentLocale, requestedLocale: locale }
       }, id, "public, max-age=0, s-maxage=600, stale-while-revalidate=1200", record.updatedAt, [
         "app:" + slug,
+        "app:" + slug + ":rating",
         "developer:" + parsed.data.publisher.slug,
         ...parsed.data.categories.map((category) => "category:" + category.slug),
         "locale:" + record.contentLocale
@@ -181,6 +182,7 @@ export function createPublicReadApp(repository: PublicReadRepository, config: Pu
       }, id, "public, max-age=0, s-maxage=120, stale-while-revalidate=240", page.app.updatedAt, [
         "app:" + slug,
         "app:" + slug + ":reviews",
+        "app:" + slug + ":rating",
         "locale:" + page.app.contentLocale
       ]);
     } catch (error) {

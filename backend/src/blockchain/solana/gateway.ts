@@ -54,6 +54,9 @@ export interface SolanaGateway {
     confirmationStatus?: "processed" | "confirmed" | "finalized";
   }>>;
   getSignatureStatuses(signatures: readonly string[]): ReturnType<SolanaRpcClient["getSignatureStatuses"]>;
+}
+
+export interface SolanaPayoutGateway extends SolanaGateway {
   simulateTransaction(transactionBase64: string): Promise<{ err: unknown | null; logs: string[]; unitsConsumed: number | null; contextSlot: number }>;
   sendTransaction(transactionBase64: string): Promise<string>;
 }
@@ -61,7 +64,7 @@ export interface SolanaGateway {
 export function createSolanaGateway(
   endpoint: string,
   rpc: SolanaRpcClient = createSolanaRpcClient(endpoint)
-): SolanaGateway {
+): SolanaPayoutGateway {
   return {
     async getDevnetStatus() {
       const [health, genesisHash, slotValue, blockHeight] = await Promise.all([

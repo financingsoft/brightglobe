@@ -84,9 +84,10 @@ export function createSolanaBgPayoutReconciliationRpc(
         state.before = oldest.signature;
       }
 
+      const found = state.signatures.has(signature);
       return {
-        found: state.signatures.has(signature),
-        complete: state.reachedEnd && config.archiveHistoryEnabled
+        found,
+        complete: !found && state.reachedEnd && config.archiveHistoryEnabled
       };
     }
   };

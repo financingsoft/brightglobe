@@ -89,7 +89,7 @@ function emptySnapshot(
   account: BgTreasuryAccountForReconciliation,
   totals: BgTreasuryInventoryTotals,
   discrepancyCode: string,
-  status: "quarantined" | "unavailable"
+  status: BgTreasuryReconciliationStatus
 ): BgTreasurySnapshotInput {
   return {
     treasuryAccountId: account.id,

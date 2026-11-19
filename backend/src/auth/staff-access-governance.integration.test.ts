@@ -22,7 +22,7 @@ import {
 
 const connectionString = process.env.BG_REWARD_TEST_DATABASE_URL ?? process.env.LOCAL_DATABASE_URL;
 
-test("staff access provisioning, role changes, and suspension require independent approval and execution", {
+test("staff access provisioning, role changes, suspension, and reactivation require independent approval and execution", {
   skip: !connectionString ? "BG_REWARD_TEST_DATABASE_URL is not configured; PostgreSQL integration test skipped." : false
 }, async () => {
   const pool = new PgPool({ connectionString });

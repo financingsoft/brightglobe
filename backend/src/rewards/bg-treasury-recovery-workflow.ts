@@ -500,3 +500,155 @@ export async function approveBgTreasuryRecovery(
     return toResult(approved);
   });
 }
+
+export async function executeBgTreasuryRecovery(
+  db: Database,
+  input: {
+    proposalId: string;
+    reason: string;
+    actor: TreasuryRecoveryActor;
+    requestId?: string | null;
+  },
+  now = new Date()
+): Promise<TreasuryRecoveryProposalResult> {
+  const reason = input.reason.trim();
+  if (!input.proposalId || reason.length < 1 || reason.length > 1000 || Number.isNaN(now.getTime())) {
+    throw new TreasuryRecoveryWorkflowError("INVALID_INPUT", "A proposal ID and non-empty execution reason are required.");
+  }
+
+  return db.transaction(async (tx) => {
+    const transactionDb = tx as unknown as Database;
+    const [reference] = await tx.select({
+      treasuryAccountId: bgTreasuryRecoveryProposals.treasuryAccountId,
+      snapshotId: bgTreasuryRecoveryProposals.snapshotId,
+      proposerStaffId: bgTreasuryRecoveryProposals.proposerStaffId,
+      approverStaffId: bgTreasuryRecoveryProposals.approverStaffId
+    }).from(bgTreasuryRecoveryProposals)
+      .where(eq(bgTreasuryRecoveryProposals.id, input.proposalId))
+      .limit(1);
+
+    if (!reference) {
+      throw new TreasuryRecoveryWorkflowError("PROPOSAL_NOT_FOUND", "The Treasury recovery proposal does not exist.");
+    }
+    if (!reference.approverStaffId) {
+      throw new TreasuryRecoveryWorkflowError("PROPOSAL_NOT_PENDING", "The proposal has not been independently approved.");
+    }
+    if (reference.approverStaffId !== input.actor.staffPrincipalId) {
+      throw new TreasuryRecoveryWorkflowError("NOT_APPROVER", "Only the independent approver may execute this approved recovery.");
+    }
+
+    // Lock proposer and approver principals in stable order before permission
+    // checks. The approver must remain active and retain both approve/execute
+    // permissions; the proposer must remain active and retain propose access.
+    const principalIds = [...new Set([reference.proposerStaffId, reference.approverStaffId])].sort();
+    const principals = await tx.select({
+      id: staffPrincipals.id,
+      authUserId: staffPrincipals.authUserId,
+      status: staffPrincipals.status
+    }).from(staffPrincipals)
+      .where(inArray(staffPrincipals.id, principalIds))
+      .orderBy(asc(staffPrincipals.id))
+      .for("update");
+    const proposerPrincipal = principals.find((principal) => principal.id === reference.proposerStaffId);
+    const approverPrincipal = principals.find((principal) => principal.id === reference.approverStaffId);
+
+    if (!approverPrincipal || approverPrincipal.authUserId !== input.actor.authUserId || approverPrincipal.status !== "active") {
+      throw new TreasuryRecoveryWorkflowError("STAFF_INACTIVE", "The approving staff principal is no longer active.");
+    }
+    if (!proposerPrincipal || proposerPrincipal.status !== "active") {
+      throw new TreasuryRecoveryWorkflowError("STAFF_INACTIVE", "The proposing staff principal is no longer active.");
+    }
+
+    await assertStaffPermission(transactionDb, input.actor, "bg.treasury.recovery.approve", now);
+    await assertStaffPermission(transactionDb, input.actor, "bg.treasury.recovery.execute", now);
+    await assertStaffPermission(transactionDb, {
+      staffPrincipalId: proposerPrincipal.id,
+      authUserId: proposerPrincipal.authUserId
+    }, "bg.treasury.recovery.propose", now);
+
+    const [treasuryLock] = await tx.select({ id: treasuryAccounts.id })
+      .from(treasuryAccounts)
+      .where(eq(treasuryAccounts.id, reference.treasuryAccountId))
+      .limit(1)
+      .for("update");
+    if (!treasuryLock) {
+      throw new TreasuryRecoveryWorkflowError("TREASURY_NOT_FOUND", "The Treasury account does not exist.");
+    }
+
+    const [proposal] = await tx.select().from(bgTreasuryRecoveryProposals)
+      .where(eq(bgTreasuryRecoveryProposals.id, input.proposalId))
+      .limit(1)
+      .for("update");
+    if (!proposal) {
+      throw new TreasuryRecoveryWorkflowError("PROPOSAL_NOT_FOUND", "The Treasury recovery proposal does not exist.");
+    }
+    if (
+      proposal.treasuryAccountId !== reference.treasuryAccountId ||
+      proposal.snapshotId !== reference.snapshotId ||
+      proposal.proposerStaffId !== reference.proposerStaffId ||
+      proposal.approverStaffId !== reference.approverStaffId
+    ) {
+      throw new TreasuryRecoveryWorkflowError("PROPOSAL_NOT_PENDING", "The approved proposal binding changed before execution.");
+    }
+    if (proposal.proposerStaffId === input.actor.staffPrincipalId) {
+      throw new TreasuryRecoveryWorkflowError("SELF_APPROVAL", "The proposer cannot execute their own Treasury recovery.");
+    }
+    if (proposal.status !== "approved" || !proposal.approvedAt) {
+      throw new TreasuryRecoveryWorkflowError("PROPOSAL_NOT_PENDING", "Only an approved, unconsumed Treasury recovery proposal can execute.");
+    }
+    if (proposal.approvedAt.getTime() > now.getTime() || now.getTime() - proposal.approvedAt.getTime() > SNAPSHOT_MAX_AGE_MS) {
+      throw new TreasuryRecoveryWorkflowError("PROPOSAL_EXPIRED", "The approval is older than five minutes; a new proposal and approval are required.");
+    }
+
+    await assertTreasuryAndSnapshot(
+      transactionDb,
+      proposal.treasuryAccountId,
+      proposal.snapshotId,
+      now
+    );
+
+    const [activated] = await tx.update(treasuryAccounts)
+      .set({ status: "active", updatedAt: now })
+      .where(and(
+        eq(treasuryAccounts.id, proposal.treasuryAccountId),
+        eq(treasuryAccounts.status, "paused")
+      ))
+      .returning({ id: treasuryAccounts.id });
+
+    if (!activated) {
+      throw new TreasuryRecoveryWorkflowError("TREASURY_NOT_PAUSED", "Treasury status changed before the recovery transition.");
+    }
+
+    const [consumed] = await tx.update(bgTreasuryRecoveryProposals)
+      .set({ status: "consumed", consumedAt: now })
+      .where(and(
+        eq(bgTreasuryRecoveryProposals.id, proposal.id),
+        eq(bgTreasuryRecoveryProposals.status, "approved")
+      ))
+      .returning();
+
+    if (!consumed) {
+      throw new TreasuryRecoveryWorkflowError("PROPOSAL_NOT_PENDING", "The approved recovery proposal was already consumed.");
+    }
+
+    await appendAudit(transactionDb, {
+      actorStaffId: input.actor.staffPrincipalId,
+      subjectStaffId: proposal.proposerStaffId,
+      action: "bg.treasury.recovery.executed",
+      reason,
+      requestId: input.requestId,
+      metadata: {
+        proposalId: proposal.id,
+        treasuryAccountId: proposal.treasuryAccountId,
+        snapshotId: proposal.snapshotId,
+        proposerStaffId: proposal.proposerStaffId,
+        approverStaffId: input.actor.staffPrincipalId,
+        beforeStatus: "paused",
+        afterStatus: "active"
+      },
+      now
+    });
+
+    return toResult(consumed);
+  });
+}

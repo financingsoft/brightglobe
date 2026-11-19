@@ -24,10 +24,10 @@ The staff authorization foundation is implemented:
 
 ## TOTP step-up contract
 
-Implemented through Better Auth TOTP and a server-side one-time grant:
+Implemented through Better Auth TOTP/backup-code verification and a server-side one-time grant:
 
 - The staff principal must be active, hold the exact operation permission, and have an enrolled, verified authenticator.
-- A fresh TOTP code is required for each proposal, approval, and execution operation.
+- A fresh TOTP code or one-time Better Auth backup code is required for each proposal, approval, and execution operation. Backup-code verification does not trust the device or change the session; Better Auth consumes the code once.
 - Each grant is bound to one staff principal, Better Auth session, and exact operation.
 - Grants expire after five minutes, store only a SHA-256 token digest, and are atomically consumed once.
 - Replay, cross-session, cross-user, cross-operation, and expired use are rejected.

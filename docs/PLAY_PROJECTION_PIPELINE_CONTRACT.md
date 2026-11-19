@@ -71,3 +71,29 @@ The projector orchestration is implemented as a dependency-injected, batch-aware
 - Cache purge limits and cost must be measured; invalidation must be batched and coalesced during bulk edits.
 
 No database migration, Queue creation, Worker deployment, cache purge credential creation, DNS change or Production action is authorized by this proposal.
+
+## Round 2 reconciliation amendment — outbox and projection responsibilities
+
+**Status:** Proposed; effective only after review and merge.
+
+### Event and payload model
+- The transactional business mutation and its durable outbox event are committed atomically in the same database transaction.
+- The durable outbox row contains the validated, minimized event envelope and the sanitized public projection payload or explicit tombstone/purge instruction required by the projector. Private evidence, credentials, email addresses and non-public moderation data are excluded by an allowlist.
+- Queue messages carry only an opaque outbox event ID plus schema/version metadata; consumers reload the durable outbox record rather than trusting arbitrary client-supplied payloads.
+- Every event has a stable event ID, event type, schema version, aggregate ID, aggregate version, occurred-at timestamp and idempotency/deduplication identity.
+
+### Runtime separation
+- Outbox relay may claim/dispatch outbox rows and send Queue messages; it cannot mutate business aggregates or write public projections.
+- Projector may read durable sanitized events and write approved projection tables, receipts and aggregate watermarks; it cannot approve listings, mutate source records or perform moderation.
+- Public reader has SELECT-only access to approved projection tables. It has no source-table access, writes, outbox access or purge credential.
+- Cache invalidation is scoped to affected keys/tags and runs only after projection state is committed. No whole-zone purge for an ordinary content change.
+- Scanner processing and scanner callbacks have separate scoped authority; a scan result is evidence and never itself grants release approval.
+
+### Ordering, retries and recovery
+- Projection application is idempotent and guarded by aggregate version/watermark so stale events cannot resurrect withdrawn content.
+- Duplicate delivery is expected. Retry, poison-message, dead-letter, replay and operator-recovery procedures must preserve event identity and audit history.
+- Deletion/withdrawal emits a tombstone or purge instruction and retains a durable receipt/watermark preventing stale resurrection.
+- The projector must validate schema version and reject unknown/incompatible payloads without silently dropping them.
+
+### Privacy and cache
+Public projections are explicit allowlists, not serialized source rows. Authenticated, private, draft, pending, quarantined and moderation-only data are never projected to public tables or shared caches.

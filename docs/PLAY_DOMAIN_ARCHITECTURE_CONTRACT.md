@@ -88,3 +88,32 @@ Do not add a Worker per bounded context in V1. Do not introduce Kubernetes, Kafk
 ## 8. Non-negotiable architecture gates
 
 No public release until tenant isolation, object authorization, package provenance, release-state enforcement, audit, rollback, abuse controls, data retention and restore tests pass. Production DNS, migrations and deployment require separate approval.
+
+## Round 2 reconciliation amendment — proposed runtime topology
+
+**Status:** Proposed; effective only after review and merge.
+
+### Bounded runtime responsibilities
+| Runtime | Responsibility | Must not do |
+|---|---|---|
+| `globe` / `globe-staging` | Existing BrightGlobe mobile/community, canonical identity and account capabilities | Become a second Marketplace authority |
+| `globe-play` / `globe-play-staging` | Anonymous public Marketplace read API over approved projections | Developer writes, moderation writes, source-table access or private data reads |
+| `globe-play-private` | Authenticated developer and user Marketplace commands | Public shared-cache responses or bypass membership/object authorization |
+| `globe-api-gateway` | Explicit routing, request limits, correlation and common transport policy | Business authorization, domain state transitions or privilege escalation |
+| Async consumers | Outbox relay, projection, scanner callback processing and scoped cache invalidation | Share a universal credential or mutate unrelated business aggregates |
+
+### Gateway route contract
+- `/api/auth/*` routes to the existing BrightGlobe authentication boundary.
+- `/api/v1/play/*` routes to public read APIs.
+- `/api/v1/play-private/*` routes to authenticated Marketplace command APIs.
+- `/api/v1/play-admin/*` is reserved for a future separately protected staff API; it is not enabled by this amendment.
+- Staging routes use the repository's agreed staging prefix and staging-only upstream bindings; production paths omit that prefix. The exact deployed route configuration must be verified before activation.
+- Gateway must fail closed for unknown routes, missing upstream bindings and environment mismatch. It must not silently fall back to production from Staging or vice versa.
+
+### Identity and request security
+- The gateway may forward identity context only from the trusted authentication boundary; upstream services must validate the trusted context and independently authorize the requested object and organization.
+- Client-supplied canonical user IDs, organization IDs, role claims or staff claims are never trusted as authorization evidence.
+- Private responses use `Cache-Control: private, no-store`; public cache keys exclude credentials and personalized state.
+
+### Deployment boundary
+This topology is a proposed target, not evidence that the Workers, routes, bindings, secrets or environments exist. Provisioning and deployment remain separate approval-gated work in Round 3.

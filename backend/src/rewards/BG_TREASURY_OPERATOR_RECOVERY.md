@@ -2,7 +2,7 @@
 
 ## Decision and safety boundary
 
-BrightGlobe now has server-enforced staff RBAC, TOTP step-up, and Treasury recovery proposal, approval, and execution APIs.
+BrightGlobe now has server-enforced staff RBAC, TOTP/backup-code step-up, and Treasury recovery proposal, approval, and execution APIs.
 
 The execution API performs only an internal database state transition from `paused` to `active`. It does not construct, sign, submit, retry, or transfer a Solana transaction or BG tokens. A healthy reconciliation snapshot by itself never resumes a Treasury.
 
@@ -52,7 +52,7 @@ A different active staff principal with `bg.treasury.recovery.approve` must appr
 
 ### Execution
 
-Execution requires `bg.treasury.recovery.execute`, a fresh TOTP step-up grant, and the same independent staff principal who approved the proposal. The proposer cannot execute their own proposal.
+Execution requires `bg.treasury.recovery.execute`, a fresh TOTP or backup-code step-up grant, and the same independent staff principal who approved the proposal. The proposer cannot execute their own proposal.
 
 The execution service revalidates the proposer and approver identities and permissions inside the transaction. The approval must be no older than five minutes. Under Treasury and proposal row locks, it then revalidates:
 

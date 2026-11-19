@@ -293,6 +293,100 @@ test("Neon BG payout repository claims once and settles the reward ledger atomic
     const [failedEvent] = await db.select().from(rewardEvents).where(eq(rewardEvents.id, failedEventId));
     assert.equal(releasedProgram?.reservedBaseUnits, 0n);
     assert.equal(failedEvent?.status, "failed");
+
+    const createEligibilityProgram = async (
+      suffix: string,
+      status: "active" | "paused",
+      startsAt: Date,
+      endsAt: Date | null
+    ): Promise<string> => {
+      const probeProgramId = createUuidV7(Date.now());
+      await db.insert(rewardPrograms).values({
+        id: probeProgramId,
+        assetId,
+        programKey: "bg-payout-probe-" + suffix + "-" + probeProgramId.slice(0, 8),
+        actionType: "campaign",
+        ruleVersion: 1,
+        status,
+        rewardBaseUnits: amount,
+        perUserLimit: 1,
+        budgetBaseUnits: 1_000n,
+        reservedBaseUnits: 0n,
+        paidBaseUnits: 0n,
+        startsAt,
+        endsAt,
+        approvalReference: status === "active" ? "ci-probe-approval" : null,
+        approvedBy: status === "active" ? "ci-probe-operator" : null,
+        approvedAt: status === "active" ? now : null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      return probeProgramId;
+    };
+
+    const queueEligibilityProbe = async (suffix: string, probeProgramId: string): Promise<string> => {
+      const probeEventId = createUuidV7(Date.now());
+      const probePayoutId = createUuidV7(Date.now());
+      await db.insert(rewardEvents).values({
+        id: probeEventId,
+        programId: probeProgramId,
+        canonicalUserId,
+        actionType: "campaign",
+        evidenceRef: null,
+        idempotencyKey: "bg-payout-eligibility:" + suffix + ":" + id,
+        amountBaseUnits: amount,
+        ruleVersion: 1,
+        periodKey: null,
+        status: "reserved",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      await db.insert(rewardPayoutIntents).values({
+        id: probePayoutId,
+        rewardEventId: probeEventId,
+        treasuryAccountId,
+        network: "devnet",
+        mintAddress,
+        tokenProgram: CLASSIC_SPL_TOKEN_PROGRAM_ID,
+        sourceTokenAccount,
+        feePayerAddress,
+        treasuryAuthorityAddress: treasuryWalletAddress,
+        destinationWallet: testAddress(910_000 + suffix.length),
+        destinationTokenAccount: testAddress(920_000 + suffix.length),
+        amountBaseUnits: amount,
+        status: "queued",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      return probePayoutId;
+    };
+
+    const pausedProgramId = await createEligibilityProgram(
+      "paused", "paused", new Date(now.getTime() - 60_000), null
+    );
+    const pausedPayoutId = await queueEligibilityProbe("paused", pausedProgramId);
+    assert.equal(await repository.claimNextQueued("paused-program-worker"), null);
+    const [pausedPayout] = await db.select().from(rewardPayoutIntents)
+      .where(eq(rewardPayoutIntents.id, pausedPayoutId));
+    assert.equal(pausedPayout?.status, "queued", "operator pause must leave queued payout untouched");
+
+    const expiredProgramId = await createEligibilityProgram(
+      "expired", "active", new Date(now.getTime() - 60_000), new Date(now.getTime() - 1)
+    );
+    const expiredPayoutId = await queueEligibilityProbe("expired", expiredProgramId);
+    assert.equal(await repository.claimNextQueued("expired-program-worker"), null);
+    const [expiredPayout] = await db.select().from(rewardPayoutIntents)
+      .where(eq(rewardPayoutIntents.id, expiredPayoutId));
+    assert.equal(expiredPayout?.status, "queued", "expired program must not start a payout");
+
+    const futureProgramId = await createEligibilityProgram(
+      "future", "active", new Date(now.getTime() + 60 * 60 * 1000), null
+    );
+    const futurePayoutId = await queueEligibilityProbe("future", futureProgramId);
+    assert.equal(await repository.claimNextQueued("future-program-worker"), null);
+    const [futurePayout] = await db.select().from(rewardPayoutIntents)
+      .where(eq(rewardPayoutIntents.id, futurePayoutId));
+    assert.equal(futurePayout?.status, "queued", "future program must not start a payout");
   } finally {
     await pool.end();
   }

@@ -10,7 +10,9 @@ import {
   staffAuditEvents,
   staffPrincipals,
   staffRoleAssignments,
-  staffRoles
+  staffRoles,
+  staffStepUpGrants,
+  session
 } from "../db/schema.js";
 import { createUuidV7 } from "../identity/ids.js";
 import {
@@ -184,6 +186,28 @@ test("staff access provisioning, role changes, suspension, and reactivation requ
       }, new Date(now.getTime() + 120_000));
       assert.equal(revoked.status, "consumed");
 
+      const targetSessionId = "ci-staff-session-" + suffix;
+      await tx.insert(session).values({
+        id: targetSessionId,
+        expiresAt: new Date(now.getTime() + 86_400_000),
+        token: "ci-staff-session-token-" + suffix,
+        createdAt: now,
+        updatedAt: now,
+        userId: targetUserId
+      });
+      const targetStepUpGrantId = createUuidV7(now.getTime());
+      await tx.insert(staffStepUpGrants).values({
+        id: targetStepUpGrantId,
+        staffPrincipalId: targetPrincipalId,
+        authUserId: targetUserId,
+        sessionId: targetSessionId,
+        operation: "bg.staff.access.execute",
+        tokenHash: "a".repeat(64),
+        issuedAt: now,
+        expiresAt: new Date(now.getTime() + 300_000),
+        consumedAt: null
+      });
+
       const suspend = await proposeStaffAccessChange(db, {
         action: "suspend_principal",
         targetStaffPrincipalId: targetPrincipalId,
@@ -202,6 +226,14 @@ test("staff access provisioning, role changes, suspension, and reactivation requ
         actor: approver
       }, new Date(now.getTime() + 150_000));
       assert.equal(suspended.status, "consumed");
+
+      const remainingSessions = await tx.select({ id: session.id }).from(session).where(eq(session.userId, targetUserId));
+      assert.equal(remainingSessions.length, 0, "suspension must revoke all existing Better Auth sessions");
+      const [invalidatedGrant] = await tx.select({
+        consumedAt: staffStepUpGrants.consumedAt
+      }).from(staffStepUpGrants).where(eq(staffStepUpGrants.id, targetStepUpGrantId));
+      assert.equal(invalidatedGrant?.consumedAt?.getTime(), new Date(now.getTime() + 150_000).getTime(),
+        "suspension must invalidate all outstanding staff step-up grants");
 
       const activate = await proposeStaffAccessChange(db, {
         action: "activate_principal",

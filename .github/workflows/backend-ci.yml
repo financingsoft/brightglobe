@@ -82,7 +82,8 @@ jobs:
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0030_bg_treasury_recovery_proposals.sql
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0031_bg_treasury_recovery_execution.sql
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0032_staff_access_governance.sql
-          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public."session" (id text PRIMARY KEY, token text NOT NULL, updated_at timestamptz NOT NULL DEFAULT now());'
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public."session" (id text PRIMARY KEY, expires_at timestamptz NOT NULL, token text NOT NULL UNIQUE, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(), ip_address text, user_agent text, user_id text NOT NULL REFERENCES public."user"(id) ON DELETE CASCADE);'
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE INDEX session_user_id_idx ON public."session" (user_id);'
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public.provider_identities (id uuid PRIMARY KEY, canonical_user_id uuid NOT NULL, provider varchar(32) NOT NULL, provider_subject varchar(256) NOT NULL, verified_at timestamptz, created_at timestamptz NOT NULL DEFAULT now());'
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public.identity_audit_events (id uuid PRIMARY KEY, canonical_user_id uuid, event_type varchar(64), actor_type varchar(24), actor_id varchar(256), metadata jsonb, created_at timestamptz);'
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public.wallet_sessions (id uuid PRIMARY KEY, last_seen_at timestamptz NOT NULL DEFAULT now(), revoked_at timestamptz);'

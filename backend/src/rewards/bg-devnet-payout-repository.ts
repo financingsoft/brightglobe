@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, gt, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, asc, eq, gte, gt, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import type { Database } from "../db/client.js";
 import {
   assetRegistry,
@@ -159,6 +159,81 @@ export function createDrizzleBgDevnetPayoutRepository(db: Database): BgDevnetPay
       });
     },
 
+    async claimReconciliationBatch(workerId: string, limit: number) {
+      if (!workerId || workerId.length > 128) throw new TypeError("Invalid reconciliation worker ID.");
+      if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
+        throw new RangeError("BG payout reconciliation batch size must be between 1 and 50.");
+      }
+      return db.transaction(async (tx) => {
+        const now = new Date();
+        const leaseUntil = new Date(now.getTime() + 30_000);
+        const candidates = await tx.select({
+          payout: rewardPayoutIntents,
+          asset: assetRegistry
+        }).from(rewardPayoutIntents)
+          .innerJoin(rewardEvents, eq(rewardEvents.id, rewardPayoutIntents.rewardEventId))
+          .innerJoin(rewardPrograms, eq(rewardPrograms.id, rewardEvents.programId))
+          .innerJoin(assetRegistry, eq(assetRegistry.id, rewardPrograms.assetId))
+          .where(and(
+            eq(rewardPayoutIntents.network, "devnet"),
+            inArray(rewardPayoutIntents.status, [
+              "signed", "submitted", "confirmed", "finalized", "reconciliation_required"
+            ]),
+            or(isNull(rewardPayoutIntents.retryAfter), lte(rewardPayoutIntents.retryAfter, now))
+          ))
+          .orderBy(asc(rewardPayoutIntents.createdAt))
+          .limit(limit)
+          .for("update", { skipLocked: true });
+
+        const claimed = [];
+        for (const candidate of candidates) {
+          const [leased] = await tx.update(rewardPayoutIntents)
+            .set({ retryAfter: leaseUntil, updatedAt: now })
+            .where(and(
+              eq(rewardPayoutIntents.id, candidate.payout.id),
+              inArray(rewardPayoutIntents.status, [
+                "signed", "submitted", "confirmed", "finalized", "reconciliation_required"
+              ]),
+              or(isNull(rewardPayoutIntents.retryAfter), lte(rewardPayoutIntents.retryAfter, now))
+            ))
+            .returning({ id: rewardPayoutIntents.id });
+          if (!leased) continue;
+
+          await tx.insert(rewardAuditEvents).values({
+            id: createUuidV7(now.getTime()),
+            actorType: "service",
+            actorId: workerId,
+            action: "bg.reward.payout.reconciliation_claimed",
+            targetType: "reward_payout_intent",
+            targetId: candidate.payout.id,
+            reason: "Persisted Devnet payout claimed for read-only signature reconciliation.",
+            metadata: { workerId, priorStatus: candidate.payout.status, leaseUntil: leaseUntil.toISOString() },
+            createdAt: now
+          });
+
+          claimed.push({
+            id: candidate.payout.id,
+            status: candidate.payout.status as "signed" | "submitted" | "confirmed" | "finalized" | "reconciliation_required",
+            network: candidate.payout.network,
+            mintAddress: candidate.payout.mintAddress,
+            tokenProgram: candidate.payout.tokenProgram,
+            sourceTokenAccount: candidate.payout.sourceTokenAccount,
+            feePayerAddress: candidate.payout.feePayerAddress,
+            treasuryAuthorityAddress: candidate.payout.treasuryAuthorityAddress,
+            destinationWallet: candidate.payout.destinationWallet,
+            destinationTokenAccount: candidate.payout.destinationTokenAccount,
+            amountBaseUnits: candidate.payout.amountBaseUnits,
+            decimals: candidate.asset.decimals ?? -1,
+            signature: candidate.payout.chainSignature,
+            recentBlockhash: candidate.payout.recentBlockhash,
+            lastValidBlockHeight: candidate.payout.lastValidBlockHeight,
+            finalizedSlot: candidate.payout.finalizedSlot
+          });
+        }
+        return claimed;
+      });
+    },
+
     async persistSigned(input): Promise<boolean> {
       const now = new Date();
       const rows = await db.update(rewardPayoutIntents)
@@ -198,6 +273,7 @@ export function createDrizzleBgDevnetPayoutRepository(db: Database): BgDevnetPay
           status: input.to,
           reconciliationMetadata: metadata,
           lastErrorCode: input.errorCode ?? null,
+          retryAfter: null,
           updatedAt: now
         };
         if (input.signature) patch.chainSignature = input.signature;
@@ -322,7 +398,7 @@ export function createDrizzleBgDevnetPayoutRepository(db: Database): BgDevnetPay
         if (!programUpdated) throw new Error("BG reward program reservation could not be settled.");
 
         await tx.update(rewardEvents)
-          .set({ status: "paid", updatedAt: now })
+          .set({ status: "paid", retryAfter: null, updatedAt: now })
           .where(and(eq(rewardEvents.id, row.event.id), eq(rewardEvents.status, "finalized")));
         const [payoutUpdated] = await tx.update(rewardPayoutIntents)
           .set({ status: "paid", updatedAt: now })

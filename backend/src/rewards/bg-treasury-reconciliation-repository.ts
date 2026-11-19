@@ -82,20 +82,13 @@ export function createDrizzleBgTreasuryReconciliationRepository(
         // Recompute inventory only after taking the same treasury row lock used by
         // payout claims. Caller-provided aggregates may have become stale while
         // waiting for this lock and must never determine the durable safety state.
-        const [reservedRow] = await tx.select({
-          amount: sql<string>`coalesce(sum(${rewardPayoutIntents.amountBaseUnits}), 0)::text`
-        }).from(rewardPayoutIntents).where(and(
-          eq(rewardPayoutIntents.treasuryAccountId, snapshot.treasuryAccountId),
-          inArray(rewardPayoutIntents.status, [...RESERVED_PAYOUT_STATUSES])
-        ));
-        const [paidRow] = await tx.select({
-          amount: sql<string>`coalesce(sum(${rewardPayoutIntents.amountBaseUnits}), 0)::text`
-        }).from(rewardPayoutIntents).where(and(
-          eq(rewardPayoutIntents.treasuryAccountId, snapshot.treasuryAccountId),
-          eq(rewardPayoutIntents.status, "paid")
-        ));
-        const reservedBaseUnits = BigInt(reservedRow?.amount ?? "0");
-        const paidBaseUnits = BigInt(paidRow?.amount ?? "0");
+        const [inventoryRow] = await tx.select({
+          reserved: sql<string>`coalesce(sum(${rewardPayoutIntents.amountBaseUnits}) FILTER (WHERE ${rewardPayoutIntents.status} IN (${sql.join(RESERVED_PAYOUT_STATUSES.map((status) => sql`${status}`), sql`, `)})), 0)::text`,
+          paid: sql<string>`coalesce(sum(${rewardPayoutIntents.amountBaseUnits}) FILTER (WHERE ${rewardPayoutIntents.status} = 'paid'), 0)::text`
+        }).from(rewardPayoutIntents)
+          .where(eq(rewardPayoutIntents.treasuryAccountId, snapshot.treasuryAccountId));
+        const reservedBaseUnits = BigInt(inventoryRow?.reserved ?? "0");
+        const paidBaseUnits = BigInt(inventoryRow?.paid ?? "0");
         const availableAfterReservationsBaseUnits = snapshot.tokenBalanceBaseUnits === null
           ? null
           : snapshot.tokenBalanceBaseUnits - reservedBaseUnits;

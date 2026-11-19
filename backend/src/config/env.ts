@@ -20,6 +20,7 @@ const environmentSchema = z.object({
     emptyToUndefined,
     z.string().url().default("https://api.devnet.solana.com")
   ),
+  BG_TREASURY_RECONCILIATION_ENABLED: z.enum(["true", "false"]).default("false").transform((value) => value === "true"),
   BG_PAYOUT_RECONCILIATION_ENABLED: z.enum(["true", "false"]).default("false").transform((value) => value === "true"),
   BG_PAYOUT_ARCHIVE_HISTORY_ENABLED: z.enum(["true", "false"]).default("false").transform((value) => value === "true"),
   BG_PAYOUT_RECONCILIATION_BATCH_SIZE: z.preprocess(
@@ -38,6 +39,13 @@ const environmentSchema = z.object({
       code: "custom",
       path: ["RESEND_API_KEY"],
       message: "EMAIL_ENABLED requires RESEND_API_KEY and EMAIL_FROM."
+    });
+  }
+  if (value.BG_TREASURY_RECONCILIATION_ENABLED && value.SOLANA_NETWORK !== "devnet") {
+    context.addIssue({
+      code: "custom",
+      path: ["BG_TREASURY_RECONCILIATION_ENABLED"],
+      message: "BG treasury reconciliation can only run when SOLANA_NETWORK=devnet."
     });
   }
   if (value.BG_PAYOUT_RECONCILIATION_ENABLED && value.SOLANA_NETWORK !== "devnet") {
@@ -100,6 +108,7 @@ export interface WorkerBindings {
   SMS_GATEWAY_TOKEN?: string;
   SOLANA_NETWORK?: string;
   SOLANA_RPC_URL?: string;
+  BG_TREASURY_RECONCILIATION_ENABLED?: string;
   BG_PAYOUT_RECONCILIATION_ENABLED?: string;
   BG_PAYOUT_ARCHIVE_HISTORY_ENABLED?: string;
   BG_PAYOUT_RECONCILIATION_BATCH_SIZE?: string;

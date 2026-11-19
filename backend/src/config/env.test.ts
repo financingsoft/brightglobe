@@ -16,9 +16,29 @@ test("parses Worker bindings with safe development defaults", () => {
   assert.equal(env.EMAIL_ENABLED, false);
   assert.equal(env.SOLANA_NETWORK, "disabled");
   assert.equal(env.SOLANA_RPC_URL, "https://api.devnet.solana.com");
+  assert.equal(env.BG_TREASURY_RECONCILIATION_ENABLED, false);
   assert.equal(env.BG_PAYOUT_RECONCILIATION_ENABLED, false);
   assert.equal(env.BG_PAYOUT_ARCHIVE_HISTORY_ENABLED, false);
   assert.equal(env.BG_PAYOUT_RECONCILIATION_BATCH_SIZE, 10);
+});
+
+test("enables BG treasury reconciliation only when explicitly configured for Devnet", () => {
+  const env = parseEnvironment({
+    ...requiredBindings,
+    SOLANA_NETWORK: "devnet",
+    BG_TREASURY_RECONCILIATION_ENABLED: "true"
+  });
+  assert.equal(env.BG_TREASURY_RECONCILIATION_ENABLED, true);
+});
+
+test("rejects BG treasury reconciliation when Solana is disabled", () => {
+  assert.throws(
+    () => parseEnvironment({
+      ...requiredBindings,
+      BG_TREASURY_RECONCILIATION_ENABLED: "true"
+    }),
+    /BG treasury reconciliation can only run when SOLANA_NETWORK=devnet/
+  );
 });
 
 test("enables only Solana Devnet when explicitly configured", () => {

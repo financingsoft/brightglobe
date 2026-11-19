@@ -47,3 +47,17 @@ The five-minute freshness bound is an admission guard, not a substitute for chai
 confirmation. The executor must continue to verify the persisted signature and
 finalized transaction evidence before ledger settlement. Any operator resume remains
 a separate, explicit, audited operation.
+
+## Scheduled execution
+
+The Worker scheduled handler can run treasury reconciliation for all Devnet treasuries
+whose status is `active` or `paused`. Paused accounts continue to receive new
+read-only observations, but a matched observation never resumes them. The handler
+runs this reconciliation before payout reconciliation so the newest snapshot is
+available to the payout admission gate.
+
+`BG_TREASURY_RECONCILIATION_ENABLED` defaults to `false` and is explicitly false
+in the root and Staging Wrangler configuration. It can only be enabled when
+`SOLANA_NETWORK=devnet`. Before enabling it in any environment, apply migration
+0027 there and verify the Devnet RPC endpoint. The Staging cron is configured every
+five minutes; Production has no scheduled trigger configured by this change.

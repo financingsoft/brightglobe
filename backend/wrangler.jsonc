@@ -9,6 +9,7 @@
   "workers_dev": true,
   "vars": {
     "NODE_ENV": "production",
+    "BG_TREASURY_RECONCILIATION_ENABLED": "false",
     "BG_PAYOUT_RECONCILIATION_ENABLED": "false",
     "BG_PAYOUT_ARCHIVE_HISTORY_ENABLED": "false",
     "BG_PAYOUT_RECONCILIATION_BATCH_SIZE": "10"
@@ -26,6 +27,7 @@
         "EMAIL_FROM": "BrightGlobe <noreply@go.globeapps.com>",
         "SOLANA_NETWORK": "devnet",
         "SOLANA_RPC_URL": "https://api.devnet.solana.com",
+        "BG_TREASURY_RECONCILIATION_ENABLED": "false",
         "BG_PAYOUT_RECONCILIATION_ENABLED": "false",
         "BG_PAYOUT_ARCHIVE_HISTORY_ENABLED": "false",
         "BG_PAYOUT_RECONCILIATION_BATCH_SIZE": "10"

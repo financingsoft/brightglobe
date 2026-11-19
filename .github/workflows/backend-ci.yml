@@ -76,7 +76,8 @@ jobs:
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0025_bg_payout_status_capacity.sql
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0026_bg_payout_reconciliation_recovery.sql
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0027_bg_treasury_reconciliation_snapshots.sql
-          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public."user" (id text PRIMARY KEY, email text NOT NULL);'
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public."user" (id text PRIMARY KEY, name text NOT NULL, email text NOT NULL);'
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0028_staff_rbac_foundation.sql
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public."session" (id text PRIMARY KEY, token text NOT NULL, updated_at timestamptz NOT NULL DEFAULT now());'
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public.provider_identities (id uuid PRIMARY KEY, canonical_user_id uuid NOT NULL, provider varchar(32) NOT NULL, provider_subject varchar(256) NOT NULL, verified_at timestamptz, created_at timestamptz NOT NULL DEFAULT now());'
           psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE public.identity_audit_events (id uuid PRIMARY KEY, canonical_user_id uuid, event_type varchar(64), actor_type varchar(24), actor_id varchar(256), metadata jsonb, created_at timestamptz);'

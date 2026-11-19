@@ -24,6 +24,13 @@ export function createSolanaBgPayoutReconciliationRpc(
     throw new RangeError("BG payout archive history scan must use between 1 and 100 pages.");
   }
 
+  const historyByAddress = new Map<string, {
+    signatures: Set<string>;
+    before: string | undefined;
+    pagesScanned: number;
+    reachedEnd: boolean;
+  }>();
+
   return {
     async getDevnetStatus() {
       const status = await gateway.getDevnetStatus();
@@ -50,20 +57,37 @@ export function createSolanaBgPayoutReconciliationRpc(
     },
 
     async getSignatureHistoryEvidence({ feePayerAddress, signature }) {
-      let before: string | undefined;
-      for (let pageNumber = 0; pageNumber < maxHistoryPages; pageNumber += 1) {
-        const page = await gateway.getSignaturesForAddress(feePayerAddress, before, 1000);
-        if (page.some((entry) => entry.signature === signature)) {
-          return { found: true, complete: false };
-        }
+      let state = historyByAddress.get(feePayerAddress);
+      if (!state) {
+        state = { signatures: new Set<string>(), before: undefined, pagesScanned: 0, reachedEnd: false };
+        historyByAddress.set(feePayerAddress, state);
+      }
+
+      while (
+        !state.signatures.has(signature) &&
+        !state.reachedEnd &&
+        state.pagesScanned < maxHistoryPages
+      ) {
+        const page = await gateway.getSignaturesForAddress(feePayerAddress, state.before, 1000);
+        state.pagesScanned += 1;
+        for (const entry of page) state.signatures.add(entry.signature);
+
         if (page.length < 1000) {
-          return { found: false, complete: config.archiveHistoryEnabled };
+          state.reachedEnd = true;
+          break;
         }
         const oldest = page[page.length - 1];
-        if (!oldest) return { found: false, complete: config.archiveHistoryEnabled };
-        before = oldest.signature;
+        if (!oldest) {
+          state.reachedEnd = true;
+          break;
+        }
+        state.before = oldest.signature;
       }
-      return { found: false, complete: false };
+
+      return {
+        found: state.signatures.has(signature),
+        complete: state.reachedEnd && config.archiveHistoryEnabled
+      };
     }
   };
 }

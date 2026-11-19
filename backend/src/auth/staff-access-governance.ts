@@ -198,6 +198,12 @@ async function validateTarget(
   if (input.validUntil && (Number.isNaN(input.validUntil.getTime()) || input.validUntil.getTime() <= now.getTime())) {
     throw new StaffAccessGovernanceError("INVALID_INPUT", "Role validity must end in the future.");
   }
+  if (input.action !== "provision_principal" && (input.targetAuthUserId || input.displayLabel)) {
+    throw new StaffAccessGovernanceError("INVALID_INPUT", "Only principal provisioning accepts an auth user ID or display label.");
+  }
+  if ((input.action === "revoke_role" || input.action === "suspend_principal") && input.validUntil) {
+    throw new StaffAccessGovernanceError("INVALID_INPUT", "This staff access action does not accept a role expiry.");
+  }
 
   if (input.action === "provision_principal") {
     const targetAuthUserId = input.targetAuthUserId?.trim();

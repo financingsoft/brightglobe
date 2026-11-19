@@ -51,11 +51,30 @@ test("enables only Solana Devnet when explicitly configured", () => {
   assert.equal(env.SOLANA_RPC_URL, "https://api.devnet.solana.com");
 });
 
-test("rejects unsupported Solana networks", () => {
-  assert.throws(
-    () => parseEnvironment({ ...requiredBindings, SOLANA_NETWORK: "mainnet-beta" }),
-    /SOLANA_NETWORK/
-  );
+test("rejects Mainnet aliases and unsupported Solana networks even in production mode", () => {
+  for (const network of ["mainnet", "mainnet-beta", "testnet"]) {
+    assert.throws(
+      () => parseEnvironment({
+        ...requiredBindings,
+        NODE_ENV: "production",
+        SMS_ENABLED: "false",
+        SOLANA_NETWORK: network
+      }),
+      /SOLANA_NETWORK/
+    );
+  }
+});
+
+test("production defaults keep Solana and BG reconciliation disabled", () => {
+  const env = parseEnvironment({
+    ...requiredBindings,
+    NODE_ENV: "production",
+    SMS_ENABLED: "false"
+  });
+  assert.equal(env.SOLANA_NETWORK, "disabled");
+  assert.equal(env.BG_TREASURY_RECONCILIATION_ENABLED, false);
+  assert.equal(env.BG_PAYOUT_RECONCILIATION_ENABLED, false);
+  assert.equal(env.BG_PAYOUT_ARCHIVE_HISTORY_ENABLED, false);
 });
 
 test("rejects insecure Solana RPC endpoints", () => {

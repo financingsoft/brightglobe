@@ -9,6 +9,8 @@ import {
   staffPrincipals,
   staffRoleAssignments,
   staffRolePermissions,
+  staffStepUpGrants,
+  session,
   staffRoles,
   user
 } from "../db/schema.js";
@@ -670,13 +672,32 @@ export async function executeStaffAccessChange(
         ))
         .returning({ id: staffPrincipals.id });
       if (!suspended) throw new StaffAccessGovernanceError("PRINCIPAL_NOT_ACTIVE", "The target principal is no longer active.");
+
+      // Suspension is a security boundary, not merely an RBAC flag. Revoke every
+      // Better Auth session and invalidate outstanding step-up grants in the
+      // same transaction so reactivation can never revive old credentials.
+      const revokedSessions = await tx.delete(session)
+        .where(eq(session.userId, principals.find((principal) => principal.id === request.targetStaffPrincipalId)!.authUserId))
+        .returning({ id: session.id });
+      const invalidatedStepUpGrants = await tx.update(staffStepUpGrants)
+        .set({ consumedAt: now })
+        .where(and(
+          eq(staffStepUpGrants.staffPrincipalId, request.targetStaffPrincipalId!),
+          isNull(staffStepUpGrants.consumedAt)
+        ))
+        .returning({ id: staffStepUpGrants.id });
+
       await appendAccessAudit(transactionDb, {
         actorStaffId: input.actor.staffPrincipalId,
         subjectStaffId: request.targetStaffPrincipalId,
         action: "bg.staff.principal.suspended",
         reason,
         requestId: input.requestIdHeader,
-        metadata: { requestId: request.id },
+        metadata: {
+          requestId: request.id,
+          revokedSessionCount: revokedSessions.length,
+          invalidatedStepUpGrantCount: invalidatedStepUpGrants.length
+        },
         now
       });
     } else {

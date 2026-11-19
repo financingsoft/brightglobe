@@ -3,8 +3,7 @@ import test from "node:test";
 import {
   generateKeyPair,
   getAddressFromPublicKey,
-  getBase64Decoder,
-  getBase64Encoder,
+  
   getBase64EncodedWireTransaction,
   getSignatureFromTransaction,
   getTransactionDecoder,
@@ -13,6 +12,13 @@ import {
 } from "@solana/kit";
 import { buildClassicSplTransferTransaction } from "../blockchain/solana/transfer-builder.js";
 import { verifyBgPayoutSignedTransaction } from "./bg-payout-signed-transaction.js";
+
+function decodeBase64(value: string): Uint8Array {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
+}
 
 const RECIPIENT = "Stake11111111111111111111111111111111111111";
 const MINT = "So11111111111111111111111111111111111111112";
@@ -34,7 +40,7 @@ async function signedFixture() {
     lastValidBlockHeight: 500n
   });
   const unsignedTransaction = getTransactionDecoder().decode(
-    getBase64Decoder().decode(getBase64Encoder().encode(built.transactionBase64))
+    decodeBase64(built.transactionBase64)
   );
   const signedTransaction = await signTransaction(
     [feePayerKeyPair, treasuryAuthorityKeyPair],
@@ -87,7 +93,7 @@ test("rejects missing signatures and invalid transaction signature metadata", as
 test("rejects a cryptographically corrupted signer signature", async () => {
   const fixture = await signedFixture();
   const decoded = getTransactionDecoder().decode(
-    getBase64Decoder().decode(getBase64Encoder().encode(fixture.signedTransactionBase64))
+    decodeBase64(fixture.signedTransactionBase64)
   );
   const originalSignature = decoded.signatures[fixture.feePayerAddress];
   assert.ok(originalSignature);

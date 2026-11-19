@@ -1,6 +1,7 @@
 import {
   address,
   getBase64Decoder,
+  getBase64Encoder,
   getPublicKeyFromAddress,
   getSignatureFromTransaction,
   getTransactionDecoder,
@@ -11,7 +12,7 @@ import {
 
 const MAX_SOLANA_TRANSACTION_BYTES = 1_232;
 
-function equalBytes(left: Uint8Array, right: Uint8Array): boolean {
+function equalBytes(left: Readonly<Uint8Array>, right: Readonly<Uint8Array>): boolean {
   if (left.length !== right.length) return false;
   let difference = 0;
   for (let index = 0; index < left.length; index += 1) {
@@ -42,9 +43,10 @@ export async function verifyBgPayoutSignedTransaction(input: {
     ) return false;
 
     const base64 = getBase64Decoder();
+    const base64Encoder = getBase64Encoder();
     const decoder = getTransactionDecoder();
-    const unsignedBytes = base64.decode(input.unsignedTransactionBase64);
-    const signedBytes = base64.decode(input.signedTransactionBase64);
+    const unsignedBytes = base64.decode(base64Encoder.encode(input.unsignedTransactionBase64));
+    const signedBytes = base64.decode(base64Encoder.encode(input.signedTransactionBase64));
     if (
       unsignedBytes.length === 0 ||
       signedBytes.length === 0 ||
@@ -76,7 +78,7 @@ export async function verifyBgPayoutSignedTransaction(input: {
     for (const [signerAddress, signature] of signerEntries) {
       if (signature === null) return false;
       const publicKey = await getPublicKeyFromAddress(address(signerAddress));
-      if (!(await verifySignature(publicKey, signature, signedTransaction.messageBytes))) {
+      if (!(await verifySignature(publicKey, signature, new Uint8Array(signedTransaction.messageBytes)))) {
         return false;
       }
     }

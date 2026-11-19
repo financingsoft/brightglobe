@@ -203,6 +203,25 @@ test("staff access provisioning, role changes, and suspension require independen
       }, new Date(now.getTime() + 150_000));
       assert.equal(suspended.status, "consumed");
 
+      const activate = await proposeStaffAccessChange(db, {
+        action: "activate_principal",
+        targetStaffPrincipalId: targetPrincipalId,
+        reason: "Reactivate the suspended staff principal after access review.",
+        idempotencyKey: "access-activate-key-" + suffix,
+        actor: proposer
+      }, new Date(now.getTime() + 150_000));
+      await approveStaffAccessChange(db, {
+        requestId: activate.requestId,
+        reason: "Approve controlled reactivation of the suspended staff principal.",
+        actor: approver
+      }, new Date(now.getTime() + 150_000));
+      const activated = await executeStaffAccessChange(db, {
+        requestId: activate.requestId,
+        reason: "Execute the approved staff principal reactivation.",
+        actor: approver
+      }, new Date(now.getTime() + 180_000));
+      assert.equal(activated.status, "consumed");
+
       const expiringRequest = await proposeStaffAccessChange(db, {
         action: "provision_principal",
         targetAuthUserId: expiredTargetUserId,
@@ -232,7 +251,7 @@ test("staff access provisioning, role changes, and suspension require independen
       const [finalPrincipal] = await tx.select({ status: staffPrincipals.status })
         .from(staffPrincipals)
         .where(eq(staffPrincipals.id, targetPrincipalId));
-      assert.equal(finalPrincipal?.status, "suspended");
+      assert.equal(finalPrincipal?.status, "active");
 
       const [provisionRequest] = await tx.select({
         status: staffAccessChangeRequests.status,
@@ -253,6 +272,7 @@ test("staff access provisioning, role changes, and suspension require independen
             "bg.staff.role.assigned",
             "bg.staff.role.revoked",
             "bg.staff.principal.suspended",
+            "bg.staff.principal.activated",
             "bg.staff.access.expired"
           ]),
           eq(staffAuditEvents.actorStaffId, approverId)
@@ -261,7 +281,8 @@ test("staff access provisioning, role changes, and suspension require independen
       assert.ok(audit.some((item) => item.action === "bg.staff.role.assigned"));
       assert.ok(audit.some((item) => item.action === "bg.staff.role.revoked"));
       assert.ok(audit.some((item) => item.action === "bg.staff.principal.suspended"));
-      assert.equal(audit.filter((item) => item.action === "bg.staff.access.executed").length, 4);
+      assert.ok(audit.some((item) => item.action === "bg.staff.principal.activated"));
+      assert.equal(audit.filter((item) => item.action === "bg.staff.access.executed").length, 5);
       assert.ok(audit.some((item) => item.action === "bg.staff.access.expired"));
 
       throw rollback;

@@ -126,6 +126,6 @@ The API never accepts a caller-supplied staff principal or permission claim. The
 
 ## Audit and release boundaries
 
-Audit events include proposal, approval, execution, provisioning, role assignment/revocation, and principal suspension. Audit history is append-only.
+Audit events include proposal, approval, expiry, execution, provisioning, role assignment/revocation, and principal suspension/reactivation. All access-change transactions serialize through a dedicated database mutex so concurrent revocations cannot race the minimum-two-approver invariant. Audit history is append-only.
 
 Migration 0032 is committed but has not been applied to any shared environment. No staff principals or assignments have been provisioned. No Staging/Production migration or deployment, Mainnet activity, signing, or BG transfer is authorized by this work.

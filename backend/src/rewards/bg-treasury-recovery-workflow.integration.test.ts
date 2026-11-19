@@ -192,6 +192,17 @@ test("Treasury recovery proposal requires fresh matched inventory and distinct a
         (error: unknown) => error instanceof TreasuryRecoveryWorkflowError && error.code === "PROPOSAL_NOT_PENDING"
       );
 
+      const expiredProposal = await proposeBgTreasuryRecovery(db, {
+        ...proposalInput,
+        idempotencyKey: "recovery-expired-key-" + suffix
+      }, now);
+      const expiredResult = await approveBgTreasuryRecovery(db, {
+        proposalId: expiredProposal.proposalId,
+        reason: "The approval window elapsed; the proposal must expire without checking stale inventory.",
+        actor: approver
+      }, new Date(now.getTime() + 6 * 60 * 1000));
+      assert.equal(expiredResult.status, "expired");
+
       const [treasury] = await tx.select({ status: treasuryAccounts.status })
         .from(treasuryAccounts)
         .where(eq(treasuryAccounts.id, treasuryId));
@@ -202,12 +213,15 @@ test("Treasury recovery proposal requires fresh matched inventory and distinct a
         .where(and(
           inArray(staffAuditEvents.action, [
             "bg.treasury.recovery.proposed",
-            "bg.treasury.recovery.approved"
+            "bg.treasury.recovery.approved",
+            "bg.treasury.recovery.expired"
           ]),
           eq(staffAuditEvents.subjectStaffId, proposerId)
         ));
       assert.deepEqual(audit.map((row) => row.action).sort(), [
         "bg.treasury.recovery.approved",
+        "bg.treasury.recovery.expired",
+        "bg.treasury.recovery.proposed",
         "bg.treasury.recovery.proposed"
       ]);
 

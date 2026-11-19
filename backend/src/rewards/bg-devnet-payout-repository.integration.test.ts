@@ -169,6 +169,17 @@ test("Neon BG payout repository claims once and settles the reward ledger atomic
       recentBlockhash: testAddress(900_007),
       lastValidBlockHeight: 123n
     }), true);
+
+    const concurrentRecoveryClaims = await Promise.all([
+      repository.claimReconciliationBatch("ci-reconciler", 10),
+      repository.claimReconciliationBatch("second-reconciler", 10)
+    ]);
+    const signedRecovery = concurrentRecoveryClaims.flat();
+    assert.equal(signedRecovery.length, 1);
+    assert.equal(signedRecovery[0]?.id, payoutId);
+    assert.equal(signedRecovery[0]?.status, "signed");
+    assert.equal(signedRecovery[0]?.signature, "ci-signed-bg-payout-signature");
+    assert.equal(signedRecovery[0]?.lastValidBlockHeight, 123n);
     assert.equal(await repository.persistSigned({
       payoutIntentId: payoutId,
       signature: "different-signature",
@@ -190,6 +201,10 @@ test("Neon BG payout repository claims once and settles the reward ledger atomic
       signature: "ci-signed-bg-payout-signature",
       evidence: { broadcastOutcomeAmbiguous: true }
     }), true);
+
+    const ambiguousRecovery = await repository.claimReconciliationBatch("ci-reconciler", 10);
+    assert.equal(ambiguousRecovery.length, 1);
+    assert.equal(ambiguousRecovery[0]?.status, "reconciliation_required");
     assert.equal(await repository.transition({
       payoutIntentId: payoutId,
       from: "reconciliation_required",

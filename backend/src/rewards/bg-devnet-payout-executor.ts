@@ -11,6 +11,7 @@ import {
   validateBgPayoutSigningRequest,
   type BgPayoutSigner
 } from "./bg-payout-signer.js";
+import type { BgPayoutStatus } from "./bg-payout-lifecycle.js";
 
 export interface BgDevnetPayoutIntent {
   id: string;
@@ -30,9 +31,30 @@ export interface BgDevnetPayoutIntent {
   remainingRollingOutflowBaseUnits: bigint;
 }
 
+export interface BgDevnetPayoutReconciliationCandidate {
+  id: string;
+  status: "signed" | "submitted" | "confirmed" | "finalized" | "reconciliation_required";
+  network: string;
+  mintAddress: string;
+  tokenProgram: string;
+  sourceTokenAccount: string;
+  feePayerAddress: string;
+  treasuryAuthorityAddress: string;
+  destinationWallet: string;
+  destinationTokenAccount: string;
+  amountBaseUnits: bigint;
+  decimals: number;
+  signature: string | null;
+  recentBlockhash: string | null;
+  lastValidBlockHeight: bigint | null;
+  finalizedSlot: bigint | null;
+}
+
 export interface BgDevnetPayoutRepository {
   /** Must atomically claim exactly one queued intent (UPDATE ... WHERE status='queued' RETURNING). */
   claimNextQueued(workerId: string): Promise<BgDevnetPayoutIntent | null>;
+  /** Claims persisted, non-terminal payouts for read-only chain reconciliation using a bounded retry lease. */
+  claimReconciliationBatch(workerId: string, limit: number): Promise<BgDevnetPayoutReconciliationCandidate[]>;
   /** Must atomically persist signature and blockhash while status is still signing. */
   persistSigned(input: {
     payoutIntentId: string;
@@ -42,8 +64,8 @@ export interface BgDevnetPayoutRepository {
   }): Promise<boolean>;
   transition(input: {
     payoutIntentId: string;
-    from: "signing" | "signed" | "submitted" | "confirmed" | "reconciliation_required";
-    to: "submitted" | "confirmed" | "finalized" | "reconciliation_required" | "failed" | "expired" | "quarantined" | "cancelled";
+    from: BgPayoutStatus;
+    to: BgPayoutStatus;
     signature?: string;
     slot?: bigint;
     errorCode?: string;
@@ -101,7 +123,7 @@ function isSafeLamports(value: number): boolean {
   return Number.isSafeInteger(value) && value >= 0;
 }
 
-function hasExactFinalizedTransfer(
+export function hasExactFinalizedTransfer(
   transaction: unknown,
   signature: string,
   intent: BgDevnetPayoutIntent,

@@ -604,6 +604,7 @@ export const rewardPayoutIntents = pgTable("reward_payout_intents", {
   uniqueIndex("reward_payout_intents_signature_uidx").on(table.chainSignature).where(sql`${table.chainSignature} IS NOT NULL`),
   index("reward_payout_intents_status_created_idx").on(table.status, table.createdAt),
   index("reward_payout_intents_treasury_idx").on(table.treasuryAccountId, table.createdAt),
+  index("reward_payout_intents_reconciliation_due_idx").on(table.retryAfter, table.createdAt).where(sql`${table.network} = 'devnet' AND ${table.status} IN ('signed', 'submitted', 'confirmed', 'finalized', 'reconciliation_required')`),
   check("reward_payout_intents_network_check", sql`${table.network} IN ('devnet', 'mainnet-beta')`),
   check("reward_payout_intents_status_check", sql`${table.status} IN ('queued', 'signing', 'signed', 'submitted', 'confirmed', 'finalized', 'paid', 'reconciliation_required', 'failed', 'expired', 'quarantined', 'cancelled')`),
   check("reward_payout_intents_amount_check", sql`${table.amountBaseUnits} > 0`),
@@ -615,6 +616,7 @@ export const rewardPayoutIntents = pgTable("reward_payout_intents", {
   check("reward_payout_intents_slot_order_check", sql`${table.confirmedSlot} IS NULL OR ${table.finalizedSlot} IS NULL OR ${table.finalizedSlot} >= ${table.confirmedSlot}`),
   check("reward_payout_intents_confirmed_evidence_check", sql`${table.status} <> 'confirmed' OR (${table.chainSignature} IS NOT NULL AND ${table.confirmedSlot} IS NOT NULL)`),
   check("reward_payout_intents_signed_blockhash_check", sql`${table.status} NOT IN ('signed', 'submitted', 'confirmed', 'finalized', 'paid') OR (${table.recentBlockhash} IS NOT NULL AND ${table.lastValidBlockHeight} IS NOT NULL)`),
+  check("reward_payout_intents_reconciliation_signature_check", sql`${table.status} NOT IN ('signed', 'submitted', 'confirmed', 'finalized', 'paid', 'reconciliation_required') OR (${table.chainSignature} IS NOT NULL AND ${table.recentBlockhash} IS NOT NULL AND ${table.lastValidBlockHeight} IS NOT NULL)`),
   check("reward_payout_intents_finalized_check", sql`${table.status} NOT IN ('finalized', 'paid') OR (${table.chainSignature} IS NOT NULL AND ${table.chainSlot} IS NOT NULL AND ${table.finalizedAt} IS NOT NULL AND ${table.finalizedSlot} IS NOT NULL)`)
 ]);
 

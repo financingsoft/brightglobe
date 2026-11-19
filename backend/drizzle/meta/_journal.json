@@ -176,6 +176,13 @@
       "when": 1795287600000,
       "tag": "0025_bg_payout_status_capacity",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1795374000000,
+      "tag": "0026_bg_payout_reconciliation_recovery",
+      "breakpoints": true
     }
   ]
 }

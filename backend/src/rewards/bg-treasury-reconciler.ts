@@ -48,7 +48,7 @@ export interface BgTreasurySnapshotInput {
 export interface BgTreasuryReconciliationRepository {
   loadTreasuryAccount(treasuryAccountId: string): Promise<BgTreasuryAccountForReconciliation | null>;
   getInventoryTotals(treasuryAccountId: string): Promise<BgTreasuryInventoryTotals>;
-  recordSnapshot(snapshot: BgTreasurySnapshotInput): Promise<{ snapshotId: string; treasuryPaused: boolean }>;
+  recordSnapshot(snapshot: BgTreasurySnapshotInput): Promise<{ snapshotId: string; treasuryPaused: boolean; snapshot: BgTreasurySnapshotInput }>;
 }
 
 export interface BgTreasuryReconciliationRpc {
@@ -254,10 +254,10 @@ export async function reconcileBgTreasuryInventory(input: {
     outcome: snapshot.status,
     snapshotId: recorded.snapshotId,
     treasuryPaused: recorded.treasuryPaused,
-    reservedBaseUnits: snapshot.reservedBaseUnits,
-    paidBaseUnits: snapshot.paidBaseUnits,
-    tokenBalanceBaseUnits: snapshot.tokenBalanceBaseUnits,
-    availableAfterReservationsBaseUnits: snapshot.availableAfterReservationsBaseUnits,
-    discrepancyCode: snapshot.discrepancyCode
+    reservedBaseUnits: recorded.snapshot.reservedBaseUnits,
+    paidBaseUnits: recorded.snapshot.paidBaseUnits,
+    tokenBalanceBaseUnits: recorded.snapshot.tokenBalanceBaseUnits,
+    availableAfterReservationsBaseUnits: recorded.snapshot.availableAfterReservationsBaseUnits,
+    discrepancyCode: recorded.snapshot.discrepancyCode
   };
 }

@@ -168,10 +168,32 @@ test("Neon BG payout repository claims once and settles the reward ledger atomic
       status: "matched",
       discrepancyCode: null,
       evidence: { finalizedAccountRead: true },
-      createdAt: now
+      createdAt: new Date(now.getTime() - 10 * 60 * 1000)
     });
 
     const repository = createDrizzleBgDevnetPayoutRepository(db);
+    assert.equal(await repository.claimNextQueued("stale-inventory-worker"), null,
+      "a stale reconciliation snapshot must fail closed before signing");
+    await db.insert(bgTreasuryReconciliationSnapshots).values({
+      id: createUuidV7(now.getTime() + 1),
+      treasuryAccountId,
+      network: "devnet",
+      mintAddress,
+      tokenProgram: CLASSIC_SPL_TOKEN_PROGRAM_ID,
+      tokenAccountAddress: sourceTokenAccount,
+      accountOwnerAddress: treasuryWalletAddress,
+      accountMintAddress: mintAddress,
+      accountState: "initialized",
+      observedSlot: 124n,
+      tokenBalanceBaseUnits: 1_000n,
+      reservedBaseUnits: amount,
+      paidBaseUnits: 0n,
+      availableAfterReservationsBaseUnits: 900n,
+      status: "matched",
+      discrepancyCode: null,
+      evidence: { finalizedAccountRead: true },
+      createdAt: now
+    });
     const concurrentClaims = await Promise.all([
       repository.claimNextQueued("ci-payout-worker"),
       repository.claimNextQueued("second-worker")

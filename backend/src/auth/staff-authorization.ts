@@ -72,7 +72,7 @@ export async function resolveStaffAuthorization(
 export async function staffHasPermission(
   db: Database,
   authUserId: string,
-  permission: StaffPermission,
+  permission: string,
   now = new Date()
 ): Promise<boolean> {
   const result = await resolveStaffAuthorization(db, authUserId, now);

@@ -50,7 +50,7 @@ const environmentSchema = z.object({
   }
   if (
     value.BG_PAYOUT_ARCHIVE_HISTORY_ENABLED &&
-    value.SOLANA_RPC_URL === "https://api.devnet.solana.com"
+    new URL(value.SOLANA_RPC_URL).hostname === "api.devnet.solana.com"
   ) {
     context.addIssue({
       code: "custom",

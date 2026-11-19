@@ -70,7 +70,7 @@ test("staff RBAC resolves only active, current server-side grants and protects a
       staffPrincipalId: principalId,
       roleId,
       status: "active",
-      valvalidFrom: new Date(now.getTime() - 60_000),
+      validFrom: new Date(now.getTime() - 60_000),
       validUntil: new Date(now.getTime() + 60_000),
       createdAt: now
     });

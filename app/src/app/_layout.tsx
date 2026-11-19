@@ -35,6 +35,7 @@ export default function RootLayout() {
               <Stack.Screen name="points-record" />
               <Stack.Screen name="rewards" />
               <Stack.Screen name="settings" />
+              <Stack.Screen name="security" />
               <Stack.Screen name="wallet" />
               <Stack.Screen name="bg-wallet" />
               <Stack.Screen name="bg-rewards" />

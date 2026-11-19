@@ -90,6 +90,19 @@ async function lockStaffAccessGovernance(db: Database): Promise<void> {
   if (!lock) throw new StaffAccessGovernanceError("ROLE_NOT_FOUND", "The staff access governance mutex is missing.");
 }
 
+async function lockStaffPrincipals(db: Database, principalIds: Array<string | null | undefined>) {
+  const ids = [...new Set(principalIds.filter((id): id is string => Boolean(id)))].sort();
+  if (ids.length === 0) return [];
+  return db.select({
+    id: staffPrincipals.id,
+    authUserId: staffPrincipals.authUserId,
+    status: staffPrincipals.status
+  }).from(staffPrincipals)
+    .where(inArray(staffPrincipals.id, ids))
+    .orderBy(asc(staffPrincipals.id))
+    .for("update");
+}
+
 async function assertAccessPermission(
   db: Database,
   actor: StaffAccessActor,
@@ -328,6 +341,7 @@ export async function proposeStaffAccessChange(
   return db.transaction(async (tx) => {
     const transactionDb = tx as unknown as Database;
     await lockStaffAccessGovernance(transactionDb);
+    await lockStaffPrincipals(transactionDb, [input.actor.staffPrincipalId, input.targetStaffPrincipalId]);
     await assertAccessPermission(transactionDb, input.actor, "bg.staff.access.propose", now);
 
     const [existing] = await tx.select().from(staffAccessChangeRequests)
@@ -419,15 +433,7 @@ export async function approveStaffAccessChange(
       .limit(1);
     if (!reference) throw new StaffAccessGovernanceError("REQUEST_NOT_FOUND", "The staff access request does not exist.");
 
-    const principalIds = [...new Set([input.actor.staffPrincipalId, reference.proposerStaffId])].sort();
-    const principals = await tx.select({
-      id: staffPrincipals.id,
-      authUserId: staffPrincipals.authUserId,
-      status: staffPrincipals.status
-    }).from(staffPrincipals)
-      .where(inArray(staffPrincipals.id, principalIds))
-      .orderBy(asc(staffPrincipals.id))
-      .for("update");
+    const principals = await lockStaffPrincipals(transactionDb, [input.actor.staffPrincipalId, reference.proposerStaffId, reference.targetStaffPrincipalId]);
     const approver = principals.find((principal) => principal.id === input.actor.staffPrincipalId);
     const proposer = principals.find((principal) => principal.id === reference.proposerStaffId);
     if (!approver || approver.authUserId !== input.actor.authUserId || approver.status !== "active" || !proposer || proposer.status !== "active") {
@@ -525,15 +531,7 @@ export async function executeStaffAccessChange(
       throw new StaffAccessGovernanceError("NOT_APPROVER", "Only the independent approver may execute this staff access change.");
     }
 
-    const principalIds = [...new Set([input.actor.staffPrincipalId, reference.proposerStaffId])].sort();
-    const principals = await tx.select({
-      id: staffPrincipals.id,
-      authUserId: staffPrincipals.authUserId,
-      status: staffPrincipals.status
-    }).from(staffPrincipals)
-      .where(inArray(staffPrincipals.id, principalIds))
-      .orderBy(asc(staffPrincipals.id))
-      .for("update");
+    const principals = await lockStaffPrincipals(transactionDb, [input.actor.staffPrincipalId, reference.proposerStaffId, reference.targetStaffPrincipalId]);
     const approver = principals.find((principal) => principal.id === input.actor.staffPrincipalId);
     const proposer = principals.find((principal) => principal.id === reference.proposerStaffId);
     if (!approver || approver.authUserId !== input.actor.authUserId || approver.status !== "active" || !proposer || proposer.status !== "active") {

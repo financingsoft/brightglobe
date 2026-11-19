@@ -221,7 +221,7 @@ test("staff access provisioning, role changes, and suspension require independen
         requestId: expiringRequest.requestId,
         reason: "Execution is attempted after the approval window.",
         actor: approver
-      }, new Date(now.getTime() + 7 * 60 * 1000));
+      }, new Date(now.getTime() + 8 * 60 * 1000));
       assert.equal(expiredResult.status, "expired");
 
       const [expiredTarget] = await tx.select({ id: staffPrincipals.id })

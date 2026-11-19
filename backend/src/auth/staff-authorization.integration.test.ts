@@ -5,7 +5,6 @@ import { Pool as PgPool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Database } from "../db/client.js";
 import {
-  user,
   staffPrincipals,
   staffRoles,
   staffPermissions,
@@ -35,14 +34,13 @@ test("staff RBAC resolves only active, current server-side grants and protects a
   const auditId = createUuidV7(now.getTime());
 
   try {
-    await db.insert(user).values({
-      id: authUserId,
-      name: "CI Staff",
-      email: `${authUserId}@example.invalid`,
-      emailVerified: true,
-      createdAt: now,
-      updatedAt: now
-    });
+    // The reward-engine CI fixture intentionally creates a minimal Better Auth
+    // user table (id/email only); insert only the stable FK columns so this test
+    // remains compatible with both the minimal CI fixture and the full auth schema.
+    await client.query(
+      'INSERT INTO public."user" (id, email) VALUES ($1, $2)',
+      [authUserId, `${authUserId}@example.invalid`]
+    );
     await db.insert(staffPrincipals).values({
       id: principalId,
       authUserId,

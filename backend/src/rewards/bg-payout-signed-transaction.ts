@@ -1,8 +1,6 @@
 import {
   address,
-  getBase64Decoder,
-  getBase64Encoder,
-  getPublicKeyFromAddress,
+    getPublicKeyFromAddress,
   getSignatureFromTransaction,
   getTransactionDecoder,
   isFullySignedTransaction,
@@ -12,13 +10,20 @@ import {
 
 const MAX_SOLANA_TRANSACTION_BYTES = 1_232;
 
-function equalBytes(left: Readonly<Uint8Array>, right: Readonly<Uint8Array>): boolean {
+function equalBytes(left: ArrayLike<number>, right: ArrayLike<number>): boolean {
   if (left.length !== right.length) return false;
   let difference = 0;
   for (let index = 0; index < left.length; index += 1) {
     difference |= left[index]! ^ right[index]!;
   }
   return difference === 0;
+}
+
+function decodeBase64(value: string): Uint8Array {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
 }
 
 /**
@@ -42,11 +47,9 @@ export async function verifyBgPayoutSignedTransaction(input: {
       input.feePayerAddress === input.treasuryAuthorityAddress
     ) return false;
 
-    const base64 = getBase64Decoder();
-    const base64Encoder = getBase64Encoder();
     const decoder = getTransactionDecoder();
-    const unsignedBytes = base64.decode(base64Encoder.encode(input.unsignedTransactionBase64));
-    const signedBytes = base64.decode(base64Encoder.encode(input.signedTransactionBase64));
+    const unsignedBytes = decodeBase64(input.unsignedTransactionBase64);
+    const signedBytes = decodeBase64(input.signedTransactionBase64);
     if (
       unsignedBytes.length === 0 ||
       signedBytes.length === 0 ||
@@ -56,7 +59,7 @@ export async function verifyBgPayoutSignedTransaction(input: {
 
     const unsignedTransaction = decoder.decode(unsignedBytes);
     const signedTransaction = decoder.decode(signedBytes);
-    if (!equalBytes(unsignedTransaction.messageBytes, signedTransaction.messageBytes)) {
+    if (!equalBytes(new Uint8Array(unsignedTransaction.messageBytes), new Uint8Array(signedTransaction.messageBytes))) {
       return false;
     }
     if (!isFullySignedTransaction(signedTransaction)) return false;
@@ -78,7 +81,7 @@ export async function verifyBgPayoutSignedTransaction(input: {
     for (const [signerAddress, signature] of signerEntries) {
       if (signature === null) return false;
       const publicKey = await getPublicKeyFromAddress(address(signerAddress));
-      if (!(await verifySignature(publicKey, signature, new Uint8Array(signedTransaction.messageBytes)))) {
+      if (!(await verifySignature(publicKey, new Uint8Array(signature), new Uint8Array(signedTransaction.messageBytes)))) {
         return false;
       }
     }

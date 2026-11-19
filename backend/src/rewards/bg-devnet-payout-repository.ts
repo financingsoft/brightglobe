@@ -398,10 +398,10 @@ export function createDrizzleBgDevnetPayoutRepository(db: Database): BgDevnetPay
         if (!programUpdated) throw new Error("BG reward program reservation could not be settled.");
 
         await tx.update(rewardEvents)
-          .set({ status: "paid", retryAfter: null, updatedAt: now })
+          .set({ status: "paid", updatedAt: now })
           .where(and(eq(rewardEvents.id, row.event.id), eq(rewardEvents.status, "finalized")));
         const [payoutUpdated] = await tx.update(rewardPayoutIntents)
-          .set({ status: "paid", updatedAt: now })
+          .set({ status: "paid", retryAfter: null, updatedAt: now })
           .where(and(
             eq(rewardPayoutIntents.id, row.payout.id),
             eq(rewardPayoutIntents.status, "finalized"),

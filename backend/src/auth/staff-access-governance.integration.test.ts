@@ -44,7 +44,7 @@ test("staff access provisioning, role changes, and suspension require independen
     await rootDb.transaction(async (tx) => {
       const db = tx as unknown as Database;
       await client.query(
-        'INSERT INTO public."user" (id, name, email) VALUES ($1, $2, $3), ($4, $5, $6), ($7, $8, $9)',
+        'INSERT INTO public."user" (id, name, email) VALUES ($1, $2, $3), ($4, $5, $6), ($7, $8, $9), ($10, $11, $12)',
         [
           proposerUserId, "CI access proposer", proposerUserId + "@example.invalid",
           approverUserId, "CI access approver", approverUserId + "@example.invalid",

@@ -151,12 +151,17 @@ test("Neon BG payout repository claims once and settles the reward ledger atomic
     });
 
     const repository = createDrizzleBgDevnetPayoutRepository(db);
-    const claimed = await repository.claimNextQueued("ci-payout-worker");
+    const concurrentClaims = await Promise.all([
+      repository.claimNextQueued("ci-payout-worker"),
+      repository.claimNextQueued("second-worker")
+    ]);
+    const claimed = concurrentClaims.find((candidate) => candidate !== null) ?? null;
     assert.ok(claimed);
+    assert.equal(concurrentClaims.filter((candidate) => candidate !== null).length, 1);
     assert.equal(claimed.id, payoutId);
     assert.equal(claimed.signerProvider, "kms");
     assert.equal(claimed.remainingRollingOutflowBaseUnits, 500n);
-    assert.equal(await repository.claimNextQueued("second-worker"), null);
+    assert.equal(await repository.claimNextQueued("third-worker"), null);
 
     assert.equal(await repository.persistSigned({
       payoutIntentId: payoutId,

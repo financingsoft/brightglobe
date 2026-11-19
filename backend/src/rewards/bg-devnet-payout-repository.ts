@@ -154,20 +154,13 @@ export function createDrizzleBgDevnetPayoutRepository(db: Database): BgDevnetPay
           latestSnapshot.tokenBalanceBaseUnits === null
         ) return null;
 
-        const [reservedRow] = await tx.select({
-          amount: sql<string>`coalesce(sum(${rewardPayoutIntents.amountBaseUnits}), 0)::text`
-        }).from(rewardPayoutIntents).where(and(
-          eq(rewardPayoutIntents.treasuryAccountId, candidate.treasury.id),
-          inArray(rewardPayoutIntents.status, [...RESERVED_PAYOUT_STATUSES])
-        ));
-        const [paidRow] = await tx.select({
-          amount: sql<string>`coalesce(sum(${rewardPayoutIntents.amountBaseUnits}), 0)::text`
-        }).from(rewardPayoutIntents).where(and(
-          eq(rewardPayoutIntents.treasuryAccountId, candidate.treasury.id),
-          eq(rewardPayoutIntents.status, "paid")
-        ));
-        const currentReservedBaseUnits = BigInt(reservedRow?.amount ?? "0");
-        const currentPaidBaseUnits = BigInt(paidRow?.amount ?? "0");
+        const [inventoryRow] = await tx.select({
+          reserved: sql<string>`coalesce(sum(${rewardPayoutIntents.amountBaseUnits}) FILTER (WHERE ${rewardPayoutIntents.status} IN (${sql.join(RESERVED_PAYOUT_STATUSES.map((status) => sql`${status}`), sql`, `)})), 0)::text`,
+          paid: sql<string>`coalesce(sum(${rewardPayoutIntents.amountBaseUnits}) FILTER (WHERE ${rewardPayoutIntents.status} = 'paid'), 0)::text`
+        }).from(rewardPayoutIntents)
+          .where(eq(rewardPayoutIntents.treasuryAccountId, candidate.treasury.id));
+        const currentReservedBaseUnits = BigInt(inventoryRow?.reserved ?? "0");
+        const currentPaidBaseUnits = BigInt(inventoryRow?.paid ?? "0");
         // Payouts that settled after the snapshot have already left the chain
         // balance. Deduct that cumulative paid delta before comparing today's
         // reservations, otherwise an old matched snapshot can be spent twice.

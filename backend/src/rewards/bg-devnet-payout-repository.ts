@@ -2,6 +2,7 @@ import { and, asc, eq, gte, gt, inArray, isNotNull, isNull, lte, or, sql } from 
 import type { Database } from "../db/client.js";
 import {
   assetRegistry,
+  bgTreasuryReconciliationSnapshots,
   rewardAuditEvents,
   rewardEvents,
   rewardPayoutIntents,
@@ -24,6 +25,17 @@ import type {
   BgDevnetPayoutIntent,
   BgDevnetPayoutRepository
 } from "./bg-devnet-payout-executor.js";
+
+const RESERVED_PAYOUT_STATUSES = [
+  "queued",
+  "signing",
+  "signed",
+  "submitted",
+  "confirmed",
+  "finalized",
+  "reconciliation_required",
+  "quarantined"
+] as const;
 
 const ACTIVE_OUTFLOW_STATUSES = [
   "signing",
@@ -103,6 +115,50 @@ export function createDrizzleBgDevnetPayoutRepository(db: Database): BgDevnetPay
         if (!treasuryLock) return null;
 
         const now = new Date();
+        const [latestSnapshot] = await tx.select({
+          network: bgTreasuryReconciliationSnapshots.network,
+          mintAddress: bgTreasuryReconciliationSnapshots.mintAddress,
+          tokenProgram: bgTreasuryReconciliationSnapshots.tokenProgram,
+          tokenAccountAddress: bgTreasuryReconciliationSnapshots.tokenAccountAddress,
+          accountOwnerAddress: bgTreasuryReconciliationSnapshots.accountOwnerAddress,
+          accountMintAddress: bgTreasuryReconciliationSnapshots.accountMintAddress,
+          accountState: bgTreasuryReconciliationSnapshots.accountState,
+          tokenBalanceBaseUnits: bgTreasuryReconciliationSnapshots.tokenBalanceBaseUnits,
+          status: bgTreasuryReconciliationSnapshots.status,
+          createdAt: bgTreasuryReconciliationSnapshots.createdAt
+        }).from(bgTreasuryReconciliationSnapshots)
+          .where(eq(bgTreasuryReconciliationSnapshots.treasuryAccountId, candidate.treasury.id))
+          .orderBy(sql`${bgTreasuryReconciliationSnapshots.createdAt} DESC`)
+          .limit(1);
+
+        // Signing is admitted only against a recent, identity-matched finalized
+        // inventory observation. Recalculate reservations under the same treasury
+        // lock so newly queued payouts cannot overbook that observed balance.
+        const snapshotMaxAgeMs = 5 * 60 * 1000;
+        if (
+          !latestSnapshot ||
+          latestSnapshot.status !== "matched" ||
+          latestSnapshot.createdAt.getTime() > now.getTime() ||
+          now.getTime() - latestSnapshot.createdAt.getTime() > snapshotMaxAgeMs ||
+          latestSnapshot.network !== "devnet" ||
+          latestSnapshot.mintAddress !== candidate.payout.mintAddress ||
+          latestSnapshot.tokenProgram !== candidate.payout.tokenProgram ||
+          latestSnapshot.tokenAccountAddress !== candidate.payout.sourceTokenAccount ||
+          latestSnapshot.accountOwnerAddress !== candidate.payout.treasuryAuthorityAddress ||
+          latestSnapshot.accountMintAddress !== candidate.payout.mintAddress ||
+          latestSnapshot.accountState !== "initialized" ||
+          latestSnapshot.tokenBalanceBaseUnits === null
+        ) return null;
+
+        const [reservedRow] = await tx.select({
+          amount: sql<string>`coalesce(sum(${rewardPayoutIntents.amountBaseUnits}), 0)::text`
+        }).from(rewardPayoutIntents).where(and(
+          eq(rewardPayoutIntents.treasuryAccountId, candidate.treasury.id),
+          inArray(rewardPayoutIntents.status, [...RESERVED_PAYOUT_STATUSES])
+        ));
+        const currentReservedBaseUnits = BigInt(reservedRow?.amount ?? "0");
+        if (latestSnapshot.tokenBalanceBaseUnits < currentReservedBaseUnits) return null;
+
         const windowStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         const [outflowRow] = await tx.select({
           amount: sql<string>`coalesce(sum(${rewardPayoutIntents.amountBaseUnits}), 0)::text`

@@ -73,6 +73,10 @@ export function createDrizzleBgDevnetPayoutRepository(db: Database): BgDevnetPay
           .where(and(
             eq(rewardPayoutIntents.status, "queued"),
             eq(rewardPayoutIntents.network, "devnet"),
+            // A reservation does not override an operator pause or campaign window.
+            eq(rewardPrograms.status, "active"),
+            lte(rewardPrograms.startsAt, new Date()),
+            or(isNull(rewardPrograms.endsAt), gt(rewardPrograms.endsAt, new Date())),
             eq(treasuryAccounts.network, "devnet"),
             eq(treasuryAccounts.status, "active"),
             inArray(treasuryAccounts.signerProvider, ["kms", "hsm", "external"]),

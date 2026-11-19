@@ -242,3 +242,16 @@ The payout executor must not trust signer-returned metadata or a signer provider
 - Enforces the Solana transaction wire-size ceiling before persistence or broadcast.
 
 Any decode, message, signer-set, signature or metadata mismatch is quarantined while the payout is still in signing state. No signature is persisted and no RPC broadcast is attempted. This local verification complements, rather than replaces, the external KMS/HSM signer's independent transaction-message policy enforcement.
+
+## 15. Treasury inventory reconciliation
+
+Treasury inventory reconciliation is a read-only Solana observation paired with an append-only Neon snapshot. It is not a transfer, ledger settlement, mint or funding operation.
+
+- Read the Devnet genesis hash and mint/token-account data at finalized commitment.
+- Verify the Classic SPL Token Program owns both the mint and treasury token account; verify mint initialization and decimals; verify the token account is initialized and its mint and authority match the treasury configuration.
+- Compute reserved inventory from payout intents in queued, signing, signed, submitted, confirmed, finalized, reconciliation_required and quarantined states. Failed, expired and cancelled payouts are excluded because their reservation has been released. Paid inventory is recorded as a cumulative historical total and is not subtracted from the current on-chain token balance.
+- Available inventory is the observed token-account balance minus currently reserved payout base units. A negative value is an inventory discrepancy.
+- Persist every successful or failed reconciliation attempt as an append-only snapshot with observed slot, account identity, on-chain balance, reserved and paid totals, available-after-reservations, status and discrepancy evidence.
+- Any non-matched result (insufficient inventory, invalid account identity/data, missing account, RPC outage or cluster mismatch) pauses an active treasury and appends an audit event. The system never automatically resumes a paused treasury after a later healthy snapshot; an authorized operator must separately review the audit history and explicitly resume it.
+- Snapshot history cannot be updated or deleted. No private keys, signer payloads or secrets are included.
+- This control is Devnet-only in the current implementation. It does not authorize Mainnet RPC configuration, Mainnet signing, deployment or payout activation.

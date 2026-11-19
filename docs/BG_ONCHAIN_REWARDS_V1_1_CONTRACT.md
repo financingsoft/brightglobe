@@ -202,7 +202,7 @@ Mainnet reward code and configuration remain disabled until all are satisfied:
 - legal, tax, sanctions, privacy and app-store reviews completed for launch jurisdictions;
 - written operator approval for each Mainnet reward program.
 
-Default state is disabled. No Mainnet transaction is authorized by this contract alone.
+Default state is disabled. No Mainnet transaction is authorized by this contract alone. Use the [BG Mainnet Readiness and Activation Gate](BG_MAINNET_READINESS_GATE.md) to collect release evidence; that checklist does not authorize any Mainnet operation.
 
 ## 12. Unresolved launch parameters
 

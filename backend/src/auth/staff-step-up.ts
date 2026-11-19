@@ -8,7 +8,10 @@ export const STAFF_STEP_UP_TTL_MS = 5 * 60 * 1000;
 export type StaffStepUpOperation =
   | "bg.treasury.recovery.propose"
   | "bg.treasury.recovery.approve"
-  | "bg.treasury.recovery.execute";
+  | "bg.treasury.recovery.execute"
+  | "bg.staff.access.propose"
+  | "bg.staff.access.approve"
+  | "bg.staff.access.execute";
 
 interface StaffStepUpBinding {
   staffPrincipalId: string;

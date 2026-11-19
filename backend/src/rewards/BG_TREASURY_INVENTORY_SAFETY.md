@@ -12,8 +12,10 @@ outside this workflow.
 A reconciliation snapshot is persisted only after the repository locks the matching
 `treasury_accounts` row. While holding that lock, it recomputes reserved payout
 inventory from the current payout-intent statuses and cumulative paid inventory from
-`paid` intents. Caller-supplied aggregate values are advisory only and must not decide
-the persisted status. The available amount is recomputed as:
+`paid` intents. Reserved and paid aggregates are read in one SQL statement so both totals share
+the same PostgreSQL statement snapshot even if a payout settles concurrently.
+Caller-supplied aggregate values are advisory only and must not decide the persisted
+status. The available amount is recomputed as:
 
 `finalized token balance - current reserved payout intents`
 
@@ -33,7 +35,8 @@ treasury row and requires the newest snapshot to:
 - show an initialized token account and a non-null observed token balance.
 
 The claim transaction then recomputes current reservations and cumulative paid
-payouts under the treasury lock. It subtracts paid payouts settled after the snapshot
+payouts in one SQL statement under the treasury lock, so the two totals cannot
+reflect different committed payout states. It subtracts paid payouts settled after the snapshot
 from the snapshot balance before comparing that effective observed balance with
 current reservations. This prevents a payout settled after an old snapshot from being
 counted as still-available inventory. A paid total lower than the snapshot's recorded

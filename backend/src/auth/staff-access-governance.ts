@@ -123,7 +123,6 @@ async function assertAccessPermission(
       isNull(staffRoleAssignments.revokedAt),
       eq(staffRoles.status, "active")
     ))
-    .for("update");
 
   if (!grants.some((grant) => grant.permissionKey === permission)) {
     throw new StaffAccessGovernanceError("STAFF_PERMISSION_REVOKED", "The required staff access permission is no longer active.");
@@ -138,7 +137,6 @@ async function assertRole(db: Database, roleId: string, requireActive = true) {
   }).from(staffRoles)
     .where(eq(staffRoles.id, roleId))
     .limit(1)
-    .for("update");
   if (!role) throw new StaffAccessGovernanceError("ROLE_NOT_FOUND", "The requested staff role does not exist.");
   if (requireActive && role.status !== "active") {
     throw new StaffAccessGovernanceError("ROLE_DISABLED", "The requested staff role is disabled.");
@@ -165,7 +163,6 @@ async function assertNotLastAccessApprover(
       eq(staffRoles.status, "active")
     ))
     .limit(1)
-    .for("update");
 
   if (!targetHasApproverRole) return;
 
@@ -184,7 +181,6 @@ async function assertNotLastAccessApprover(
       eq(staffRoles.roleKey, "staff_access_approver"),
       eq(staffRoles.status, "active")
     ))
-    .for("update");
 
   if (remainingApprovers.length < 2) {
     throw new StaffAccessGovernanceError("LAST_ACCESS_APPROVER", "This change would leave fewer than two active staff access approvers.");
@@ -222,7 +218,6 @@ async function validateTarget(
     const [existingPrincipal] = await db.select({ id: staffPrincipals.id }).from(staffPrincipals)
       .where(eq(staffPrincipals.authUserId, targetAuthUserId))
       .limit(1)
-      .for("update");
     if (existingPrincipal) {
       throw new StaffAccessGovernanceError("TARGET_ALREADY_STAFF", "The target auth user already has a staff principal.");
     }
@@ -265,7 +260,6 @@ async function validateTarget(
       eq(staffRoleAssignments.status, "active")
     ))
     .limit(1)
-    .for("update");
 
   if (input.action === "assign_role" && assignment) {
     throw new StaffAccessGovernanceError("ROLE_ALREADY_ASSIGNED", "The target already has an active assignment for this role.");
@@ -650,7 +644,6 @@ export async function executeStaffAccessChange(
           eq(staffRoleAssignments.status, "active")
         ))
         .limit(1)
-        .for("update");
       if (!assignment) throw new StaffAccessGovernanceError("ROLE_ASSIGNMENT_NOT_FOUND", "The role assignment is no longer active.");
       await tx.update(staffRoleAssignments)
         .set({ status: "revoked", revokedAt: now })

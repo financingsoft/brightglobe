@@ -2,15 +2,17 @@
 
 ## Decision
 
-Treasury recovery remains unavailable until the complete step-up and two-person recovery workflow is implemented and reviewed. BrightGlobe now has a separate server-enforced staff principal/RBAC foundation and a TOTP-backed, one-time step-up grant mechanism. Do not expose a recovery route yet, accept an operator ID/role from request data, or treat an ordinary member session as staff authorization.
+Treasury resume/execution remains unavailable until its final atomic execution transaction is implemented and reviewed. BrightGlobe now has separate server-enforced staff RBAC, TOTP step-up, and two-person proposal/approval routes. Do not expose a resume/execution route, accept an operator ID/role from request data, or treat an ordinary member session as staff authorization.
 
-The current backend has end-user Better Auth and canonical wallet/email sessions. Those establish member identity, not staff authority. The BG task-review service accepts an injected authorizer, but this is only a service seam; it is not a staff RBAC implementation or a production authorization source. The current app route composition has no staff/admin route group or operator permission middleware.
+End-user Better Auth and canonical wallet/email sessions establish member identity, not staff authority. The BG task-review service's injected authorizer remains a separate service seam and is not used as staff authorization. Treasury staff routes derive authority only from Better Auth staff principals and database permission grants.
 
 The staff RBAC, TOTP step-up, and two-person proposal/approval state machine are implemented. The final execution transaction remains unimplemented. Proposal and approval routes are available, but no callable resume operation is exposed.
 
-## Required staff authorization foundation
+## Staff authorization invariants (implemented)
 
-Before implementing recovery:
+1. A separate staff-principal and permission model exists. Staff status is not inferred from member profiles, email domains, wallet ownership, client-supplied roles, or hard-coded user IDs.
+2. Staff identity is resolved from a trusted server-verified Better Auth session. Privileged Treasury actions require fresh TOTP step-up grants bound to the session and exact operation.
+3. Explicit permissions are enforced server-side:
 
 1. Create a separate staff-principal and permission model. Staff status must not be inferred from a member profile, email domain, wallet ownership, client-supplied role, or a hard-coded user ID.
 2. Resolve staff identity from a trusted server-verified staff authentication session. Require strong authentication for privileged actions; define session expiry, revocation, and step-up authentication for treasury operations.
@@ -44,9 +46,9 @@ Before implementing recovery:
 
 ## Recovery workflow contract
 
-Recovery is a control-plane operation only. It must never sign, construct, submit, retry, or transfer BG tokens.
+Proposal and approval are control-plane operations only. They never sign, construct, submit, retry, or transfer BG tokens. The final resume/execution operation is not implemented.
 
-### Proposal
+### Proposal (implemented)
 
 A proposer must supply:
 - Treasury account ID
@@ -56,13 +58,13 @@ A proposer must supply:
 
 The service must require an active staff principal with `bg.treasury.recovery.propose`, and the treasury must currently be paused. Only Devnet is in scope for the first implementation.
 
-### Approval
+### Approval (implemented)
 
 A different active staff principal with `bg.treasury.recovery.approve` must explicitly approve the proposal. The approval must bind to the exact proposal, treasury, and snapshot; it cannot approve a changed or superseded proposal.
 
-### Final execution checks
+### Final execution checks (not yet implemented)
 
-In one database transaction:
+When the final execution operation is built, it must perform all checks in one database transaction:
 1. Lock the treasury row and recovery proposal row.
 2. Re-resolve both staff principals and permissions from trusted server-side records; reject revoked, disabled, expired, or self-approved identities.
 3. Require treasury status still be `paused`.
@@ -105,7 +107,7 @@ Each event should bind the treasury ID, proposal ID, snapshot ID, actor staff-pr
 
 - Staff authentication and RBAC are implemented and reviewed.
 - Two-person approval and immutable audit protections pass PostgreSQL integration tests.
-- Recovery endpoint is not mounted until those gates pass.
+- Proposal and approval endpoints are mounted behind TOTP step-up and RBAC; the final resume/execution endpoint remains unmounted until its gates pass.
 - Devnet-only enforcement is covered by tests.
 - Feature remains disabled by default.
 - No Staging/Production migration or deployment, Mainnet activity, or real BG transfer is authorized by this design.

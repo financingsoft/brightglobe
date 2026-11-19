@@ -561,7 +561,19 @@ export async function executeStaffAccessChange(
       throw new StaffAccessGovernanceError("REQUEST_NOT_PENDING", "Only an approved, unconsumed staff access request can execute.");
     }
     if (request.approvedAt.getTime() > now.getTime() || now.getTime() - request.approvedAt.getTime() > ACCESS_APPROVAL_TTL_MS) {
-      throw new StaffAccessGovernanceError("REQUEST_EXPIRED", "The approval is older than five minutes; a new request and approval are required.");
+      await tx.update(staffAccessChangeRequests)
+        .set({ status: "expired", approverStaffId: null, approvedAt: null })
+        .where(eq(staffAccessChangeRequests.id, request.id));
+      await appendAccessAudit(transactionDb, {
+        actorStaffId: input.actor.staffPrincipalId,
+        subjectStaffId: request.targetStaffPrincipalId,
+        action: "bg.staff.access.expired",
+        reason: "Staff access approval expired before execution.",
+        requestId: input.requestIdHeader,
+        metadata: { requestId: request.id, changeAction: request.action },
+        now
+      });
+      return toResult({ ...request, status: "expired", approverStaffId: null, approvedAt: null });
     }
 
     await validateTarget(transactionDb, {

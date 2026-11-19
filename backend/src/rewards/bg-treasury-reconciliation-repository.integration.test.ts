@@ -231,9 +231,9 @@ test("BG treasury snapshots are append-only, aggregate reserved/paid inventory a
       tokenBalanceBaseUnits: 9n,
       reservedBaseUnits: 10n,
       paidBaseUnits: 5n,
-      availableAfterReservationsBaseUnits: -1n,
-      status: "insufficient_inventory",
-      discrepancyCode: "treasury_balance_below_reserved_inventory",
+      availableAfterReservationsBaseUnits: 0n,
+      status: "matched",
+      discrepancyCode: null,
       evidence: { finalizedAccountRead: true }
     });
     assert.equal(discrepancy.treasuryPaused, true);

@@ -285,3 +285,32 @@ Before migration:
 8. Add explicit event schema and idempotency contract for any future BG reward integration.
 
 No migration, API implementation, CMS deployment or reward activation is authorized by this document alone.
+
+## Round 2 reconciliation amendment — identity, tenancy and revision authority
+
+**Status:** Proposed; effective only after review and merge.
+
+### Canonical user identity
+- All Marketplace user references represent the BrightGlobe canonical UUID identity, never a Better Auth provider-local identifier.
+- The logical identity source is BrightGlobe's canonical identity layer. The exact physical table, schema, key type, FK target and deletion behavior are not assumed by this document; they must be verified against the actual Neon Staging schema and application identity resolver before any migration is authored.
+- Do not create a speculative `public.canonical_users` table or a second identity provider to satisfy a guessed FK.
+
+### Developer organization tenancy
+- Organization membership rows are the sole authority for membership, role and organization access.
+- A user may belong to multiple organizations. An organization may have multiple members but exactly one active owner.
+- An organization owner is represented by an active membership with role `owner`; a separate owner UUID column must not independently authorize access. If a denormalized owner pointer is retained for query performance, it is derived/maintained transactionally and is not an authorization source.
+- Owner transfer requires current-owner initiation and proposed-owner acceptance, both audited, with the final swap atomic. The last active owner cannot be removed or downgraded before replacement acceptance.
+- Invitations are single-use, cryptographically random, stored only as hashes, revocable and expire after seven days. Acceptance requires an authenticated canonical user matching the normalized invited email.
+
+### Listing and review revisions
+- App identity is stable and separate from immutable locale-specific listing revisions.
+- Revision uniqueness is `(app_id, content_locale, revision_number)`; locale tags use one normalized BCP 47 policy.
+- Submission references and freezes an exact revision snapshot and checksum. Editing creates a new revision; it never mutates a submitted or published snapshot.
+- Each locale has independent review/publication state. An app is publicly discoverable when at least one locale has an approved published revision; each locale route is independently eligible for indexing.
+- A pending listing revision does not replace the last approved public revision. Rejection does not erase the prior published revision.
+- Published app slugs are immutable in V1. A future change requires a dedicated audited redirect/reservation workflow.
+
+### Data lifecycle
+- Audit history, legal evidence, release provenance, outbox events, projection receipts and watermarks must not be cascade-deleted as a side effect of parent deletion.
+- Use status transitions/soft deletion for core business records. Legal deletion/anonymization requires a reviewed workflow and retention policy.
+- No Marketplace table or service may directly mutate BrightGlobe BD/BG balances or reward-ledger records.

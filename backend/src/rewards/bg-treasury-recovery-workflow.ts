@@ -139,6 +139,7 @@ async function assertTreasuryAndSnapshot(
     treasuryWalletAddress: treasuryAccounts.treasuryWalletAddress,
     tokenAccountAddress: treasuryAccounts.tokenAccountAddress,
     tokenProgram: assetRegistry.tokenProgram,
+    decimals: assetRegistry.decimals,
     updatedAt: treasuryAccounts.updatedAt
   }).from(treasuryAccounts)
     .innerJoin(assetRegistry, eq(assetRegistry.id, treasuryAccounts.assetId))
@@ -171,9 +172,14 @@ async function assertTreasuryAndSnapshot(
   if (latestSnapshot.createdAt.getTime() > now.getTime() || now.getTime() - latestSnapshot.createdAt.getTime() > SNAPSHOT_MAX_AGE_MS) {
     throw new TreasuryRecoveryWorkflowError("SNAPSHOT_STALE", "The reconciliation snapshot is older than five minutes.");
   }
+  const evidence = latestSnapshot.evidence as Record<string, unknown>;
   if (
     latestSnapshot.network !== "devnet" ||
     treasury.tokenProgram !== CLASSIC_SPL_TOKEN_PROGRAM_ID ||
+    evidence.finalizedAccountRead !== true ||
+    evidence.mintAccountProgramOwner !== CLASSIC_SPL_TOKEN_PROGRAM_ID ||
+    evidence.tokenAccountProgramOwner !== CLASSIC_SPL_TOKEN_PROGRAM_ID ||
+    evidence.mintDecimals !== treasury.decimals ||
     latestSnapshot.mintAddress !== treasury.mintAddress ||
     latestSnapshot.tokenProgram !== treasury.tokenProgram ||
     latestSnapshot.tokenAccountAddress !== treasury.tokenAccountAddress ||

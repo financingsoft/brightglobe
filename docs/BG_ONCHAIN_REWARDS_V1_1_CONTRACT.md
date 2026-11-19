@@ -214,3 +214,18 @@ Do not guess or hard-code:
 - treasury and fee-payer addresses and balance limits;
 - signing provider and governance;
 - launch jurisdictions and release date.
+
+## 13. Payout reconciliation and crash recovery
+
+Persisted Devnet payout signatures are reconciled independently from the queue executor. The reconciler is read-only with respect to Solana: it may query signature status, finalized transaction data, finalized block height and authoritative signature history, but it cannot sign, broadcast, or construct a replacement transaction.
+
+- Reconciliation claims are bounded and leased in Neon using `retry_after`, row locks and `SKIP LOCKED`. Compare-and-set state transitions and idempotent ledger settlement remain the final concurrency controls.
+- The reconciler uses only the original persisted signature and recent blockhash. It never creates a replacement signature and never rebroadcasts a transaction.
+- `processed` advances a signed or ambiguous payout to submitted; `confirmed` advances it to confirmed; only finalized transaction evidence matching the exact signature, blockhash, mint, Classic SPL Token Program, source ATA, destination ATA, treasury authority, amount and decimals can advance it to finalized.
+- A finalized payout whose ledger settlement was interrupted retries the same database settlement transaction. It does not repeat an on-chain transfer.
+- A null signature status is not proof that a transaction was never broadcast. The payout remains reserved until the original blockhash expires and an authoritative archive lookup proves the fee payer's complete finalized transaction history was searched and the signature is absent.
+- If archive coverage is incomplete, RPC is unavailable, or transaction data is unavailable, the payout remains pending reconciliation. It is never expired merely because an RPC returned null.
+- A finalized failed transaction may be marked failed only when its transaction envelope matches the persisted signature and recent blockhash. An instruction, account, amount or envelope mismatch is quarantined.
+- A terminal failed/expired payout releases its reserved program budget only after the evidence gate passes. Ambiguous and quarantined payouts keep the reservation.
+
+The repository currently supplies the reconciliation port and deterministic tests only. No scheduled Worker, production RPC adapter, live signer or broadcast integration is enabled by this phase. Mainnet remains disabled.

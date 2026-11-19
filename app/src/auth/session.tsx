@@ -442,6 +442,8 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
     verifyPhoneOtp,
     signUpEmail,
     signInEmail,
+    verifySignInTotp,
+    verifySignInBackupCode,
     sendVerificationEmail,
     requestPasswordReset,
     resetPassword,
@@ -455,7 +457,7 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
   }), [
     status, session, walletSession, user, account, profileLoading, profileError,
     linkEmailIdentity, acceptWalletSession, sendPhoneOtp, verifyPhoneOtp, signUpEmail, signInEmail,
-    sendVerificationEmail, requestPasswordReset, resetPassword, refreshProfile,
+    verifySignInTotp, verifySignInBackupCode, sendVerificationEmail, requestPasswordReset, resetPassword, refreshProfile,
     updateProfile, loadSessions, revokeSession, revokeOtherSessions, signOut
   ]);
 

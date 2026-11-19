@@ -13,6 +13,10 @@ export type StaffPermission =
   | "bg.treasury.recovery.propose"
   | "bg.treasury.recovery.approve"
   | "bg.treasury.recovery.execute"
+  | "bg.staff.access.read"
+  | "bg.staff.access.propose"
+  | "bg.staff.access.approve"
+  | "bg.staff.access.execute"
   | "bg.rewards.evidence.review"
   | "bg.rewards.appeal.review";
 

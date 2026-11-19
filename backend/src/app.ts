@@ -14,6 +14,7 @@ import { createAssetRoutes } from "./routes/assets.js";
 import { createCommunityRoutes } from "./routes/community.js";
 import { createStaffStepUpRoutes } from "./routes/staff-step-up.js";
 import { createStaffTreasuryRecoveryRoutes } from "./routes/staff-treasury-recovery.js";
+import { createStaffAccessGovernanceRoutes } from "./routes/staff-access-governance.js";
 
 interface AppDependencies {
   db: Database;
@@ -61,6 +62,7 @@ export function createApp({ db, auth, env }: AppDependencies) {
   app.route("/api/v1/community", createCommunityRoutes(db, auth));
   app.route("/api/v1/staff/step-up", createStaffStepUpRoutes(db, auth));
   app.route("/api/v1/staff/treasury/recovery", createStaffTreasuryRecoveryRoutes(db, auth));
+  app.route("/api/v1/staff/access", createStaffAccessGovernanceRoutes(db, auth));
 
   app.notFound((context) => context.json({
     error: { code: "NOT_FOUND", message: "The requested endpoint does not exist." }

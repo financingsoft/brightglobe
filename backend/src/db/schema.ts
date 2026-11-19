@@ -530,6 +530,47 @@ export const communityEvents = pgTable("community_events", {
   check("community_events_window_check", sql`${table.endsAt} IS NULL OR ${table.startsAt} IS NULL OR ${table.endsAt} > ${table.startsAt}`)
 ]);
 
+export const staffAccessGovernanceMutex = pgTable("staff_access_governance_mutex", {
+  id: integer("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  check("staff_access_governance_mutex_singleton_check", sql.raw("id = 1"))
+]);
+
+export const staffAccessChangeRequests = pgTable("staff_access_change_requests", {
+  id: uuid("id").primaryKey(),
+  action: varchar("action", { length: 32 }).notNull(),
+  targetAuthUserId: text("target_auth_user_id").references(() => user.id, { onDelete: "restrict" }),
+  targetStaffPrincipalId: uuid("target_staff_principal_id").references(() => staffPrincipals.id, { onDelete: "restrict" }),
+  resultStaffPrincipalId: uuid("result_staff_principal_id").references(() => staffPrincipals.id, { onDelete: "restrict" }),
+  roleId: uuid("role_id").references(() => staffRoles.id, { onDelete: "restrict" }),
+  displayLabel: varchar("display_label", { length: 120 }),
+  validUntil: timestamp("valid_until", { withTimezone: true }),
+  proposerStaffId: uuid("proposer_staff_id").notNull().references(() => staffPrincipals.id, { onDelete: "restrict" }),
+  approverStaffId: uuid("approver_staff_id").references(() => staffPrincipals.id, { onDelete: "restrict" }),
+  status: varchar("status", { length: 16 }).notNull().default("pending"),
+  reason: varchar("reason", { length: 1000 }).notNull(),
+  idempotencyKey: varchar("idempotency_key", { length: 128 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  consumedAt: timestamp("consumed_at", { withTimezone: true })
+}, (table) => [
+  uniqueIndex("staff_access_change_requests_idempotency_uidx").on(table.proposerStaffId, table.idempotencyKey),
+  index("staff_access_change_requests_status_created_idx").on(table.status, table.createdAt),
+  index("staff_access_change_requests_target_status_idx").on(table.targetStaffPrincipalId, table.status, table.createdAt),
+  check("staff_access_change_action_check", sql.raw("action IN ('provision_principal', 'assign_role', 'revoke_role', 'suspend_principal', 'activate_principal')")),
+  check("staff_access_change_status_check", sql.raw("status IN ('pending', 'approved', 'expired', 'consumed')")),
+  check("staff_access_change_reason_check", sql.raw("length(trim(reason)) BETWEEN 1 AND 1000")),
+  check("staff_access_change_idempotency_check", sql.raw("length(trim(idempotency_key)) BETWEEN 16 AND 128")),
+  check("staff_access_change_expiry_check", sql.raw("expires_at > created_at")),
+  check("staff_access_change_valid_until_check", sql.raw("valid_until IS NULL OR valid_until > created_at")),
+  check("staff_access_change_separation_check", sql.raw("approver_staff_id IS NULL OR approver_staff_id <> proposer_staff_id")),
+  check("staff_access_change_result_check", sql.raw("(action = 'provision_principal' OR result_staff_principal_id IS NULL) AND (action <> 'provision_principal' OR status <> 'consumed' OR result_staff_principal_id IS NOT NULL)")),
+  check("staff_access_change_approval_check", sql.raw("((status IN ('pending', 'expired') AND approver_staff_id IS NULL AND approved_at IS NULL AND consumed_at IS NULL) OR (status = 'approved' AND approver_staff_id IS NOT NULL AND approved_at IS NOT NULL AND consumed_at IS NULL) OR (status = 'consumed' AND approver_staff_id IS NOT NULL AND approved_at IS NOT NULL AND consumed_at IS NOT NULL))")),
+  check("staff_access_change_action_shape_check", sql.raw("((action = 'provision_principal' AND target_auth_user_id IS NOT NULL AND target_staff_principal_id IS NULL AND role_id IS NOT NULL AND display_label IS NOT NULL) OR (action = 'assign_role' AND target_auth_user_id IS NULL AND target_staff_principal_id IS NOT NULL AND role_id IS NOT NULL AND display_label IS NULL) OR (action = 'revoke_role' AND target_auth_user_id IS NULL AND target_staff_principal_id IS NOT NULL AND role_id IS NOT NULL AND display_label IS NULL) OR ((action = 'suspend_principal' OR action = 'activate_principal') AND target_auth_user_id IS NULL AND target_staff_principal_id IS NOT NULL AND role_id IS NULL AND display_label IS NULL))"))
+]);
+
 /** V1.1 BG rewards: policy and payout records only; no signer secrets are stored here. */
 export const rewardPrograms = pgTable("reward_programs", {
   id: uuid("id").primaryKey(),
@@ -897,10 +938,10 @@ export const staffStepUpGrants = pgTable("staff_step_up_grants", {
   consumedAt: timestamp("consumed_at", { withTimezone: true })
 }, (table) => [
   index("staff_step_up_grants_subject_operation_idx").on(table.staffPrincipalId, table.sessionId, table.operation, table.expiresAt).where(sql`${table.consumedAt} IS NULL`),
-  check("staff_step_up_operation_check", sql`${table.operation} IN ('bg.treasury.recovery.propose', 'bg.treasury.recovery.approve', 'bg.treasury.recovery.execute')`),
+  check("staff_step_up_operation_check", sql`${table.operation} IN ('bg.treasury.recovery.propose', 'bg.treasury.recovery.approve', 'bg.treasury.recovery.execute', 'bg.staff.access.propose', 'bg.staff.access.approve', 'bg.staff.access.execute')`),
   check("staff_step_up_token_hash_check", sql.raw("token_hash ~ '^[a-f0-9]{64}$'")),
   check("staff_step_up_expiry_check", sql`${table.expiresAt} > ${table.issuedAt}`),
   check("staff_step_up_consumed_check", sql`${table.consumedAt} IS NULL OR ${table.consumedAt} >= ${table.issuedAt}`)
 ]);
 
-export const schema = { staffPrincipals, staffRoles, staffPermissions, staffRolePermissions, staffRoleAssignments, staffAuditEvents, staffStepUpGrants, twoFactor, bgTreasuryRecoveryProposals, rewardPrograms, rewardEvents, rewardPayoutIntents, treasuryAccounts, rewardAuditEvents, bgTaskEvidenceRecords, bgTaskAppeals, bgTaskReviewDecisions, bgTaskAuditEvents, communityTasks, invitationCodes, invitationAttributions, communityAnnouncements, communityEvents, user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };
+export const schema = { staffPrincipals, staffRoles, staffPermissions, staffRolePermissions, staffRoleAssignments, staffAuditEvents, staffStepUpGrants, twoFactor, bgTreasuryRecoveryProposals, staffAccessGovernanceMutex, staffAccessChangeRequests, rewardPrograms, rewardEvents, rewardPayoutIntents, treasuryAccounts, rewardAuditEvents, bgTaskEvidenceRecords, bgTaskAppeals, bgTaskReviewDecisions, bgTaskAuditEvents, communityTasks, invitationCodes, invitationAttributions, communityAnnouncements, communityEvents, user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };

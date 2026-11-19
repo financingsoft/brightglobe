@@ -559,7 +559,7 @@ export const staffAccessChangeRequests = pgTable("staff_access_change_requests",
   uniqueIndex("staff_access_change_requests_idempotency_uidx").on(table.proposerStaffId, table.idempotencyKey),
   index("staff_access_change_requests_status_created_idx").on(table.status, table.createdAt),
   index("staff_access_change_requests_target_status_idx").on(table.targetStaffPrincipalId, table.status, table.createdAt),
-  check("staff_access_change_action_check", sql.raw("action IN ('provision_principal', 'assign_role', 'revoke_role', 'suspend_principal')")),
+  check("staff_access_change_action_check", sql.raw("action IN ('provision_principal', 'assign_role', 'revoke_role', 'suspend_principal', 'activate_principal')")),
   check("staff_access_change_status_check", sql.raw("status IN ('pending', 'approved', 'expired', 'consumed')")),
   check("staff_access_change_reason_check", sql.raw("length(trim(reason)) BETWEEN 1 AND 1000")),
   check("staff_access_change_idempotency_check", sql.raw("length(trim(idempotency_key)) BETWEEN 16 AND 128")),
@@ -568,7 +568,7 @@ export const staffAccessChangeRequests = pgTable("staff_access_change_requests",
   check("staff_access_change_separation_check", sql.raw("approver_staff_id IS NULL OR approver_staff_id <> proposer_staff_id")),
   check("staff_access_change_result_check", sql.raw("(action = 'provision_principal' OR result_staff_principal_id IS NULL) AND (action <> 'provision_principal' OR status <> 'consumed' OR result_staff_principal_id IS NOT NULL)")),
   check("staff_access_change_approval_check", sql.raw("((status IN ('pending', 'expired') AND approver_staff_id IS NULL AND approved_at IS NULL AND consumed_at IS NULL) OR (status = 'approved' AND approver_staff_id IS NOT NULL AND approved_at IS NOT NULL AND consumed_at IS NULL) OR (status = 'consumed' AND approver_staff_id IS NOT NULL AND approved_at IS NOT NULL AND consumed_at IS NOT NULL))")),
-  check("staff_access_change_action_shape_check", sql.raw("((action = 'provision_principal' AND target_auth_user_id IS NOT NULL AND target_staff_principal_id IS NULL AND role_id IS NOT NULL AND display_label IS NOT NULL) OR (action = 'assign_role' AND target_auth_user_id IS NULL AND target_staff_principal_id IS NOT NULL AND role_id IS NOT NULL AND display_label IS NULL) OR (action = 'revoke_role' AND target_auth_user_id IS NULL AND target_staff_principal_id IS NOT NULL AND role_id IS NOT NULL AND display_label IS NULL) OR (action = 'suspend_principal' AND target_auth_user_id IS NULL AND target_staff_principal_id IS NOT NULL AND role_id IS NULL AND display_label IS NULL))"))
+  check("staff_access_change_action_shape_check", sql.raw("((action = 'provision_principal' AND target_auth_user_id IS NOT NULL AND target_staff_principal_id IS NULL AND role_id IS NOT NULL AND display_label IS NOT NULL) OR (action = 'assign_role' AND target_auth_user_id IS NULL AND target_staff_principal_id IS NOT NULL AND role_id IS NOT NULL AND display_label IS NULL) OR (action = 'revoke_role' AND target_auth_user_id IS NULL AND target_staff_principal_id IS NOT NULL AND role_id IS NOT NULL AND display_label IS NULL) OR ((action = 'suspend_principal' OR action = 'activate_principal') AND target_auth_user_id IS NULL AND target_staff_principal_id IS NOT NULL AND role_id IS NULL AND display_label IS NULL))"))
 ]);
 
 /** V1.1 BG rewards: policy and payout records only; no signer secrets are stored here. */

@@ -16,7 +16,7 @@ import {
 const ACCESS_REQUEST_TTL_MS = 5 * 60 * 1000;
 const ACCESS_APPROVAL_TTL_MS = 5 * 60 * 1000;
 
-export type StaffAccessAction = "provision_principal" | "assign_role" | "revoke_role" | "suspend_principal";
+export type StaffAccessAction = "provision_principal" | "assign_role" | "revoke_role" | "suspend_principal" | "activate_principal";
 export type StaffAccessPermission = "bg.staff.access.propose" | "bg.staff.access.approve" | "bg.staff.access.execute";
 
 export type StaffAccessErrorCode =

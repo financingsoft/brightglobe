@@ -148,3 +148,16 @@ test("reconciliation batch size is bounded", () => {
     /BG_PAYOUT_RECONCILIATION_BATCH_SIZE/
   );
 });
+
+test("archive history completeness requires an explicit archive-capable RPC endpoint", () => {
+  assert.throws(
+    () => parseEnvironment({
+      ...requiredBindings,
+      SOLANA_NETWORK: "devnet",
+      SOLANA_RPC_URL: "https://api.devnet.solana.com",
+      BG_PAYOUT_RECONCILIATION_ENABLED: "true",
+      BG_PAYOUT_ARCHIVE_HISTORY_ENABLED: "true"
+    }),
+    /Archive history coverage requires an explicitly configured archive-capable RPC endpoint/
+  );
+});

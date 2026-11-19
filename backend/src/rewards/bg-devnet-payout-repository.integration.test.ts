@@ -341,21 +341,39 @@ test("Neon BG payout repository claims once and settles the reward ledger atomic
     // settled. The paid delta reduces the usable observed balance to 900; a new
     // 901-unit reservation must therefore fail closed even though the old
     // snapshot alone appears to have enough inventory.
+    const paidDeltaProgramId = createUuidV7(now.getTime() + 9);
     const paidDeltaEventId = createUuidV7(now.getTime() + 10);
     const paidDeltaPayoutId = createUuidV7(now.getTime() + 11);
-    await db.update(rewardPrograms)
-      .set({ budgetBaseUnits: 2_000n, reservedBaseUnits: 901n, updatedAt: new Date() })
-      .where(eq(rewardPrograms.id, programId));
+    await db.insert(rewardPrograms).values({
+      id: paidDeltaProgramId,
+      assetId,
+      programKey: "bg-payout-paid-delta-" + paidDeltaProgramId.slice(0, 12),
+      actionType: "campaign",
+      ruleVersion: 1,
+      status: "active",
+      rewardBaseUnits: 901n,
+      perUserLimit: 1,
+      budgetBaseUnits: 2_000n,
+      reservedBaseUnits: 901n,
+      paidBaseUnits: 0n,
+      startsAt: new Date(now.getTime() - 60_000),
+      endsAt: null,
+      approvalReference: "ci-paid-delta-approval",
+      approvedBy: "ci-paid-delta-operator",
+      approvedAt: now,
+      createdAt: now,
+      updatedAt: now
+    });
     await db.insert(rewardEvents).values({
       id: paidDeltaEventId,
-      programId,
+      programId: paidDeltaProgramId,
       canonicalUserId,
-      actionType: "daily_collection",
+      actionType: "campaign",
       evidenceRef: null,
       idempotencyKey: "bg-payout-repository-paid-delta:" + id,
       amountBaseUnits: 901n,
       ruleVersion: 1,
-      periodKey: nextPeriod,
+      periodKey: null,
       status: "reserved",
       createdAt: now,
       updatedAt: now

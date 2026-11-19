@@ -121,7 +121,7 @@ All routes are under `/api/v1/staff/access`:
 - `GET /requests` and `GET /requests/:requestId`: access requests; requires `bg.staff.access.read`.
 - `GET /audit`: staff access audit history with bounded filters; requires `bg.staff.access.read`.
 - `POST /requests`: propose a change; requires `bg.staff.access.propose` and TOTP or backup-code step-up.
-- `POST /requests/:requestId/approve`: approve a change; requires `bg.staff.access.approve` and TOTP step-up.
+- `POST /requests/:requestId/approve`: approve a change; requires `bg.staff.access.approve` and TOTP or backup-code step-up.
 - `POST /requests/:requestId/execute`: execute the approved change; requires `bg.staff.access.execute`, TOTP or backup-code step-up, and the same approver identity.
 
 The API never accepts a caller-supplied staff principal or permission claim. The acting principal is derived from the Better Auth session and database grants.

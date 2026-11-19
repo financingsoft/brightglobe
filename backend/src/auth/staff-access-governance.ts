@@ -79,6 +79,16 @@ export interface StaffAccessRequestResult {
   approvedAt: Date | null;
 }
 
+async function lockStaffAccessGovernance(db: Database): Promise<void> {
+  // Serialize low-volume staff access mutations so concurrent role revocations
+  // cannot race the minimum-two-access-approver invariant.
+  const [lock] = await db.select({ id: staffRoles.id }).from(staffRoles)
+    .where(eq(staffRoles.roleKey, "staff_access_approver"))
+    .limit(1)
+    .for("update");
+  if (!lock) throw new StaffAccessGovernanceError("ROLE_NOT_FOUND", "The staff access approver role template is missing.");
+}
+
 async function assertAccessPermission(
   db: Database,
   actor: StaffAccessActor,
@@ -316,6 +326,7 @@ export async function proposeStaffAccessChange(
 
   return db.transaction(async (tx) => {
     const transactionDb = tx as unknown as Database;
+    await lockStaffAccessGovernance(transactionDb);
     await assertAccessPermission(transactionDb, input.actor, "bg.staff.access.propose", now);
 
     const [existing] = await tx.select().from(staffAccessChangeRequests)
@@ -393,6 +404,7 @@ export async function approveStaffAccessChange(
 
   return db.transaction(async (tx) => {
     const transactionDb = tx as unknown as Database;
+    await lockStaffAccessGovernance(transactionDb);
     const [reference] = await tx.select({
       proposerStaffId: staffAccessChangeRequests.proposerStaffId,
       targetAuthUserId: staffAccessChangeRequests.targetAuthUserId,
@@ -493,6 +505,7 @@ export async function executeStaffAccessChange(
 
   return db.transaction(async (tx) => {
     const transactionDb = tx as unknown as Database;
+    await lockStaffAccessGovernance(transactionDb);
     const [reference] = await tx.select({
       proposerStaffId: staffAccessChangeRequests.proposerStaffId,
       approverStaffId: staffAccessChangeRequests.approverStaffId,

@@ -117,7 +117,7 @@ All routes are under `/api/v1/staff/access`:
 
 - `GET /roles`: active role templates; requires `bg.staff.access.read`.
 - `GET /principals`: staff principal directory; requires `bg.staff.access.read`.
-- `GET /requests` and `GET /requests/:requestId`: access requests; requires `bg.staff.access.read`.
+- `GET /requests` and `GET /requests/:requestId`: access requests; requires `bg.staff.access.read`.\n- `GET /audit`: staff access audit history with bounded filters; requires `bg.staff.access.read`.
 - `POST /requests`: propose a change; requires `bg.staff.access.propose` and TOTP step-up.
 - `POST /requests/:requestId/approve`: approve a change; requires `bg.staff.access.approve` and TOTP step-up.
 - `POST /requests/:requestId/execute`: execute the approved change; requires `bg.staff.access.execute`, TOTP step-up, and the same approver identity.

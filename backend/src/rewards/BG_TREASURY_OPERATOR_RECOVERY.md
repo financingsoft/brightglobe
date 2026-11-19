@@ -6,7 +6,7 @@ Treasury recovery remains unavailable until the complete step-up and two-person 
 
 The current backend has end-user Better Auth and canonical wallet/email sessions. Those establish member identity, not staff authority. The BG task-review service accepts an injected authorizer, but this is only a service seam; it is not a staff RBAC implementation or a production authorization source. The current app route composition has no staff/admin route group or operator permission middleware.
 
-The staff RBAC and step-up foundations are now implemented, but the recovery proposal/approval state machine and final execution transaction remain unimplemented. No callable resume operation is exposed.
+The staff RBAC, TOTP step-up, and two-person proposal/approval state machine are implemented. The final execution transaction remains unimplemented. Proposal and approval routes are available, but no callable resume operation is exposed.
 
 ## Required staff authorization foundation
 
@@ -30,7 +30,17 @@ Before implementing recovery:
 - Each grant is bound to one staff principal, Better Auth session, and exact operation (`bg.treasury.recovery.propose` or `bg.treasury.recovery.approve`).
 - Grants expire after five minutes, store only a SHA-256 token digest, and are atomically consumed once. Replay, cross-session use, cross-user use, cross-operation use, and expired use are rejected.
 - A high-risk route must use `createRequireStaffPermissionWithStepUp`; the ordinary RBAC middleware alone is insufficient.
-- The current code adds the issuance endpoint and reusable enforcement middleware, but no Treasury recovery route is mounted.
+- The code adds the issuance endpoint and reusable enforcement middleware. Treasury proposal and approval routes use that middleware; no Treasury execution/resume route exists.
+
+## Two-person proposal and approval implementation
+
+- Proposal and approval are separate API operations, each protected by its own fresh, single-use TOTP step-up grant.
+- Proposals bind the exact Treasury account and latest matched snapshot, require a bounded reason and per-proposer idempotency key, and expire after five minutes.
+- The service rechecks the actor's active principal and permission inside the database transaction.
+- The Treasury must remain paused and Devnet-only; snapshot identity, age, configuration, finalized observation, and current reserved/paid payout totals are revalidated under Treasury/snapshot row locks.
+- A second active staff principal with the approval permission must approve. Self-approval is rejected.
+- Proposal/approval state changes and append-only staff audit events commit in the same database transaction.
+- Approval does not resume the Treasury. A separate final execution stage must revalidate the full recovery contract and atomically transition the Treasury only after all safety gates pass.
 
 ## Recovery workflow contract
 

@@ -4,6 +4,7 @@ import {
   generateKeyPair,
   getAddressFromPublicKey,
   getBase64Decoder,
+  getBase64Encoder,
   getBase64EncodedWireTransaction,
   getSignatureFromTransaction,
   getTransactionDecoder,
@@ -258,7 +259,7 @@ async function fixture(options: {
       signerCalls += 1;
       validateBgPayoutSigningRequest(request);
       const unsignedTransaction = getTransactionDecoder().decode(
-        getBase64Decoder().decode(request.unsignedTransactionBase64)
+        getBase64Decoder().decode(getBase64Encoder().encode(request.unsignedTransactionBase64))
       );
       const signedTransaction = await signTransaction(
         [feePayerKeyPair, treasuryAuthorityKeyPair],

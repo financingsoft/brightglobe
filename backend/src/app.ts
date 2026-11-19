@@ -12,6 +12,7 @@ import { createWalletAuthRoutes } from "./routes/wallet-auth.js";
 import { createIdentityRoutes } from "./routes/identity.js";
 import { createAssetRoutes } from "./routes/assets.js";
 import { createCommunityRoutes } from "./routes/community.js";
+import { createStaffStepUpRoutes } from "./routes/staff-step-up.js";
 
 interface AppDependencies {
   db: Database;
@@ -24,7 +25,7 @@ export function createApp({ db, auth, env }: AppDependencies) {
 
   app.use("*", cors({
     origin: (origin) => isAllowedOrigin(origin, env.APP_ORIGINS, env.NODE_ENV) ? origin : "",
-    allowHeaders: ["Content-Type", "Authorization", "Cookie", "X-Requested-With", "X-BrightGlobe-Client"],
+    allowHeaders: ["Content-Type", "Authorization", "Cookie", "X-Requested-With", "X-BrightGlobe-Client", "X-BG-Staff-Step-Up"],
     allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     exposeHeaders: ["Set-Cookie"],
     credentials: true,
@@ -57,6 +58,7 @@ export function createApp({ db, auth, env }: AppDependencies) {
   app.route("/api/v1/identity", createIdentityRoutes(db, auth, env));
   app.route("/api/v1/assets", createAssetRoutes(db, auth, env));
   app.route("/api/v1/community", createCommunityRoutes(db, auth));
+  app.route("/api/v1/staff/step-up", createStaffStepUpRoutes(db, auth));
 
   app.notFound((context) => context.json({
     error: { code: "NOT_FOUND", message: "The requested endpoint does not exist." }

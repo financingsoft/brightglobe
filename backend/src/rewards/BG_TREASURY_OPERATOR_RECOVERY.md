@@ -2,11 +2,11 @@
 
 ## Decision
 
-Treasury recovery remains unavailable until BrightGlobe has a real, server-enforced staff authorization model. Do not expose a recovery route, accept an operator ID/role from request data, or treat an ordinary member session as staff authorization.
+Treasury recovery remains unavailable until the complete step-up and two-person recovery workflow is implemented and reviewed. BrightGlobe now has a separate server-enforced staff principal/RBAC foundation and a TOTP-backed, one-time step-up grant mechanism. Do not expose a recovery route yet, accept an operator ID/role from request data, or treat an ordinary member session as staff authorization.
 
 The current backend has end-user Better Auth and canonical wallet/email sessions. Those establish member identity, not staff authority. The BG task-review service accepts an injected authorizer, but this is only a service seam; it is not a staff RBAC implementation or a production authorization source. The current app route composition has no staff/admin route group or operator permission middleware.
 
-Therefore this phase deliberately adds the recovery contract and release gates, not a callable resume operation. This avoids creating a privileged endpoint with guessed or spoofable authorization.
+The staff RBAC and step-up foundations are now implemented, but the recovery proposal/approval state machine and final execution transaction remain unimplemented. No callable resume operation is exposed.
 
 ## Required staff authorization foundation
 
@@ -21,6 +21,16 @@ Before implementing recovery:
 4. Enforce separation of duties: proposer and approver must be different active staff principals. A user cannot approve their own proposal.
 5. Record staff identity, permission decision, authentication context, request correlation ID, reason, and timestamps in append-only audit records. Authorization must be checked server-side inside the operation's transaction, not trusted from request payloads.
 6. Do not grant permissions by default. Permission changes themselves require auditable, restricted administration.
+
+## Staff step-up contract (implemented)
+
+- Staff authenticate through a Better Auth session and must have an active staff principal plus the exact operation permission.
+- Staff must enroll and verify an authenticator TOTP before requesting a step-up grant.
+- The step-up endpoint verifies a fresh TOTP code; it does not accept email OTP or a client assertion.
+- Each grant is bound to one staff principal, Better Auth session, and exact operation (`bg.treasury.recovery.propose` or `bg.treasury.recovery.approve`).
+- Grants expire after five minutes, store only a SHA-256 token digest, and are atomically consumed once. Replay, cross-session use, cross-user use, cross-operation use, and expired use are rejected.
+- A high-risk route must use `createRequireStaffPermissionWithStepUp`; the ordinary RBAC middleware alone is insufficient.
+- The current code adds the issuance endpoint and reusable enforcement middleware, but no Treasury recovery route is mounted.
 
 ## Recovery workflow contract
 

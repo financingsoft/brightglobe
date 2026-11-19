@@ -1,7 +1,7 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { expo } from "@better-auth/expo";
 import { betterAuth } from "better-auth";
-import { phoneNumber } from "better-auth/plugins";
+import { phoneNumber, twoFactor } from "better-auth/plugins";
 import type { AppEnvironment } from "./config/env.js";
 import { buildTrustedOrigins } from "./config/origins.js";
 import type { Database } from "./db/client.js";
@@ -69,7 +69,7 @@ export function createAuth(db: Database, env: AppEnvironment, scheduleBackground
       sendVerificationEmail: ({ user, url }) =>
         deliverEmail(user.email, "verify", user.name, url)
     } : undefined,
-    plugins: [expo(), ...phoneAuthPlugin],
+    plugins: [expo(), twoFactor({ issuer: "BrightGlobe", allowPasswordless: true }), ...phoneAuthPlugin],
     session: {
       expiresIn: 60 * 60 * 24 * 30,
       updateAge: 60 * 60 * 24

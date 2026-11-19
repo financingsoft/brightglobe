@@ -34,9 +34,8 @@ test("staff RBAC resolves only active, current server-side grants and protects a
   const auditId = createUuidV7(now.getTime());
 
   try {
-    // The reward-engine CI fixture intentionally creates a minimal Better Auth
-    // user table (id/email only); insert only the stable FK columns so this test
-    // remains compatible with both the minimal CI fixture and the full auth schema.
+    // Keep this fixture compatible with the reward-engine CI user table and the
+    // full Better Auth schema by writing only its stable identity columns.
     await client.query(
       'INSERT INTO public."user" (id, name, email) VALUES ($1, $2, $3)',
       [authUserId, "CI Staff", `${authUserId}@example.invalid`]

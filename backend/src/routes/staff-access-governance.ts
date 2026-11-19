@@ -70,9 +70,13 @@ export function createStaffAccessGovernanceRoutes(db: Database, auth: BetterAuth
       const limit = limitValue ? Number(limitValue) : 50;
       const from = fromValue ? new Date(fromValue) : null;
       const to = toValue ? new Date(toValue) : null;
+      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
       if (
-        (action && !action.startsWith("bg.staff.")) ||
+        (action && (!action.startsWith("bg.staff.") || action.length > 96)) ||
+        (actorStaffId && !uuidPattern.test(actorStaffId)) ||
+        (subjectStaffId && !uuidPattern.test(subjectStaffId)) ||
+        (requestId && requestId.length > 128) ||
         !Number.isInteger(limit) || limit < 1 || limit > 100 ||
         (from && Number.isNaN(from.getTime())) ||
         (to && Number.isNaN(to.getTime())) ||

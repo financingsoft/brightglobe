@@ -83,7 +83,9 @@ type AuthContextValue = {
   sendPhoneOtp: (phoneNumber: string) => Promise<void>;
   verifyPhoneOtp: (phoneNumber: string, code: string) => Promise<void>;
   signUpEmail: (email: string, password: string, name: string) => Promise<void>;
-  signInEmail: (email: string, password: string) => Promise<void>;
+  signInEmail: (email: string, password: string) => Promise<boolean>;
+  verifySignInTotp: (code: string) => Promise<void>;
+  verifySignInBackupCode: (code: string) => Promise<void>;
   sendVerificationEmail: (email: string) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
   resetPassword: (token: string, newPassword: string) => Promise<void>;
@@ -148,6 +150,8 @@ function UnconfiguredAuthProvider({ children }: { children: ReactNode }) {
     verifyPhoneOtp: unavailable,
     signUpEmail: unavailable,
     signInEmail: unavailable,
+    verifySignInTotp: unavailable,
+    verifySignInBackupCode: unavailable,
     sendVerificationEmail: unavailable,
     requestPasswordReset: unavailable,
     resetPassword: unavailable,
@@ -310,6 +314,24 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
   const signInEmail = useCallback(async (email: string, password: string) => {
     const result = await authClient.signIn.email({ email, password, rememberMe: true });
     if (result.error) throw new Error(result.error.message || "Unable to sign in.");
+    if (result.data?.twoFactorRedirect) return true;
+    await refetch();
+    return false;
+  }, [refetch]);
+
+  const verifySignInTotp = useCallback(async (code: string) => {
+    const result = await authClient.twoFactor.verifyTotp({ code, trustDevice: false });
+    if (result.error) throw new Error(result.error.message || "The authenticator code is invalid.");
+    await refetch();
+  }, [refetch]);
+
+  const verifySignInBackupCode = useCallback(async (code: string) => {
+    const result = await authClient.twoFactor.verifyBackupCode({
+      code,
+      disableSession: false,
+      trustDevice: false
+    });
+    if (result.error) throw new Error(result.error.message || "The backup code is invalid.");
     await refetch();
   }, [refetch]);
 

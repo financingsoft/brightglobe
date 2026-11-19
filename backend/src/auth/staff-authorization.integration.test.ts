@@ -23,7 +23,9 @@ test("staff RBAC resolves only active, current server-side grants and protects a
   skip: !connectionString ? "BG_REWARD_TEST_DATABASE_URL is not configured; PostgreSQL integration test skipped." : false
 }, async () => {
   const pool = new PgPool({ connectionString });
-  const db = drizzle(pool, { schema }) as unknown as Database;
+  const client = await pool.connect();
+  await client.query("BEGIN");
+  const db = drizzle(client, { schema }) as unknown as Database;
   const now = new Date("2026-11-19T12:00:00.000Z");
   const authUserId = `staff-rbac-${createUuidV7(now.getTime())}`;
   const principalId = createUuidV7(now.getTime());
@@ -78,7 +80,7 @@ test("staff RBAC resolves only active, current server-side grants and protects a
     if (!active.ok) throw new Error("Expected active staff principal.");
     assert.equal(active.staff.staffPrincipalId, principalId);
     assert.equal(active.staff.permissions.has(`ci.permission.${principalId.slice(-8)}`), true);
-    assert.equal(await staffHasPermission(db, authUserId, `ci.permission.${principalId.slice(-8)}` as never, now), true);
+    assert.equal(await staffHasPermission(db, authUserId, `ci.permission.${principalId.slice(-8)}`, now), true);
 
     const outsideWindow = await resolveStaffAuthorization(db, authUserId, new Date(now.getTime() + 120_000));
     assert.equal(outsideWindow.ok, true);
@@ -94,7 +96,7 @@ test("staff RBAC resolves only active, current server-side grants and protects a
       createdAt: now
     });
     await assert.rejects(
-      () => pool.query("UPDATE public.staff_audit_events SET reason = 'tampered' WHERE id = $1", [auditId]),
+      () => client.query("UPDATE public.staff_audit_events SET reason = 'tampered' WHERE id = $1", [auditId]),
       /append-only/
     );
     await assert.rejects(
@@ -106,13 +108,7 @@ test("staff RBAC resolves only active, current server-side grants and protects a
     const suspended = await resolveStaffAuthorization(db, authUserId, now);
     assert.deepEqual(suspended, { ok: false, reason: "STAFF_INACTIVE" });
   } finally {
-    await pool.query("DELETE FROM public.staff_audit_events WHERE id = $1", [auditId]).catch(() => undefined);
-    await pool.query("DELETE FROM public.staff_role_assignments WHERE id = $1", [assignmentId]).catch(() => undefined);
-    await pool.query("DELETE FROM public.staff_role_permissions WHERE role_id = $1", [roleId]).catch(() => undefined);
-    await pool.query("DELETE FROM public.staff_permissions WHERE id = $1", [permissionId]).catch(() => undefined);
-    await pool.query("DELETE FROM public.staff_roles WHERE id = $1", [roleId]).catch(() => undefined);
-    await pool.query("DELETE FROM public.staff_principals WHERE id = $1", [principalId]).catch(() => undefined);
-    await pool.query('DELETE FROM public."user" WHERE id = $1', [authUserId]).catch(() => undefined);
+    await client.query("ROLLBACK").catch(() => undefined);
+    client.release();
     await pool.end();
-  }
 });

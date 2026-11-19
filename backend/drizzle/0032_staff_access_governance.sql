@@ -77,7 +77,7 @@ CREATE TABLE public.staff_access_change_requests (
       OR (status = 'consumed' AND approver_staff_id IS NOT NULL AND approved_at IS NOT NULL AND consumed_at IS NOT NULL)
     ),
   CONSTRAINT staff_access_change_result_check
-    CHECK (action = 'provision_principal' OR result_staff_principal_id IS NULL),
+    CHECK ((action = 'provision_principal' OR result_staff_principal_id IS NULL) AND (action <> 'provision_principal' OR status <> 'consumed' OR result_staff_principal_id IS NOT NULL)),
   CONSTRAINT staff_access_change_action_shape_check
     CHECK (
       (action = 'provision_principal' AND target_auth_user_id IS NOT NULL AND target_staff_principal_id IS NULL AND role_id IS NOT NULL AND display_label IS NOT NULL)

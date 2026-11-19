@@ -4,6 +4,9 @@ import { parseEnvironment, type WorkerBindings } from "./config/env.js";
 import { createDatabase } from "./db/client.js";
 import { createSolanaGateway } from "./blockchain/solana/gateway.js";
 import { scanConfiguredBgAsset, IndexerAssetNotConfiguredError } from "./indexer/indexer-service.js";
+import { createDrizzleBgDevnetPayoutRepository } from "./rewards/bg-devnet-payout-repository.js";
+import { reconcileBgDevnetPayouts } from "./rewards/bg-devnet-payout-reconciler.js";
+import { createSolanaBgPayoutReconciliationRpc } from "./rewards/bg-devnet-payout-reconciliation-rpc.js";
 
 interface WorkerExecutionContext {
   waitUntil(promise: Promise<unknown>): void;
@@ -91,22 +94,48 @@ const worker = {
         if (!cluster.healthy) {
           throw new Error("The configured Solana Devnet RPC is not healthy.");
         }
-        const result = await scanConfiguredBgAsset(db, gateway, {
-          fromSlot: BigInt(cluster.slot),
-          toSlot: BigInt(cluster.slot),
-          maxSourcesPerRun: 10
-        });
-        console.log("[BrightGlobe Indexer] Scheduled scan completed:", JSON.stringify({
-          cron: controller.cron,
-          scheduledTime: controller.scheduledTime,
-          ...result
-        }));
-      } catch (error: unknown) {
-        if (error instanceof IndexerAssetNotConfiguredError) {
-          console.log("[BrightGlobe Indexer] BG asset is still a draft; scheduled scan skipped.");
-          return;
+        try {
+          const result = await scanConfiguredBgAsset(db, gateway, {
+            fromSlot: BigInt(cluster.slot),
+            toSlot: BigInt(cluster.slot),
+            maxSourcesPerRun: 10
+          });
+          console.log("[BrightGlobe Indexer] Scheduled scan completed:", JSON.stringify({
+            cron: controller.cron,
+            scheduledTime: controller.scheduledTime,
+            ...result
+          }));
+        } catch (error: unknown) {
+          if (error instanceof IndexerAssetNotConfiguredError) {
+            console.log("[BrightGlobe Indexer] BG asset is still a draft; scheduled scan skipped.");
+          } else {
+            throw error;
+          }
         }
-        console.error("[BrightGlobe Indexer] Scheduled scan failed:", error);
+
+        if (env.BG_PAYOUT_RECONCILIATION_ENABLED) {
+          const repository = createDrizzleBgDevnetPayoutRepository(db);
+          const reconciliationRpc = createSolanaBgPayoutReconciliationRpc(gateway, {
+            archiveHistoryEnabled: env.BG_PAYOUT_ARCHIVE_HISTORY_ENABLED,
+            maxHistoryPages: 3
+          });
+          const reconciliation = await reconcileBgDevnetPayouts({
+            config: {
+              enabled: true,
+              workerId: `globe-bg-payout-reconciler-${controller.scheduledTime}`,
+              batchSize: env.BG_PAYOUT_RECONCILIATION_BATCH_SIZE
+            },
+            repository,
+            rpc: reconciliationRpc
+          });
+          console.log("[BrightGlobe BG Payout Reconciler] Scheduled pass completed:", JSON.stringify({
+            cron: controller.cron,
+            scheduledTime: controller.scheduledTime,
+            ...reconciliation
+          }));
+        }
+      } catch (error: unknown) {
+        console.error("[BrightGlobe Scheduled Worker] Background task failed:", error);
         throw error;
       } finally {
         await pool.end();

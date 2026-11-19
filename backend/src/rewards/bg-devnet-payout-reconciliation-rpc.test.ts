@@ -80,6 +80,29 @@ test("found signature is returned without asserting exhaustive history coverage"
   }), { found: true, complete: false });
 });
 
+test("fee-payer history pages are shared across candidates in one scheduled pass", async () => {
+  let calls = 0;
+  const gateway = gatewayStub({
+    getSignaturesForAddress: async () => {
+      calls += 1;
+      return [
+        { signature: "signature-a", slot: 52, err: null, confirmationStatus: "finalized" as const },
+        { signature: "signature-b", slot: 51, err: null, confirmationStatus: "finalized" as const }
+      ];
+    }
+  });
+  const rpc = createSolanaBgPayoutReconciliationRpc(gateway, { archiveHistoryEnabled: true });
+  assert.deepEqual(await rpc.getSignatureHistoryEvidence({
+    feePayerAddress: "shared-fee-payer",
+    signature: "signature-a"
+  }), { found: true, complete: false });
+  assert.deepEqual(await rpc.getSignatureHistoryEvidence({
+    feePayerAddress: "shared-fee-payer",
+    signature: "signature-b"
+  }), { found: true, complete: false });
+  assert.equal(calls, 1);
+});
+
 test("bounded history scan cannot claim completeness when page budget is exhausted", async () => {
   let calls = 0;
   const gateway = gatewayStub({

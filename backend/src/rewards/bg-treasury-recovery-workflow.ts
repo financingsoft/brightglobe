@@ -158,7 +158,7 @@ async function assertTreasuryAndSnapshot(
 
   const [latestSnapshot] = await db.select().from(bgTreasuryReconciliationSnapshots)
     .where(eq(bgTreasuryReconciliationSnapshots.treasuryAccountId, treasuryAccountId))
-    .orderBy(desc(bgTreasuryReconciliationSnapshots.createdAt))
+    .orderBy(desc(bgTreasuryReconciliationSnapshots.createdAt), desc(bgTreasuryReconciliationSnapshots.id))
     .limit(1)
     .for("update");
 

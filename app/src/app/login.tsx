@@ -17,6 +17,8 @@ export default function LoginScreen() {
     previewEnabled,
     signUpEmail,
     signInEmail,
+    verifySignInTotp,
+    verifySignInBackupCode,
     sendVerificationEmail,
     requestPasswordReset,
     enterPreviewAccount
@@ -32,6 +34,9 @@ export default function LoginScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [messageKind, setMessageKind] = useState<"info" | "error">("info");
+  const [twoFactorRequired, setTwoFactorRequired] = useState(false);
+  const [useBackupCode, setUseBackupCode] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
   const t = (zh: string, en: string) => locale === "zh-CN" ? zh : en;
   const backendUnavailable = status === "unconfigured";
   const normalizedEmail = email.trim().toLowerCase();
@@ -42,6 +47,25 @@ export default function LoginScreen() {
   };
 
   const submit = async () => {
+    if (twoFactorRequired) {
+      const valid = useBackupCode ? /^[A-Za-z0-9-]{6,64}$/.test(twoFactorCode.trim()) : /^\d{6}$/.test(twoFactorCode.trim());
+      if (!valid) {
+        showMessage(useBackupCode ? t("请输入有效的备用恢复码。", "Enter a valid backup code.") : t("请输入 6 位动态验证码。", "Enter the 6-digit authenticator code."), "error");
+        return;
+      }
+      setBusy(true);
+      showMessage("");
+      try {
+        if (useBackupCode) await verifySignInBackupCode(twoFactorCode.trim());
+        else await verifySignInTotp(twoFactorCode.trim());
+        setTwoFactorRequired(false);
+        setTwoFactorCode("");
+        router.replace("/(tabs)");
+      } catch (error) {
+        showMessage(error instanceof Error ? error.message : t("二次验证失败。", "Second-factor verification failed."), "error");
+      } finally { setBusy(false); }
+      return;
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       showMessage(t("请输入有效的邮箱地址。", "Enter a valid email address."), "error");
       return;
@@ -66,8 +90,13 @@ export default function LoginScreen() {
         await requestPasswordReset(normalizedEmail);
         showMessage(t("如果该邮箱已注册，密码重置链接将发送至你的邮箱。", "If an account exists for this email, a password reset link will be sent."));
       } else {
-        await signInEmail(normalizedEmail, password);
-        router.replace("/(tabs)");
+        const requiresSecondFactor = await signInEmail(normalizedEmail, password);
+        if (requiresSecondFactor) {
+          setTwoFactorRequired(true);
+          showMessage(t("请输入身份验证器中的 6 位验证码。", "Enter the 6-digit code from your authenticator app."));
+        } else {
+          router.replace("/(tabs)");
+        }
       }
     } catch (error) {
       showMessage(error instanceof Error ? error.message : t("操作失败，请稍后重试。", "The request failed. Please try again."), "error");
@@ -150,7 +179,7 @@ export default function LoginScreen() {
             textContentType="emailAddress"
             autoComplete="email"
           />
-          {mode !== "forgot" ? (
+          {mode !== "forgot" && !twoFactorRequired ? (
             <TextInput
               value={password}
               onChangeText={setPassword}
@@ -164,15 +193,33 @@ export default function LoginScreen() {
               maxLength={128}
             />
           ) : null}
+          {twoFactorRequired ? (
+            <TextInput
+              value={twoFactorCode}
+              onChangeText={setTwoFactorCode}
+              placeholder={useBackupCode ? t("备用恢复码", "Backup code") : t("6 位动态验证码", "6-digit authenticator code")}
+              placeholderTextColor="#8293B0"
+              style={styles.singleInput}
+              editable={!busy}
+              keyboardType={useBackupCode ? "default" : "number-pad"}
+              autoCapitalize={useBackupCode ? "characters" : "none"}
+              autoCorrect={false}
+              maxLength={64}
+            />
+          ) : null}
           <Pressable onPress={submit} disabled={busy || backendUnavailable} style={[styles.primary, (busy || backendUnavailable) && styles.disabled]}>
             {busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryText}>
-              {mode === "signup" ? t("注册并发送验证邮件", "Create account")
+              {twoFactorRequired ? t("验证并登录", "Verify and sign in") : mode === "signup" ? t("注册并发送验证邮件", "Create account")
                 : mode === "forgot" ? t("发送重置链接", "Send reset link")
                   : t("登录", "Sign in")}
             </Text>}
           </Pressable>
 
-          {mode === "login" ? (
+          {twoFactorRequired ? (
+            <Pressable onPress={() => { setUseBackupCode((value) => !value); setTwoFactorCode(""); showMessage(""); }} style={styles.secondaryAction}>
+              <Text style={styles.switchText}>{useBackupCode ? t("改用身份验证器", "Use authenticator instead") : t("使用备用恢复码", "Use a backup code")}</Text>
+            </Pressable>
+          ) : mode === "login" ? (
             <>
               <Pressable onPress={() => { setMode("forgot"); showMessage(""); }} style={styles.secondaryAction}>
                 <Text style={styles.switchText}>{t("忘记密码？", "Forgot password?")}</Text>
@@ -185,7 +232,7 @@ export default function LoginScreen() {
               </Pressable>
             </>
           ) : (
-            <Pressable onPress={() => { setMode("login"); showMessage(""); }} style={styles.switchMode}>
+            <Pressable onPress={() => { setMode("login"); setTwoFactorRequired(false); setTwoFactorCode(""); showMessage(""); }} style={styles.switchMode}>
               <Text style={styles.switchText}>{t("返回登录", "Back to sign in")}</Text>
             </Pressable>
           )}

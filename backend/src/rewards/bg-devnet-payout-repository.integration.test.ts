@@ -7,6 +7,7 @@ import type { Database } from "../db/client.js";
 import {
   assetAccounts,
   assetRegistry,
+  bgTreasuryReconciliationSnapshots,
   canonicalUsers,
   rewardEvents,
   rewardPayoutIntents,
@@ -93,7 +94,7 @@ test("Neon BG payout repository claims once and settles the reward ledger atomic
       feePayerAddress,
       signerProvider: "kms",
       signerKeyReference: "kms://ci/brightglobe/bg-test",
-      hotWalletCapBaseUnits: 500n,
+      hotWalletCapBaseUnits: 2_000n,
       status: "active",
       createdAt: now,
       updatedAt: now
@@ -149,8 +150,50 @@ test("Neon BG payout repository claims once and settles the reward ledger atomic
       createdAt: now,
       updatedAt: now
     });
+    await db.insert(bgTreasuryReconciliationSnapshots).values({
+      id: createUuidV7(now.getTime()),
+      treasuryAccountId,
+      network: "devnet",
+      mintAddress,
+      tokenProgram: CLASSIC_SPL_TOKEN_PROGRAM_ID,
+      tokenAccountAddress: sourceTokenAccount,
+      accountOwnerAddress: treasuryWalletAddress,
+      accountMintAddress: mintAddress,
+      accountState: "initialized",
+      observedSlot: 123n,
+      tokenBalanceBaseUnits: 1_000n,
+      reservedBaseUnits: amount,
+      paidBaseUnits: 0n,
+      availableAfterReservationsBaseUnits: 900n,
+      status: "matched",
+      discrepancyCode: null,
+      evidence: { finalizedAccountRead: true },
+      createdAt: new Date(now.getTime() - 10 * 60 * 1000)
+    });
 
     const repository = createDrizzleBgDevnetPayoutRepository(db);
+    assert.equal(await repository.claimNextQueued("stale-inventory-worker"), null,
+      "a stale reconciliation snapshot must fail closed before signing");
+    await db.insert(bgTreasuryReconciliationSnapshots).values({
+      id: createUuidV7(now.getTime() + 1),
+      treasuryAccountId,
+      network: "devnet",
+      mintAddress,
+      tokenProgram: CLASSIC_SPL_TOKEN_PROGRAM_ID,
+      tokenAccountAddress: sourceTokenAccount,
+      accountOwnerAddress: treasuryWalletAddress,
+      accountMintAddress: mintAddress,
+      accountState: "initialized",
+      observedSlot: 124n,
+      tokenBalanceBaseUnits: 1_000n,
+      reservedBaseUnits: amount,
+      paidBaseUnits: 0n,
+      availableAfterReservationsBaseUnits: 900n,
+      status: "matched",
+      discrepancyCode: null,
+      evidence: { finalizedAccountRead: true },
+      createdAt: now
+    });
     const concurrentClaims = await Promise.all([
       repository.claimNextQueued("ci-payout-worker"),
       repository.claimNextQueued("second-worker")
@@ -160,7 +203,7 @@ test("Neon BG payout repository claims once and settles the reward ledger atomic
     assert.equal(concurrentClaims.filter((candidate) => candidate !== null).length, 1);
     assert.equal(claimed.id, payoutId);
     assert.equal(claimed.signerProvider, "kms");
-    assert.equal(claimed.remainingRollingOutflowBaseUnits, 500n);
+    assert.equal(claimed.remainingRollingOutflowBaseUnits, 2_000n);
     assert.equal(await repository.claimNextQueued("third-worker"), null);
 
     assert.equal(await repository.persistSigned({
@@ -293,6 +336,70 @@ test("Neon BG payout repository claims once and settles the reward ledger atomic
     const [failedEvent] = await db.select().from(rewardEvents).where(eq(rewardEvents.id, failedEventId));
     assert.equal(releasedProgram?.reservedBaseUnits, 0n);
     assert.equal(failedEvent?.status, "failed");
+
+    // The matched snapshot observed 1,000 units before the first 100-unit payout
+    // settled. The paid delta reduces the usable observed balance to 900; a new
+    // 901-unit reservation must therefore fail closed even though the old
+    // snapshot alone appears to have enough inventory.
+    const paidDeltaProgramId = createUuidV7(now.getTime() + 9);
+    const paidDeltaEventId = createUuidV7(now.getTime() + 10);
+    const paidDeltaPayoutId = createUuidV7(now.getTime() + 11);
+    await db.insert(rewardPrograms).values({
+      id: paidDeltaProgramId,
+      assetId,
+      programKey: "bg-payout-paid-delta-" + paidDeltaProgramId.slice(0, 12),
+      actionType: "campaign",
+      ruleVersion: 1,
+      status: "active",
+      rewardBaseUnits: 901n,
+      perUserLimit: 1,
+      budgetBaseUnits: 2_000n,
+      reservedBaseUnits: 901n,
+      paidBaseUnits: 0n,
+      startsAt: new Date(now.getTime() - 60_000),
+      endsAt: null,
+      approvalReference: "ci-paid-delta-approval",
+      approvedBy: "ci-paid-delta-operator",
+      approvedAt: now,
+      createdAt: now,
+      updatedAt: now
+    });
+    await db.insert(rewardEvents).values({
+      id: paidDeltaEventId,
+      programId: paidDeltaProgramId,
+      canonicalUserId,
+      actionType: "campaign",
+      evidenceRef: null,
+      idempotencyKey: "bg-payout-repository-paid-delta:" + id,
+      amountBaseUnits: 901n,
+      ruleVersion: 1,
+      periodKey: null,
+      status: "reserved",
+      createdAt: now,
+      updatedAt: now
+    });
+    await db.insert(rewardPayoutIntents).values({
+      id: paidDeltaPayoutId,
+      rewardEventId: paidDeltaEventId,
+      treasuryAccountId,
+      network: "devnet",
+      mintAddress,
+      tokenProgram: CLASSIC_SPL_TOKEN_PROGRAM_ID,
+      sourceTokenAccount,
+      feePayerAddress,
+      treasuryAuthorityAddress: treasuryWalletAddress,
+      destinationWallet: testAddress(900_011),
+      destinationTokenAccount: testAddress(900_012),
+      amountBaseUnits: 901n,
+      status: "queued",
+      createdAt: new Date(now.getTime() + 2),
+      updatedAt: now
+    });
+    assert.equal(await repository.claimNextQueued("paid-delta-overdraw-worker"), null,
+      "paid payouts since the snapshot must reduce the balance available for later claims");
+    const [unclaimedPaidDeltaPayout] = await db.select().from(rewardPayoutIntents)
+      .where(eq(rewardPayoutIntents.id, paidDeltaPayoutId));
+    assert.equal(unclaimedPaidDeltaPayout?.status, "queued");
 
     const createEligibilityProgram = async (
       suffix: string,

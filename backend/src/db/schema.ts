@@ -644,6 +644,36 @@ export const treasuryAccounts = pgTable("treasury_accounts", {
   check("treasury_accounts_active_config_check", sql`${table.status} <> 'active' OR (${table.mintAddress} IS NOT NULL AND ${table.tokenAccountAddress} IS NOT NULL AND ${table.signerProvider} <> 'unconfigured')`)
 ]);
 
+export const bgTreasuryReconciliationSnapshots = pgTable("bg_treasury_reconciliation_snapshots", {
+  id: uuid("id").primaryKey(),
+  treasuryAccountId: uuid("treasury_account_id").notNull().references(() => treasuryAccounts.id, { onDelete: "restrict" }),
+  network: varchar("network", { length: 24 }).notNull(),
+  mintAddress: varchar("mint_address", { length: 44 }).notNull(),
+  tokenProgram: varchar("token_program", { length: 64 }).notNull(),
+  tokenAccountAddress: varchar("token_account_address", { length: 44 }).notNull(),
+  accountOwnerAddress: varchar("account_owner_address", { length: 44 }),
+  accountMintAddress: varchar("account_mint_address", { length: 44 }),
+  accountState: varchar("account_state", { length: 16 }),
+  observedSlot: bigint("observed_slot", { mode: "bigint" }),
+  tokenBalanceBaseUnits: bigint("token_balance_base_units", { mode: "bigint" }),
+  reservedBaseUnits: bigint("reserved_base_units", { mode: "bigint" }).notNull(),
+  paidBaseUnits: bigint("paid_base_units", { mode: "bigint" }).notNull(),
+  availableAfterReservationsBaseUnits: bigint("available_after_reservations_base_units", { mode: "bigint" }),
+  status: varchar("status", { length: 24 }).notNull(),
+  discrepancyCode: varchar("discrepancy_code", { length: 64 }),
+  evidence: jsonb("evidence").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  index("bg_treasury_reconciliation_treasury_created_idx").on(table.treasuryAccountId, table.createdAt),
+  index("bg_treasury_reconciliation_status_created_idx").on(table.status, table.createdAt),
+  check("bg_treasury_reconciliation_network_check", sql`${table.network} IN ('devnet', 'mainnet-beta')`),
+  check("bg_treasury_reconciliation_status_check", sql`${table.status} IN ('matched', 'insufficient_inventory', 'quarantined', 'unavailable')`),
+  check("bg_treasury_reconciliation_account_state_check", sql`${table.accountState} IS NULL OR ${table.accountState} IN ('uninitialized', 'initialized', 'frozen')`),
+  check("bg_treasury_reconciliation_amounts_check", sql`${table.reservedBaseUnits} >= 0 AND ${table.paidBaseUnits} >= 0 AND (${table.tokenBalanceBaseUnits} IS NULL OR ${table.tokenBalanceBaseUnits} >= 0)`),
+  check("bg_treasury_reconciliation_available_check", sql`${table.availableAfterReservationsBaseUnits} IS NULL OR ${table.availableAfterReservationsBaseUnits} = ${table.tokenBalanceBaseUnits} - ${table.reservedBaseUnits}`),
+  check("bg_treasury_reconciliation_matched_check", sql`${table.status} <> 'matched' OR (${table.tokenBalanceBaseUnits} IS NOT NULL AND ${table.availableAfterReservationsBaseUnits} IS NOT NULL AND ${table.availableAfterReservationsBaseUnits} >= 0 AND ${table.accountState} = 'initialized' AND ${table.accountOwnerAddress} IS NOT NULL AND ${table.accountMintAddress} = ${table.mintAddress})`)
+]);
+
 export const rewardAuditEvents = pgTable("reward_audit_events", {
   id: uuid("id").primaryKey(),
   actorType: varchar("actor_type", { length: 24 }).notNull(),

@@ -2,6 +2,7 @@ import { and, asc, eq, gte, gt, inArray, isNotNull, isNull, lte, or, sql } from 
 import type { Database } from "../db/client.js";
 import {
   assetRegistry,
+  bgTreasuryReconciliationSnapshots,
   rewardAuditEvents,
   rewardEvents,
   rewardPayoutIntents,
@@ -24,6 +25,17 @@ import type {
   BgDevnetPayoutIntent,
   BgDevnetPayoutRepository
 } from "./bg-devnet-payout-executor.js";
+
+const RESERVED_PAYOUT_STATUSES = [
+  "queued",
+  "signing",
+  "signed",
+  "submitted",
+  "confirmed",
+  "finalized",
+  "reconciliation_required",
+  "quarantined"
+] as const;
 
 const ACTIVE_OUTFLOW_STATUSES = [
   "signing",
@@ -103,6 +115,60 @@ export function createDrizzleBgDevnetPayoutRepository(db: Database): BgDevnetPay
         if (!treasuryLock) return null;
 
         const now = new Date();
+        const [latestSnapshot] = await tx.select({
+          network: bgTreasuryReconciliationSnapshots.network,
+          mintAddress: bgTreasuryReconciliationSnapshots.mintAddress,
+          tokenProgram: bgTreasuryReconciliationSnapshots.tokenProgram,
+          tokenAccountAddress: bgTreasuryReconciliationSnapshots.tokenAccountAddress,
+          accountOwnerAddress: bgTreasuryReconciliationSnapshots.accountOwnerAddress,
+          accountMintAddress: bgTreasuryReconciliationSnapshots.accountMintAddress,
+          accountState: bgTreasuryReconciliationSnapshots.accountState,
+          tokenBalanceBaseUnits: bgTreasuryReconciliationSnapshots.tokenBalanceBaseUnits,
+          paidBaseUnits: bgTreasuryReconciliationSnapshots.paidBaseUnits,
+          status: bgTreasuryReconciliationSnapshots.status,
+          createdAt: bgTreasuryReconciliationSnapshots.createdAt
+        }).from(bgTreasuryReconciliationSnapshots)
+          .where(eq(bgTreasuryReconciliationSnapshots.treasuryAccountId, candidate.treasury.id))
+          .orderBy(sql`${bgTreasuryReconciliationSnapshots.createdAt} DESC`)
+          .limit(1);
+
+        // Signing is admitted only against a recent, identity-matched finalized
+        // inventory observation. Recalculate reservations under the same treasury
+        // lock so newly queued payouts cannot overbook that observed balance.
+        const snapshotMaxAgeMs = 5 * 60 * 1000;
+        if (
+          !latestSnapshot ||
+          latestSnapshot.status !== "matched" ||
+          latestSnapshot.createdAt.getTime() > now.getTime() ||
+          now.getTime() - latestSnapshot.createdAt.getTime() > snapshotMaxAgeMs ||
+          latestSnapshot.network !== "devnet" ||
+          candidate.payout.mintAddress !== candidate.treasury.mintAddress ||
+          candidate.payout.sourceTokenAccount !== candidate.treasury.tokenAccountAddress ||
+          candidate.payout.treasuryAuthorityAddress !== candidate.treasury.treasuryWalletAddress ||
+          latestSnapshot.mintAddress !== candidate.treasury.mintAddress ||
+          latestSnapshot.tokenProgram !== candidate.payout.tokenProgram ||
+          latestSnapshot.tokenAccountAddress !== candidate.treasury.tokenAccountAddress ||
+          latestSnapshot.accountOwnerAddress !== candidate.treasury.treasuryWalletAddress ||
+          latestSnapshot.accountMintAddress !== candidate.treasury.mintAddress ||
+          latestSnapshot.accountState !== "initialized" ||
+          latestSnapshot.tokenBalanceBaseUnits === null
+        ) return null;
+
+        const [inventoryRow] = await tx.select({
+          reserved: sql<string>`coalesce(sum(${rewardPayoutIntents.amountBaseUnits}) FILTER (WHERE ${rewardPayoutIntents.status} IN (${sql.join(RESERVED_PAYOUT_STATUSES.map((status) => sql`${status}`), sql`, `)})), 0)::text`,
+          paid: sql<string>`coalesce(sum(${rewardPayoutIntents.amountBaseUnits}) FILTER (WHERE ${rewardPayoutIntents.status} = 'paid'), 0)::text`
+        }).from(rewardPayoutIntents)
+          .where(eq(rewardPayoutIntents.treasuryAccountId, candidate.treasury.id));
+        const currentReservedBaseUnits = BigInt(inventoryRow?.reserved ?? "0");
+        const currentPaidBaseUnits = BigInt(inventoryRow?.paid ?? "0");
+        // Payouts that settled after the snapshot have already left the chain
+        // balance. Deduct that cumulative paid delta before comparing today's
+        // reservations, otherwise an old matched snapshot can be spent twice.
+        if (currentPaidBaseUnits < latestSnapshot.paidBaseUnits) return null;
+        const paidSinceSnapshot = currentPaidBaseUnits - latestSnapshot.paidBaseUnits;
+        const effectiveObservedBalance = latestSnapshot.tokenBalanceBaseUnits - paidSinceSnapshot;
+        if (effectiveObservedBalance < currentReservedBaseUnits) return null;
+
         const windowStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         const [outflowRow] = await tx.select({
           amount: sql<string>`coalesce(sum(${rewardPayoutIntents.amountBaseUnits}), 0)::text`

@@ -822,6 +822,7 @@ export const staffRoleAssignments = pgTable("staff_role_assignments", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
   index("staff_role_assignments_principal_status_idx").on(table.staffPrincipalId, table.status, table.validFrom, table.validUntil),
+  uniqueIndex("staff_role_assignments_active_uidx").on(table.staffPrincipalId, table.roleId).where(sql.raw("status = 'active'")),
   check("staff_role_assignments_status_check", sql`${table.status} IN ('active', 'revoked')`),
   check("staff_role_assignments_validity_check", sql`${table.validUntil} IS NULL OR ${table.validUntil} > ${table.validFrom}`),
   check("staff_role_assignments_revoked_check", sql`(${table.status} = 'active' AND ${table.revokedAt} IS NULL) OR (${table.status} = 'revoked' AND ${table.revokedAt} IS NOT NULL)`)

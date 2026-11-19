@@ -314,7 +314,8 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
   const signInEmail = useCallback(async (email: string, password: string) => {
     const result = await authClient.signIn.email({ email, password, rememberMe: true });
     if (result.error) throw new Error(result.error.message || "Unable to sign in.");
-    if (result.data?.twoFactorRedirect) return true;
+    const signInData = result.data as typeof result.data & { twoFactorRedirect?: boolean };
+    if (signInData.twoFactorRedirect) return true;
     await refetch();
     return false;
   }, [refetch]);

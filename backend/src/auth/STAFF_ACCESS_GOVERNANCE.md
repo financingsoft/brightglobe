@@ -100,7 +100,7 @@ Available actions:
 - `provision_principal`: link an existing Better Auth user to a new active staff principal and one initial role.
 - `assign_role`: assign an active role template to an existing active staff principal, optionally with an expiry.
 - `revoke_role`: revoke an existing role assignment.
-- `suspend_principal`: suspend an active staff principal.
+- `suspend_principal`: suspend an active staff principal.\n- `activate_principal`: reactivate a suspended (but not revoked) staff principal.
 
 Each change follows:
 

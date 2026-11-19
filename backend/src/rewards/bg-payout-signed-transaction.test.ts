@@ -4,6 +4,7 @@ import {
   generateKeyPair,
   getAddressFromPublicKey,
   getBase64Decoder,
+  getBase64Encoder,
   getBase64EncodedWireTransaction,
   getSignatureFromTransaction,
   getTransactionDecoder,
@@ -33,7 +34,7 @@ async function signedFixture() {
     lastValidBlockHeight: 500n
   });
   const unsignedTransaction = getTransactionDecoder().decode(
-    getBase64Decoder().decode(built.transactionBase64)
+    getBase64Decoder().decode(getBase64Encoder().encode(built.transactionBase64))
   );
   const signedTransaction = await signTransaction(
     [feePayerKeyPair, treasuryAuthorityKeyPair],
@@ -86,7 +87,7 @@ test("rejects missing signatures and invalid transaction signature metadata", as
 test("rejects a cryptographically corrupted signer signature", async () => {
   const fixture = await signedFixture();
   const decoded = getTransactionDecoder().decode(
-    getBase64Decoder().decode(fixture.signedTransactionBase64)
+    getBase64Decoder().decode(getBase64Encoder().encode(fixture.signedTransactionBase64))
   );
   const originalSignature = decoded.signatures[fixture.feePayerAddress];
   assert.ok(originalSignature);

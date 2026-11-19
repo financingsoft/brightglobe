@@ -7,6 +7,7 @@ import {
   getBase64EncodedWireTransaction,
   getSignatureFromTransaction,
   getTransactionDecoder,
+  signatureBytes,
   signTransaction
 } from "@solana/kit";
 import { buildClassicSplTransferTransaction } from "../blockchain/solana/transfer-builder.js";
@@ -79,6 +80,28 @@ test("rejects missing signatures and invalid transaction signature metadata", as
   assert.equal(await verifyBgPayoutSignedTransaction({
     ...fixture,
     transactionSignature: "not-a-solana-signature"
+  }), false);
+});
+
+test("rejects a cryptographically corrupted signer signature", async () => {
+  const fixture = await signedFixture();
+  const decoded = getTransactionDecoder().decode(
+    getBase64Decoder().decode(fixture.signedTransactionBase64)
+  );
+  const originalSignature = decoded.signatures[fixture.feePayerAddress];
+  assert.ok(originalSignature);
+  const corruptedBytes = new Uint8Array(originalSignature);
+  corruptedBytes[0] = corruptedBytes[0]! ^ 0xff;
+  const corrupted = {
+    ...decoded,
+    signatures: {
+      ...decoded.signatures,
+      [fixture.feePayerAddress]: signatureBytes(corruptedBytes)
+    }
+  };
+  assert.equal(await verifyBgPayoutSignedTransaction({
+    ...fixture,
+    signedTransactionBase64: getBase64EncodedWireTransaction(corrupted)
   }), false);
 });
 

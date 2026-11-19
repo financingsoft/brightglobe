@@ -43,6 +43,7 @@ CREATE TABLE public.staff_access_change_requests (
   action varchar(32) NOT NULL,
   target_auth_user_id text REFERENCES public."user"(id) ON DELETE RESTRICT,
   target_staff_principal_id uuid REFERENCES public.staff_principals(id) ON DELETE RESTRICT,
+  result_staff_principal_id uuid REFERENCES public.staff_principals(id) ON DELETE RESTRICT,
   role_id uuid REFERENCES public.staff_roles(id) ON DELETE RESTRICT,
   display_label varchar(120),
   valid_until timestamptz,
@@ -75,6 +76,8 @@ CREATE TABLE public.staff_access_change_requests (
       OR (status = 'approved' AND approver_staff_id IS NOT NULL AND approved_at IS NOT NULL AND consumed_at IS NULL)
       OR (status = 'consumed' AND approver_staff_id IS NOT NULL AND approved_at IS NOT NULL AND consumed_at IS NOT NULL)
     ),
+  CONSTRAINT staff_access_change_result_check
+    CHECK (action = 'provision_principal' OR result_staff_principal_id IS NULL),
   CONSTRAINT staff_access_change_action_shape_check
     CHECK (
       (action = 'provision_principal' AND target_auth_user_id IS NOT NULL AND target_staff_principal_id IS NULL AND role_id IS NOT NULL AND display_label IS NOT NULL)

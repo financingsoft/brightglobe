@@ -48,6 +48,16 @@ const environmentSchema = z.object({
       message: "Archive history coverage requires BG payout reconciliation to be enabled."
     });
   }
+  if (
+    value.BG_PAYOUT_ARCHIVE_HISTORY_ENABLED &&
+    value.SOLANA_RPC_URL === "https://api.devnet.solana.com"
+  ) {
+    context.addIssue({
+      code: "custom",
+      path: ["SOLANA_RPC_URL"],
+      message: "Archive history coverage requires an explicitly configured archive-capable RPC endpoint."
+    });
+  }
   if (value.SOLANA_RPC_URL && !value.SOLANA_RPC_URL.startsWith("https://")) {
     context.addIssue({
       code: "custom",

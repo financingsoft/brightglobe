@@ -46,7 +46,8 @@ export type TreasuryRecoveryWorkflowErrorCode =
   | "PROPOSAL_NOT_FOUND"
   | "PROPOSAL_NOT_PENDING"
   | "PROPOSAL_EXPIRED"
-  | "SELF_APPROVAL";
+  | "SELF_APPROVAL"
+  | "NOT_APPROVER";
 
 export class TreasuryRecoveryWorkflowError extends Error {
   constructor(
@@ -88,7 +89,7 @@ export interface TreasuryRecoveryProposalResult {
 async function assertStaffPermission(
   db: Database,
   actor: TreasuryRecoveryActor,
-  permission: "bg.treasury.recovery.propose" | "bg.treasury.recovery.approve",
+  permission: "bg.treasury.recovery.propose" | "bg.treasury.recovery.approve" | "bg.treasury.recovery.execute",
   now: Date
 ): Promise<void> {
   const [principal] = await db.select({

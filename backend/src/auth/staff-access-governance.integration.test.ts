@@ -33,6 +33,7 @@ test("staff access provisioning, role changes, and suspension require independen
   const proposerUserId = "access-proposer-" + suffix;
   const approverUserId = "access-approver-" + suffix;
   const targetUserId = "access-target-" + suffix;
+  const expiredTargetUserId = "access-expired-target-" + suffix;
   const proposerId = createUuidV7(now.getTime());
   const approverId = createUuidV7(now.getTime());
   const proposer = { staffPrincipalId: proposerId, authUserId: proposerUserId };
@@ -47,7 +48,8 @@ test("staff access provisioning, role changes, and suspension require independen
         [
           proposerUserId, "CI access proposer", proposerUserId + "@example.invalid",
           approverUserId, "CI access approver", approverUserId + "@example.invalid",
-          targetUserId, "CI access target", targetUserId + "@example.invalid"
+          targetUserId, "CI access target", targetUserId + "@example.invalid",
+          expiredTargetUserId, "CI expired access target", expiredTargetUserId + "@example.invalid"
         ]
       );
 
@@ -201,6 +203,32 @@ test("staff access provisioning, role changes, and suspension require independen
       }, new Date(now.getTime() + 150_000));
       assert.equal(suspended.status, "consumed");
 
+      const expiringRequest = await proposeStaffAccessChange(db, {
+        action: "provision_principal",
+        targetAuthUserId: expiredTargetUserId,
+        roleId: observerRoleId,
+        displayLabel: "Expired CI Staff",
+        reason: "Exercise expiry of an approved staff access request.",
+        idempotencyKey: "access-expired-key-" + suffix,
+        actor: proposer
+      }, new Date(now.getTime() + 150_000));
+      await approveStaffAccessChange(db, {
+        requestId: expiringRequest.requestId,
+        reason: "Approve the access request for expiry coverage.",
+        actor: approver
+      }, new Date(now.getTime() + 150_000));
+      const expiredResult = await executeStaffAccessChange(db, {
+        requestId: expiringRequest.requestId,
+        reason: "Execution is attempted after the approval window.",
+        actor: approver
+      }, new Date(now.getTime() + 7 * 60 * 1000));
+      assert.equal(expiredResult.status, "expired");
+
+      const [expiredTarget] = await tx.select({ id: staffPrincipals.id })
+        .from(staffPrincipals)
+        .where(eq(staffPrincipals.authUserId, expiredTargetUserId));
+      assert.equal(expiredTarget, undefined);
+
       const [finalPrincipal] = await tx.select({ status: staffPrincipals.status })
         .from(staffPrincipals)
         .where(eq(staffPrincipals.id, targetPrincipalId));
@@ -224,7 +252,8 @@ test("staff access provisioning, role changes, and suspension require independen
             "bg.staff.principal.provisioned",
             "bg.staff.role.assigned",
             "bg.staff.role.revoked",
-            "bg.staff.principal.suspended"
+            "bg.staff.principal.suspended",
+            "bg.staff.access.expired"
           ]),
           eq(staffAuditEvents.actorStaffId, approverId)
         ));
@@ -233,6 +262,7 @@ test("staff access provisioning, role changes, and suspension require independen
       assert.ok(audit.some((item) => item.action === "bg.staff.role.revoked"));
       assert.ok(audit.some((item) => item.action === "bg.staff.principal.suspended"));
       assert.equal(audit.filter((item) => item.action === "bg.staff.access.executed").length, 4);
+      assert.ok(audit.some((item) => item.action === "bg.staff.access.expired"));
 
       throw rollback;
     });

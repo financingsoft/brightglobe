@@ -141,6 +141,8 @@ async function assertTreasuryAndSnapshot(
     tokenAccountAddress: treasuryAccounts.tokenAccountAddress,
     tokenProgram: assetRegistry.tokenProgram,
     decimals: assetRegistry.decimals,
+    assetStatus: assetRegistry.status,
+    assetUpdatedAt: assetRegistry.updatedAt,
     updatedAt: treasuryAccounts.updatedAt
   }).from(treasuryAccounts)
     .innerJoin(assetRegistry, eq(assetRegistry.id, treasuryAccounts.assetId))
@@ -176,6 +178,8 @@ async function assertTreasuryAndSnapshot(
   const evidence = latestSnapshot.evidence as Record<string, unknown>;
   if (
     latestSnapshot.network !== "devnet" ||
+    treasury.assetStatus !== "active" ||
+    treasury.assetUpdatedAt.getTime() > latestSnapshot.createdAt.getTime() ||
     treasury.tokenProgram !== CLASSIC_SPL_TOKEN_PROGRAM_ID ||
     evidence.finalizedAccountRead !== true ||
     evidence.mintAccountProgramOwner !== CLASSIC_SPL_TOKEN_PROGRAM_ID ||

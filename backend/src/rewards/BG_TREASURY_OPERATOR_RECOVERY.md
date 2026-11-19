@@ -2,7 +2,7 @@
 
 ## Decision and safety boundary
 
-BrightGlobe now has server-enforced staff RBAC, TOTP step-up, and Treasury recovery proposal, approval, and execution APIs.
+BrightGlobe now has server-enforced staff RBAC, TOTP/backup-code step-up, and Treasury recovery proposal, approval, and execution APIs.
 
 The execution API performs only an internal database state transition from `paused` to `active`. It does not construct, sign, submit, retry, or transfer a Solana transaction or BG tokens. A healthy reconciliation snapshot by itself never resumes a Treasury.
 
@@ -24,10 +24,10 @@ The staff authorization foundation is implemented:
 
 ## TOTP step-up contract
 
-Implemented through Better Auth TOTP and a server-side one-time grant:
+Implemented through Better Auth TOTP/backup-code verification and a server-side one-time grant:
 
 - The staff principal must be active, hold the exact operation permission, and have an enrolled, verified authenticator.
-- A fresh TOTP code is required for each proposal, approval, and execution operation.
+- A fresh TOTP code or one-time Better Auth backup code is required for each proposal, approval, and execution operation. Backup-code verification does not trust the device or change the session; Better Auth consumes the code once.
 - Each grant is bound to one staff principal, Better Auth session, and exact operation.
 - Grants expire after five minutes, store only a SHA-256 token digest, and are atomically consumed once.
 - Replay, cross-session, cross-user, cross-operation, and expired use are rejected.
@@ -52,7 +52,7 @@ A different active staff principal with `bg.treasury.recovery.approve` must appr
 
 ### Execution
 
-Execution requires `bg.treasury.recovery.execute`, a fresh TOTP step-up grant, and the same independent staff principal who approved the proposal. The proposer cannot execute their own proposal.
+Execution requires `bg.treasury.recovery.execute`, a fresh TOTP or backup-code step-up grant, and the same independent staff principal who approved the proposal. The proposer cannot execute their own proposal.
 
 The execution service revalidates the proposer and approver identities and permissions inside the transaction. The approval must be no older than five minutes. Under Treasury and proposal row locks, it then revalidates:
 

@@ -21,18 +21,24 @@ export function createStaffStepUpRoutes(db: Database, auth: BetterAuthInstance) 
   routes.post("/", async (context) => {
     const body = await context.req.json().catch(() => null) as {
       code?: unknown;
+      method?: unknown;
       operation?: unknown;
     } | null;
 
+    const method = body?.method ?? "totp";
+    const validCode = typeof body?.code === "string" && (
+      (method === "totp" && /^\d{6}$/.test(body.code)) ||
+      (method === "backup_code" && /^[A-Za-z0-9-]{6,64}$/.test(body.code))
+    );
     if (
       !body ||
-      typeof body.code !== "string" ||
-      !/^\d{6}$/.test(body.code) ||
+      !validCode ||
+      (method !== "totp" && method !== "backup_code") ||
       typeof body.operation !== "string" ||
       !operations.has(body.operation as StaffStepUpOperation)
     ) {
       return context.json({
-        error: { code: "INVALID_STEP_UP_REQUEST", message: "A valid TOTP code and supported operation are required." }
+        error: { code: "INVALID_STEP_UP_REQUEST", message: "A valid TOTP or backup code and supported operation are required." }
       }, 400);
     }
 
@@ -76,13 +82,23 @@ export function createStaffStepUpRoutes(db: Database, auth: BetterAuthInstance) 
     }
 
     try {
-      await auth.api.verifyTOTP({
-        body: { code: body.code, trustDevice: false },
-        headers: context.req.raw.headers
-      });
+      if (method === "backup_code") {
+        await auth.api.verifyBackupCode({
+          body: { code: body.code as string, disableSession: true, trustDevice: false },
+          headers: context.req.raw.headers
+        });
+      } else {
+        await auth.api.verifyTOTP({
+          body: { code: body.code as string, trustDevice: false },
+          headers: context.req.raw.headers
+        });
+      }
     } catch {
       return context.json({
-        error: { code: "STAFF_TOTP_VERIFICATION_FAILED", message: "The authenticator code could not be verified." }
+        error: {
+          code: method === "backup_code" ? "STAFF_BACKUP_CODE_VERIFICATION_FAILED" : "STAFF_TOTP_VERIFICATION_FAILED",
+          message: "The second-factor recovery code could not be verified."
+        }
       }, 401);
     }
 
@@ -96,6 +112,7 @@ export function createStaffStepUpRoutes(db: Database, auth: BetterAuthInstance) 
     context.header("Cache-Control", "no-store");
     return context.json({
       operation,
+      method,
       token: grant.token,
       expiresAt: grant.expiresAt.toISOString(),
       singleUse: true

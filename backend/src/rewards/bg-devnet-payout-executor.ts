@@ -11,6 +11,7 @@ import {
   validateBgPayoutSigningRequest,
   type BgPayoutSigner
 } from "./bg-payout-signer.js";
+import type { BgPayoutStatus } from "./bg-payout-lifecycle.js";
 
 export interface BgDevnetPayoutIntent {
   id: string;
@@ -63,8 +64,8 @@ export interface BgDevnetPayoutRepository {
   }): Promise<boolean>;
   transition(input: {
     payoutIntentId: string;
-    from: "signing" | "signed" | "submitted" | "confirmed" | "finalized" | "reconciliation_required";
-    to: "submitted" | "confirmed" | "finalized" | "reconciliation_required" | "failed" | "expired" | "quarantined" | "cancelled";
+    from: BgPayoutStatus;
+    to: BgPayoutStatus;
     signature?: string;
     slot?: bigint;
     errorCode?: string;

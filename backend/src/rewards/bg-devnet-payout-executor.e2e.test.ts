@@ -17,7 +17,8 @@ import type {
 } from "./bg-devnet-payout-executor.js";
 import { executeNextBgDevnetPayout } from "./bg-devnet-payout-executor.js";
 import {
-  validateBgPayoutSigningRequest
+  validateBgPayoutSigningRequest,
+  type BgPayoutSigningRequest
 } from "./bg-payout-signer.js";
 
 const FEE_PAYER = "11111111111111111111111111111111";
@@ -209,7 +210,7 @@ async function fixture(options: {
 
   const signer = {
     provider: "external" as const,
-    sign: async (request: Parameters<NonNullable<typeof signer>["sign"]>[0]) => {
+    sign: async (request: BgPayoutSigningRequest) => {
       signerCalls += 1;
       validateBgPayoutSigningRequest(request);
       return {

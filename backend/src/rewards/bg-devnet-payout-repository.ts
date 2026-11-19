@@ -141,11 +141,14 @@ export function createDrizzleBgDevnetPayoutRepository(db: Database): BgDevnetPay
           latestSnapshot.createdAt.getTime() > now.getTime() ||
           now.getTime() - latestSnapshot.createdAt.getTime() > snapshotMaxAgeMs ||
           latestSnapshot.network !== "devnet" ||
-          latestSnapshot.mintAddress !== candidate.payout.mintAddress ||
+          candidate.payout.mintAddress !== candidate.treasury.mintAddress ||
+          candidate.payout.sourceTokenAccount !== candidate.treasury.tokenAccountAddress ||
+          candidate.payout.treasuryAuthorityAddress !== candidate.treasury.treasuryWalletAddress ||
+          latestSnapshot.mintAddress !== candidate.treasury.mintAddress ||
           latestSnapshot.tokenProgram !== candidate.payout.tokenProgram ||
-          latestSnapshot.tokenAccountAddress !== candidate.payout.sourceTokenAccount ||
-          latestSnapshot.accountOwnerAddress !== candidate.payout.treasuryAuthorityAddress ||
-          latestSnapshot.accountMintAddress !== candidate.payout.mintAddress ||
+          latestSnapshot.tokenAccountAddress !== candidate.treasury.tokenAccountAddress ||
+          latestSnapshot.accountOwnerAddress !== candidate.treasury.treasuryWalletAddress ||
+          latestSnapshot.accountMintAddress !== candidate.treasury.mintAddress ||
           latestSnapshot.accountState !== "initialized" ||
           latestSnapshot.tokenBalanceBaseUnits === null
         ) return null;

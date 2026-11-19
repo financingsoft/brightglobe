@@ -178,9 +178,44 @@ test("BG treasury snapshots are append-only, aggregate reserved/paid inventory a
       tokenAccountAddress: TOKEN_ACCOUNT,
       decimals: 9
     });
+    // Simulate a payout reservation committed after the reconciler's earlier
+    // aggregate read but before it acquires the treasury row lock.
     assert.deepEqual(await repository.getInventoryTotals(treasuryAccountId), {
       reservedBaseUnits: 10n,
       paidBaseUnits: 5n
+    });
+    const lateEventId = createUuidV7(now.getTime() + 2);
+    const latePayoutId = createUuidV7(now.getTime() + 3);
+    await db.insert(rewardEvents).values({
+      id: lateEventId,
+      programId,
+      canonicalUserId,
+      actionType: "campaign",
+      evidenceRef: null,
+      idempotencyKey: "bg-treasury-late-reservation:" + treasuryAccountId,
+      amountBaseUnits: 7n,
+      ruleVersion: 1,
+      periodKey: null,
+      status: "reserved",
+      createdAt: now,
+      updatedAt: now
+    });
+    await db.insert(rewardPayoutIntents).values({
+      id: latePayoutId,
+      rewardEventId: lateEventId,
+      treasuryAccountId,
+      network: "devnet",
+      mintAddress: MINT,
+      tokenProgram: CLASSIC_SPL_TOKEN_PROGRAM_ID,
+      sourceTokenAccount: TOKEN_ACCOUNT,
+      feePayerAddress: FEE_PAYER,
+      treasuryAuthorityAddress: TREASURY,
+      destinationWallet: DESTINATION,
+      destinationTokenAccount: DESTINATION_ATA,
+      amountBaseUnits: 7n,
+      status: "queued",
+      createdAt: now,
+      updatedAt: now
     });
 
     const discrepancy = await repository.recordSnapshot({
@@ -202,6 +237,14 @@ test("BG treasury snapshots are append-only, aggregate reserved/paid inventory a
       evidence: { finalizedAccountRead: true }
     });
     assert.equal(discrepancy.treasuryPaused, true);
+    const [persistedDiscrepancy] = await db.select().from(bgTreasuryReconciliationSnapshots)
+      .where(eq(bgTreasuryReconciliationSnapshots.id, discrepancy.snapshotId));
+    assert.equal(persistedDiscrepancy?.reservedBaseUnits, 17n,
+      "snapshot must recompute reservations after taking the treasury lock, not trust stale caller totals");
+    assert.equal(persistedDiscrepancy?.paidBaseUnits, 5n);
+    assert.equal(persistedDiscrepancy?.availableAfterReservationsBaseUnits, -8n);
+    assert.equal(persistedDiscrepancy?.status, "insufficient_inventory");
+    assert.equal(persistedDiscrepancy?.evidence.inventoryTotalsRecomputedUnderTreasuryLock, true);
 
     const [pausedTreasury] = await db.select().from(treasuryAccounts)
       .where(eq(treasuryAccounts.id, treasuryAccountId));

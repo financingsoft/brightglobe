@@ -155,57 +155,92 @@ export async function reconcileBgTreasuryInventory(input: {
             tokenResponse.account.executable) {
           snapshot = emptySnapshot(account, totals, "treasury_mint_or_token_account_missing", "quarantined");
         } else {
-          const mint = parseClassicSplMint({
-            owner: mintResponse.account.owner,
-            dataBase64: mintResponse.account.data[0]
-          });
-          const token = parseClassicSplTokenAccount({
-            owner: tokenResponse.account.owner,
-            dataBase64: tokenResponse.account.data[0]
-          });
-          const observedSlot = BigInt(Math.min(mintResponse.contextSlot, tokenResponse.contextSlot));
-          const available = token.amountBaseUnits - totals.reservedBaseUnits;
-          const identityMatches =
-            mint.initialized &&
-            mint.decimals === account.decimals &&
-            token.mint === account.mintAddress &&
-            token.owner === account.treasuryWalletAddress &&
-            token.state === "initialized";
-          if (!identityMatches) {
+          const parsed = (() => {
+            try {
+              return {
+                mint: parseClassicSplMint({
+                  owner: mintResponse.account!.owner,
+                  dataBase64: mintResponse.account!.data[0]
+                }),
+                token: parseClassicSplTokenAccount({
+                  owner: tokenResponse.account!.owner,
+                  dataBase64: tokenResponse.account!.data[0]
+                })
+              };
+            } catch {
+              return null;
+            }
+          })();
+          if (!parsed) {
             snapshot = {
-              ...emptySnapshot(account, totals, "treasury_token_identity_or_mint_mismatch", "quarantined"),
-              accountOwnerAddress: token.owner,
-              accountMintAddress: token.mint,
-              accountState: token.state,
-              observedSlot,
-              tokenBalanceBaseUnits: token.amountBaseUnits,
-              availableAfterReservationsBaseUnits: available,
-              evidence: { mintDecimals: mint.decimals, configuredDecimals: account.decimals }
-            };
-          } else if (available < 0n) {
-            snapshot = {
-              ...emptySnapshot(account, totals, "treasury_balance_below_reserved_inventory", "insufficient_inventory"),
-              accountOwnerAddress: token.owner,
-              accountMintAddress: token.mint,
-              accountState: token.state,
-              observedSlot,
-              tokenBalanceBaseUnits: token.amountBaseUnits,
-              availableAfterReservationsBaseUnits: available,
-              evidence: { finalizedAccountRead: true }
+              ...emptySnapshot(account, totals, "treasury_account_program_owner_or_data_invalid", "quarantined"),
+              observedSlot: BigInt(Math.min(mintResponse.contextSlot, tokenResponse.contextSlot)),
+              evidence: {
+                mintAccountProgramOwner: mintResponse.account.owner,
+                tokenAccountProgramOwner: tokenResponse.account.owner,
+                finalizedAccountRead: true
+              }
             };
           } else {
-            snapshot = {
-              ...emptySnapshot(account, totals, "", "unavailable"),
-              accountOwnerAddress: token.owner,
-              accountMintAddress: token.mint,
-              accountState: token.state,
-              observedSlot,
-              tokenBalanceBaseUnits: token.amountBaseUnits,
-              availableAfterReservationsBaseUnits: available,
-              status: "matched",
-              discrepancyCode: null,
-              evidence: { finalizedAccountRead: true, mintDecimals: mint.decimals }
-            };
+            const { mint, token } = parsed;
+            const observedSlot = BigInt(Math.min(mintResponse.contextSlot, tokenResponse.contextSlot));
+            const available = token.amountBaseUnits - totals.reservedBaseUnits;
+            const identityMatches =
+              mint.initialized &&
+              mint.decimals === account.decimals &&
+              token.mint === account.mintAddress &&
+              token.owner === account.treasuryWalletAddress &&
+              token.state === "initialized";
+            if (!identityMatches) {
+              snapshot = {
+                ...emptySnapshot(account, totals, "treasury_token_identity_or_mint_mismatch", "quarantined"),
+                accountOwnerAddress: token.owner,
+                accountMintAddress: token.mint,
+                accountState: token.state,
+                observedSlot,
+                tokenBalanceBaseUnits: token.amountBaseUnits,
+                availableAfterReservationsBaseUnits: available,
+                evidence: {
+                  mintDecimals: mint.decimals,
+                  configuredDecimals: account.decimals,
+                  mintAccountProgramOwner: mintResponse.account.owner,
+                  tokenAccountProgramOwner: tokenResponse.account.owner
+                }
+              };
+            } else if (available < 0n) {
+              snapshot = {
+                ...emptySnapshot(account, totals, "treasury_balance_below_reserved_inventory", "insufficient_inventory"),
+                accountOwnerAddress: token.owner,
+                accountMintAddress: token.mint,
+                accountState: token.state,
+                observedSlot,
+                tokenBalanceBaseUnits: token.amountBaseUnits,
+                availableAfterReservationsBaseUnits: available,
+                evidence: {
+                  finalizedAccountRead: true,
+                  mintAccountProgramOwner: mintResponse.account.owner,
+                  tokenAccountProgramOwner: tokenResponse.account.owner
+                }
+              };
+            } else {
+              snapshot = {
+                ...emptySnapshot(account, totals, "", "unavailable"),
+                accountOwnerAddress: token.owner,
+                accountMintAddress: token.mint,
+                accountState: token.state,
+                observedSlot,
+                tokenBalanceBaseUnits: token.amountBaseUnits,
+                availableAfterReservationsBaseUnits: available,
+                status: "matched",
+                discrepancyCode: null,
+                evidence: {
+                  finalizedAccountRead: true,
+                  mintDecimals: mint.decimals,
+                  mintAccountProgramOwner: mintResponse.account.owner,
+                  tokenAccountProgramOwner: tokenResponse.account.owner
+                }
+              };
+            }
           }
         }
       }

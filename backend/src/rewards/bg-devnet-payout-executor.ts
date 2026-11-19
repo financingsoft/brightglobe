@@ -358,13 +358,69 @@ export async function executeNextBgDevnetPayout(input: {
 
     const status = await rpc.getSignatureStatus(persistedSignature);
     if (status.err !== null) {
+      // An execution error observed at processed/confirmed is not terminal:
+      // only finalized transaction evidence can prove a definitive failure.
+      if (status.confirmationStatus !== "finalized" || status.slot === null) {
+        await repository.transition({
+          payoutIntentId: intent.id,
+          from: "submitted",
+          to: "reconciliation_required",
+          signature: persistedSignature,
+          errorCode: "PAYOUT_FAILURE_AWAITING_FINALITY",
+          evidence: {
+            chainErrorObserved: true,
+            definitiveFailureVerified: false,
+            confirmationStatus: status.confirmationStatus
+          }
+        });
+        return { outcome: "reconciliation_required", payoutIntentId: intent.id, signature: persistedSignature };
+      }
+      const failedTransaction = await rpc.getFinalizedTransaction(persistedSignature);
+      const failedMeta = typeof failedTransaction === "object" && failedTransaction !== null &&
+        !Array.isArray(failedTransaction) &&
+        typeof (failedTransaction as Record<string, unknown>).meta === "object" &&
+        (failedTransaction as Record<string, unknown>).meta !== null
+        ? (failedTransaction as { meta: Record<string, unknown> }).meta
+        : null;
+      const failedEnvelopeMatches = failedTransaction !== null &&
+        matchesFinalizedTransactionEnvelope(
+          failedTransaction,
+          persistedSignature,
+          blockhash.blockhash,
+          BigInt(status.slot)
+        );
+      if (!failedEnvelopeMatches || !failedMeta || failedMeta.err === null || failedMeta.err === undefined) {
+        await repository.transition({
+          payoutIntentId: intent.id,
+          from: "submitted",
+          to: "quarantined",
+          signature: persistedSignature,
+          errorCode: "PAYOUT_FINALIZED_FAILURE_EVIDENCE_MISMATCH",
+          evidence: {
+            integrityMismatch: true,
+            statusError: status.err,
+            finalizedMetaError: failedMeta?.err ?? null,
+            finalizedSlot: status.slot
+          }
+        });
+        return {
+          outcome: "quarantined",
+          payoutIntentId: intent.id,
+          reason: "finalized_failure_evidence_did_not_match_persisted_transaction"
+        };
+      }
       await repository.transition({
         payoutIntentId: intent.id,
         from: "submitted",
         to: "failed",
         signature: persistedSignature,
+        slot: BigInt(status.slot),
         errorCode: "PAYOUT_CHAIN_TRANSACTION_FAILED",
-        evidence: { definitiveFailureVerified: true, chainError: status.err }
+        evidence: {
+          definitiveFailureVerified: true,
+          chainError: failedMeta.err,
+          finalizedFailureEnvelopeVerified: true
+        }
       });
       return { outcome: "failed", payoutIntentId: intent.id, errorCode: "PAYOUT_CHAIN_TRANSACTION_FAILED" };
     }

@@ -27,7 +27,7 @@ export function createStaffStepUpRoutes(db: Database, auth: BetterAuthInstance) 
 
     const method = body?.method ?? "totp";
     const validCode = typeof body?.code === "string" && (
-      (method === "totp" && /^\\d{6}$/.test(body.code)) ||
+      (method === "totp" && /^\d{6}$/.test(body.code)) ||
       (method === "backup_code" && /^[A-Za-z0-9-]{6,64}$/.test(body.code))
     );
     if (

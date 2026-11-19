@@ -27,6 +27,12 @@ const environmentSchema = z.object({
     z.coerce.number().int().min(1).max(50).default(10)
   )
 }).superRefine((value, context) => {
+  let solanaRpcHostname = "";
+  try {
+    solanaRpcHostname = new URL(value.SOLANA_RPC_URL).hostname;
+  } catch {
+    // The URL validator below reports malformed endpoints without throwing here.
+  }
   if (value.EMAIL_ENABLED && (!value.RESEND_API_KEY || !value.EMAIL_FROM)) {
     context.addIssue({
       code: "custom",
@@ -50,7 +56,7 @@ const environmentSchema = z.object({
   }
   if (
     value.BG_PAYOUT_ARCHIVE_HISTORY_ENABLED &&
-    new URL(value.SOLANA_RPC_URL).hostname === "api.devnet.solana.com"
+    solanaRpcHostname === "api.devnet.solana.com"
   ) {
     context.addIssue({
       code: "custom",

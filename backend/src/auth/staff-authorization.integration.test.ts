@@ -70,7 +70,7 @@ test("staff RBAC resolves only active, current server-side grants and protects a
       staffPrincipalId: principalId,
       roleId,
       status: "active",
-      validFrom: new Date(now.getTime() - 60_000),
+      valvalidFrom: new Date(now.getTime() - 60_000),
       validUntil: new Date(now.getTime() + 60_000),
       createdAt: now
     });
@@ -100,7 +100,7 @@ test("staff RBAC resolves only active, current server-side grants and protects a
       /append-only/
     );
     await assert.rejects(
-      () => pool.query("DELETE FROM public.staff_audit_events WHERE id = $1", [auditId]),
+      () => client.query("DELETE FROM public.staff_audit_events WHERE id = $1", [auditId]),
       /append-only/
     );
 
@@ -111,4 +111,5 @@ test("staff RBAC resolves only active, current server-side grants and protects a
     await client.query("ROLLBACK").catch(() => undefined);
     client.release();
     await pool.end();
+  }
 });

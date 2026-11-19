@@ -417,6 +417,13 @@ export async function approveBgTreasuryRecovery(
     if (!proposal) {
       throw new TreasuryRecoveryWorkflowError("PROPOSAL_NOT_FOUND", "The Treasury recovery proposal does not exist.");
     }
+    if (
+      proposal.treasuryAccountId !== proposalReference.treasuryAccountId ||
+      proposal.snapshotId !== proposalReference.snapshotId ||
+      proposal.proposerStaffId !== proposalReference.proposerStaffId
+    ) {
+      throw new TreasuryRecoveryWorkflowError("PROPOSAL_NOT_PENDING", "The proposal binding changed while approval was being checked.");
+    }
     if (proposal.proposerStaffId === input.actor.staffPrincipalId) {
       throw new TreasuryRecoveryWorkflowError("SELF_APPROVAL", "The proposer cannot approve their own Treasury recovery proposal.");
     }

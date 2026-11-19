@@ -7,3 +7,8 @@ APP_ORIGINS=https://financingsoft.github.io,http://localhost:8081,http://127.0.0
 # Production only:
 # SMS_GATEWAY_URL=https://sms-provider.example.com/send
 # SMS_GATEWAY_TOKEN=replace-with-provider-secret
+
+# Read-only Devnet payout reconciliation remains disabled unless explicitly enabled.
+BG_PAYOUT_RECONCILIATION_ENABLED=false
+BG_PAYOUT_ARCHIVE_HISTORY_ENABLED=false
+BG_PAYOUT_RECONCILIATION_BATCH_SIZE=10

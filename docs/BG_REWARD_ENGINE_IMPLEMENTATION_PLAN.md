@@ -35,7 +35,7 @@
 ## Phase 4 — Reconciliation and operations
 - Verify exact mint, token program, source, destination, amount, signature and finalized commitment.
 - Reconcile unknown broadcast outcomes without duplicate payment.
-- Add treasury balance snapshots, reserved/paid inventory and discrepancy quarantine.
+- Persist append-only finalized treasury token-account snapshots, reserved/paid inventory and discrepancy quarantine.\n- Pause an active treasury on any mismatch or inability to verify its Devnet inventory; healthy reconciliation never auto-resumes it.
 - Add operator pause, audit trail and incident runbooks.
 
 ## Phase 5 — App integration

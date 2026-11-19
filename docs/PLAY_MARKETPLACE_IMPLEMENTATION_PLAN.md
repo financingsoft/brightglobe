@@ -115,3 +115,28 @@ V1 is complete only when:
 8. Tenant isolation, privacy, accessibility, localization, observability, backup/restore and release gates pass.
 
 V1 does not require paid app checkout, developer payouts, BG rewards, advanced automated personalization or a dedicated search cluster. These are extension points, not launch blockers.
+
+## Round 2 reconciliation — authoritative delivery sequence proposal
+
+**Status:** Proposed replacement sequence; effective only after review and merge. This sequence supersedes the older Phase 0–9 ordering only when the reconciliation amendment is accepted. Work remains phase-sized; do not split a round into artificial micro-PRs.
+
+| Round | Name | Scope and exit gate |
+|---|---|---|
+| 1 | Project audit | Repository, contracts, runtime, CI, data and deployment evidence recorded. No implementation. |
+| 2 | Product and technical architecture | Product/domain boundaries, runtime topology, identity semantics, data ownership, V1 distribution and detailed contracts reconciled. Exit: all eight detailed contracts agree and contract guard passes. |
+| 3 | Technical foundation | Read-only inventory of Neon branches/schema/roles, Cloudflare Workers/bindings, R2, Queues, gateway, environments and observability; then approved additive design and isolated local PostgreSQL rehearsal. Exit: physical canonical FK verified, role matrix tested, migration and rollback plan reviewed. Staging provisioning/migration is a separate explicit approval. |
+| 4 | User and developer system | Canonical identity integration, developer organizations, memberships, invitations, verification, owner transfer and tenant isolation. Exit: authorization and cross-tenant negative tests pass. |
+| 5 | Marketplace core | Public catalogue, categories, search, collections, app detail and locale-aware projection-backed pages. Exit: SEO, cache and projection correctness verified. |
+| 6 | Developer publishing | Developer workspace, immutable localized listing revisions, submissions, version metadata and private artifact intake. Exit: snapshot immutability and upload quarantine tests pass. |
+| 7 | Review and moderation | Publisher/app verification, review decisions, reports, copyright/takedown, appeals and release approval. Exit: state-machine and privilege-separation tests pass. |
+| 8 | User interactions | Experience reports, ratings, comments where approved, bookmarks, follows, reports and user library. Exit: abuse, privacy and moderation gates pass. |
+| 9 | Distribution | Verified Android APK provenance, scanning, signer continuity, authorization, CDN delivery, update metadata and withdrawal. iOS uses official App Store/TestFlight paths. Exit: end-to-end release/takedown/recovery evidence. |
+| 10 | Security and operations | Threat controls, privileged operations, audit, support, analytics, alerting, incident and recovery runbooks. Exit: operational drills and least-privilege evidence. |
+| 11 | Full integration testing | End-to-end, tenant isolation, security, performance, compatibility, migration, cache, failure/recovery and accessibility tests. Exit: all critical defects resolved or explicitly accepted. |
+| 12 | Deployment and V1 closure | Production readiness and deployment only under separate explicit approval. Exit: monitored release, backup/recovery verification and signed V1 acceptance. |
+
+### Cross-round gates
+- Round 3 may inspect infrastructure read-only before approval, but no cloud resource creation, secrets, DNS, public R2 exposure, Staging migration or Production action is inferred from this plan.
+- No PR is merged without explicit user authorization. Never merge another engineer's PR.
+- Code/CI success, Staging runtime verification, Production deployment and product/legal acceptance are reported separately.
+- No BG reward activation, token ledger or Mainnet operation is part of Globe Play V1.

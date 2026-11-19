@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, isNull, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, lte, or, sql } from "drizzle-orm";
 import type { Database } from "../db/client.js";
 import { CLASSIC_SPL_TOKEN_PROGRAM_ID } from "../blockchain/solana/token/classic-token.js";
 import { createUuidV7 } from "../identity/ids.js";
@@ -365,7 +365,8 @@ export async function approveBgTreasuryRecovery(
     await assertStaffPermission(transactionDb, input.actor, "bg.treasury.recovery.approve", now);
 
     const [proposalReference] = await tx.select({
-      treasuryAccountId: bgTreasuryRecoveryProposals.treasuryAccountId
+      treasuryAccountId: bgTreasuryRecoveryProposals.treasuryAccountId,
+      snapshotId: bgTreasuryRecoveryProposals.snapshotId
     }).from(bgTreasuryRecoveryProposals)
       .where(eq(bgTreasuryRecoveryProposals.id, input.proposalId))
       .limit(1);
@@ -377,10 +378,7 @@ export async function approveBgTreasuryRecovery(
     await assertTreasuryAndSnapshot(
       transactionDb,
       proposalReference.treasuryAccountId,
-      (await tx.select({ snapshotId: bgTreasuryRecoveryProposals.snapshotId })
-        .from(bgTreasuryRecoveryProposals)
-        .where(eq(bgTreasuryRecoveryProposals.id, input.proposalId))
-        .limit(1))[0]!.snapshotId,
+      proposalReference.snapshotId,
       now
     );
 

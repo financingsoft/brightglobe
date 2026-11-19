@@ -8,7 +8,10 @@
   ],
   "workers_dev": true,
   "vars": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "BG_PAYOUT_RECONCILIATION_ENABLED": "false",
+    "BG_PAYOUT_ARCHIVE_HISTORY_ENABLED": "false",
+    "BG_PAYOUT_RECONCILIATION_BATCH_SIZE": "10"
   },
   "env": {
     "staging": {

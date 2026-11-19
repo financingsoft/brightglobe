@@ -39,19 +39,11 @@ WHERE id IN (:'first_auth_user_id', :'second_auth_user_id')
 ORDER BY id
 FOR UPDATE;
 
-DO $$
-BEGIN
-  IF (SELECT count(*) FROM public."user"
-      WHERE id IN (:'first_auth_user_id', :'second_auth_user_id')) <> 2 THEN
-    RAISE EXCEPTION 'Both bootstrap auth users must exist';
-  END IF;
-  IF EXISTS (
-    SELECT 1 FROM public.staff_principals
-    WHERE auth_user_id IN (:'first_auth_user_id', :'second_auth_user_id')
-  ) THEN
-    RAISE EXCEPTION 'A bootstrap user already has a staff principal';
-  END IF;
-END $$;
+-- Stop and do not continue unless the preceding query returns exactly
+-- two rows and this query returns zero rows.
+SELECT id
+FROM public.staff_principals
+WHERE auth_user_id IN (:'first_auth_user_id', :'second_auth_user_id');
 
 -- Insert two distinct principals and grant exactly one bootstrap role to each.
 WITH principals AS (

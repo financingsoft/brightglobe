@@ -180,3 +180,34 @@ It does not authorize:
 - PR merge, BG reward activation or any Mainnet operation.
 
 The next implementation stage may convert these decisions and the approved source-schema proposal into a Drizzle schema plus a draft additive migration, then validate it in an isolated local PostgreSQL test environment. Neon Staging migration remains a separate explicit approval gate.
+
+## Round 2 reconciliation decisions — proposed additions
+
+**Status:** Proposed; effective only after review and merge. Existing D1–D10 remain in force where compatible; this section resolves the cross-document ownership and runtime questions identified in Round 2.
+
+### D11 — Separate public and private Marketplace runtimes
+Public anonymous projection reads run in `globe-play`; authenticated developer commands run in `globe-play-private`. Gateway routing is not authorization. No universal credential is shared across public API, private API, relay, projector, scanner, CMS and operations.
+
+### D12 — Marketplace owns taxonomy and collection state
+Marketplace is authoritative for categories, category localization, collection identity, app membership, ordering, schedule and publication state. CMS may own editorial article/guide bodies and reference Marketplace entities by stable IDs; CMS is not a catalogue or collection-state authority.
+
+### D13 — Membership is the sole organization authority
+A canonical user may join multiple developer organizations. Each active organization has exactly one active owner represented by an active owner membership. Any denormalized owner pointer is not an authorization source. Owner transfer requires current-owner initiation and proposed-owner acceptance, atomically audited.
+
+### D14 — Logical identity is fixed; physical FK is evidence-gated
+Marketplace uses BrightGlobe canonical UUID identity and never Better Auth provider-local IDs. The physical FK target is not guessed; it must be verified against the actual Staging schema and identity resolver before DDL.
+
+### D15 — Locale-specific immutable listing revisions
+Each locale has its own immutable revision sequence and moderation/publication state. Submission freezes an exact revision snapshot. A pending revision never replaces the last approved public revision. Published slug is immutable for V1.
+
+### D16 — Projection pipeline uses durable sanitized outbox events
+Business writes and outbox insertion are atomic. Queue messages carry event identifiers, not untrusted public payloads. Relay, projector, public reader and scanner have distinct least-privilege roles. Projection application is idempotent and version-guarded.
+
+### D17 — CMS is optional for V1 core
+Payload selection is deferred until a compatibility and schema-isolation spike passes. The core catalogue, developer publishing and review lifecycle must not depend on CMS availability.
+
+### D18 — V1 distribution boundary
+Only verified Android APKs may be hosted publicly by Globe after independent release approval. iOS/iPadOS use official App Store or approved TestFlight paths; no generic public IPA hosting. Desktop binaries are not hosted in V1.
+
+### D19 — Rewards remain outside Marketplace accounting
+Marketplace owns no wallet or reward ledger and cannot write BD/BG balances. Any future reward eligibility or payout integration requires separate product, legal and event-contract approval; clicks, redirects and download starts are not reward proof.

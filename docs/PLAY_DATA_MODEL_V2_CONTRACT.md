@@ -154,3 +154,26 @@ Before the first migration:
 10. Obtain explicit approval before any Staging migration.
 
 This document does not authorize schema changes, migration execution, Worker deployment or Production changes.
+
+## Round 2 reconciliation amendment — mandatory model invariants
+
+**Status:** Proposed; effective only after review and merge.
+
+The following are required logical invariants for the eventual schema. They do not prescribe unverified physical table names or authorize DDL.
+
+1. Canonical user references use BrightGlobe canonical UUIDs. The actual FK target is evidence-gated on Staging schema and identity-resolver inspection; Better Auth provider-local IDs are not valid Marketplace business keys.
+2. Organization authorization is membership-derived. Exactly one active owner membership exists per active organization; a denormalized pointer, if any, is non-authoritative and transactionally consistent.
+3. One canonical user may be a member of multiple organizations. Role checks are scoped to the requested organization and object.
+4. Invitation secrets are high-entropy, stored hashed, single-use, revocable, expire after seven days and are bound to normalized invited email at acceptance.
+5. Ownership transfer requires two-party acceptance and an atomic audited state transition; there is no ownerless intermediate committed state.
+6. Listing revisions are immutable and locale-scoped, with uniqueness by `(app_id, content_locale, revision_number)`. Submission freezes the exact revision and checksum.
+7. Public locale state is independent. Pending/rejected revisions never replace the last approved public revision; at least one approved locale is required for app-level publication.
+8. Published slug is immutable in V1; any later slug change requires permanent old-slug reservation, audited redirect and complete invalidation.
+9. Review edits create immutable revisions. The last published revision remains visible while an edit is pending; hidden/removed moderation state excludes it from public projections and rating aggregates.
+10. Ratings aggregate only eligible published first-party integer ratings 1–5. Locale filters do not change the global aggregate.
+11. Category taxonomy and localized category labels are platform-owned; app revisions reference active category IDs and do not duplicate category text.
+12. Artifact bytes are immutable and identified by checksum plus object-version provenance. No public distribution record exists before all required scan and independent approval gates pass.
+13. Outbox, audit, release provenance, projection receipts and watermarks have independent retention/deletion semantics and must not be accidentally cascade-deleted.
+14. Every runtime role has positive and negative privilege tests using its actual credentials. Public reader has SELECT-only projection access and no source-table, mutation or purge privilege.
+
+The implementation must derive exact constraints, indexes, FK actions and grants from the verified physical schema and concrete SQL access patterns. This amendment does not authorize schema generation, migration creation or execution.

@@ -206,3 +206,28 @@ This contract intentionally does not decide:
 - final public API hostname and API Gateway routing.
 
 Each requires a separate decision record or implementation contract.
+
+## Round 2 reconciliation amendment — product ownership and V1 distribution
+
+**Status:** Proposed; effective only after review and merge.
+
+### Source-of-truth ownership
+- Marketplace owns category taxonomy, category IDs, category localization, collection identity, collection membership, app references, ordering, schedule and publication state.
+- Payload CMS, if selected after a compatibility spike, owns editorial article/guide body content and editorial workflow only. It does not own publisher identity, app metadata, categories, collection membership/order, submissions, review decisions, packages, artifacts, release state or security approvals.
+- Editorial pages may reference Marketplace-owned categories/apps/collections by stable IDs. They must not duplicate Marketplace publication state or create a second catalogue source of truth.
+- Sponsored placement, if introduced, must be explicitly labelled and cannot alter review, rating, verification or security decisions.
+
+### V1 distribution policy
+- Globe-hosted public binary distribution is limited to verified Android APKs.
+- APK publication requires verified publisher authority, stable package identity, signer continuity, SHA-256 and immutable object-version provenance, MIME/size/archive validation, malware scan pass and an independent release approval.
+- Upload completion or scanner success alone is not release approval. Scanner unavailable, inconclusive or failed means quarantine remains in force.
+- iOS/iPadOS use official App Store listings or approved TestFlight distribution. Do not promise general public IPA installation.
+- Web and desktop products link to verified publisher HTTPS destinations or official stores; no Globe-hosted desktop installers in V1.
+
+### CMS and search scope
+- Payload remains optional and non-blocking for the first catalogue operating loop. Selection requires a compatibility spike proving supported Next.js/runtime/Postgres adapter behavior and strict schema/migration ownership isolation.
+- V1 search uses PostgreSQL full-text search and indexed filters. A dedicated external search service requires measured evidence and a separate architecture decision.
+- The first Marketplace experience is responsive web/mobile web. A separate native Marketplace app is not a V1 prerequisite.
+
+### Product exclusions
+No checkout, payment, seller settlement, Marketplace wallet, duplicate reward ledger or reward for clicks/download starts is introduced by this amendment.

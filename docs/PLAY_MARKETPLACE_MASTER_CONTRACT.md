@@ -395,3 +395,37 @@ No Production launch until applicable gates pass and separate explicit Productio
 - `scripts/validate-marketplace-contract.mjs` and `.github/workflows/marketplace-contract-guard.yml` validate mandatory contract presence, required agent instructions and route-policy invariants on PRs and pushes.
 - This static guard does not prove actual CDN HIT/BYPASS behavior, SSR output, Google crawlability or Neon query counts. Once `apps/play-web` exists, its CI must add runtime tests for response headers/cache behavior, authenticated bypass, cache-key isolation, invalidation, rendered HTML metadata, sitemap/hreflang/JSON-LD, and measured origin/Neon query counts.
 - CI must report runtime checks as pending until a real application and Staging test environment exist; it must never report an unimplemented check as passed.
+
+## Round 2 reconciliation amendment — proposed
+
+**Status:** Proposed; becomes authoritative only after this amendment is reviewed and merged. Until then, the existing approval gates remain in force and no implementation may rely on a conflicting clause.
+
+### Project and product boundary
+- GlobeApps is the umbrella project. BrightGlobe and Globe Play are product domains in the same `financingsoft/brightglobe` repository.
+- BrightGlobe remains the authority for existing canonical identity, account and BD/BG reward capabilities. Globe Play owns marketplace publisher, app, listing, review, artifact, release and discovery domains.
+- A unified repository does not imply one Worker, one schema, or one credential.
+
+### Runtime and host ownership
+- `play.globeapps.com` is public marketplace; `open.globeapps.com` is authenticated developer console; `api.globeapps.com` is the versioned API gateway; `globeapps.com` is the umbrella entry point.
+- Public anonymous reads are served by `globe-play` (Staging: `globe-play-staging`) and may read only approved public projections.
+- Authenticated developer writes are served by `globe-play-private` (Staging counterpart to be provisioned only after approval). The private service is no-store and enforces canonical identity, organization membership and object-level authorization.
+- Gateway routing is not authorization. The gateway forwards only explicit allowlisted routes, preserves request/correlation context, rejects unknown routes and must not bypass upstream authorization.
+- Background relay, projection, scanning and cache invalidation use distinct least-privilege execution identities; do not combine all capabilities in the public Worker.
+
+### Canonical identity and tenant authority
+- Marketplace business identity is the BrightGlobe canonical UUID. Better Auth provider-local user IDs are not Marketplace identities.
+- The logical identity contract is fixed, but the physical FK target must be verified from the actual Neon Staging schema and canonical identity implementation before DDL. Never create or assume `public.canonical_users` solely from this logical name.
+- Developer organization membership is the sole authorization source for tenant access. A canonical user may belong to multiple organizations; each active organization has exactly one active owner. No parallel owner column may independently grant authority.
+
+### Public data, cache and reward boundaries
+- Public pages read projection-backed data; public page views must not query transactional Marketplace tables.
+- Authenticated, draft, pending, private, quarantined and moderation-only data are never shared-cached.
+- Marketplace does not create a wallet/ledger and cannot write BD/BG balance or reward-ledger tables. Any future reward integration requires a separate approved event contract and legal/product gate.
+
+### V1 boundary
+- V1 Globe-hosted public binaries are verified Android APKs only, after all publisher, package, signer, checksum, archive, malware and independent release-approval gates pass.
+- iOS/iPadOS use official App Store or approved TestFlight paths; no generic public IPA hosting or installation promise.
+- Desktop platforms link to verified official stores/publisher distribution. No hosted desktop installer in V1.
+
+### Contract precedence and rollout
+This amendment is intended to align the detailed contracts listed in the Round 2 conflict review. If any older clause conflicts with this proposed amendment, implementation remains blocked until the conflict is explicitly resolved and the amendment is accepted. This text does not authorize migrations, provisioning, deployment, DNS changes, secrets, reward activation or PR merge.

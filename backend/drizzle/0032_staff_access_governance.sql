@@ -38,6 +38,13 @@ JOIN public.staff_roles r ON r.role_key = grants.role_key
 JOIN public.staff_permissions p ON p.permission_key = grants.permission_key
 ON CONFLICT DO NOTHING;
 --> statement-breakpoint
+CREATE TABLE public.staff_access_governance_mutex (
+  id integer PRIMARY KEY CHECK (id = 1),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+--> statement-breakpoint
+INSERT INTO public.staff_access_governance_mutex (id) VALUES (1);
+--> statement-breakpoint
 CREATE TABLE public.staff_access_change_requests (
   id uuid PRIMARY KEY,
   action varchar(32) NOT NULL,

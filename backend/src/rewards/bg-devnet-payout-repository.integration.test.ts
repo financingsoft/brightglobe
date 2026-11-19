@@ -294,12 +294,42 @@ test("Neon BG payout repository claims once and settles the reward ledger atomic
     assert.equal(releasedProgram?.reservedBaseUnits, 0n);
     assert.equal(failedEvent?.status, "failed");
 
-    const queueEligibilityProbe = async (suffix: string): Promise<string> => {
+    const createEligibilityProgram = async (
+      suffix: string,
+      status: "active" | "paused",
+      startsAt: Date,
+      endsAt: Date | null
+    ): Promise<string> => {
+      const probeProgramId = createUuidV7(Date.now());
+      await db.insert(rewardPrograms).values({
+        id: probeProgramId,
+        assetId,
+        programKey: "bg-payout-probe-" + suffix + "-" + probeProgramId.slice(0, 8),
+        actionType: "campaign",
+        ruleVersion: 1,
+        status,
+        rewardBaseUnits: amount,
+        perUserLimit: 1,
+        budgetBaseUnits: 1_000n,
+        reservedBaseUnits: 0n,
+        paidBaseUnits: 0n,
+        startsAt,
+        endsAt,
+        approvalReference: status === "active" ? "ci-probe-approval" : null,
+        approvedBy: status === "active" ? "ci-probe-operator" : null,
+        approvedAt: status === "active" ? now : null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      return probeProgramId;
+    };
+
+    const queueEligibilityProbe = async (suffix: string, probeProgramId: string): Promise<string> => {
       const probeEventId = createUuidV7(Date.now());
       const probePayoutId = createUuidV7(Date.now());
       await db.insert(rewardEvents).values({
         id: probeEventId,
-        programId,
+        programId: probeProgramId,
         canonicalUserId,
         actionType: "campaign",
         evidenceRef: null,
@@ -331,28 +361,28 @@ test("Neon BG payout repository claims once and settles the reward ledger atomic
       return probePayoutId;
     };
 
-    await db.update(rewardPrograms)
-      .set({ status: "paused", startsAt: new Date(now.getTime() - 60_000), endsAt: null })
-      .where(eq(rewardPrograms.id, programId));
-    const pausedPayoutId = await queueEligibilityProbe("paused");
+    const pausedProgramId = await createEligibilityProgram(
+      "paused", "paused", new Date(now.getTime() - 60_000), null
+    );
+    const pausedPayoutId = await queueEligibilityProbe("paused", pausedProgramId);
     assert.equal(await repository.claimNextQueued("paused-program-worker"), null);
     const [pausedPayout] = await db.select().from(rewardPayoutIntents)
       .where(eq(rewardPayoutIntents.id, pausedPayoutId));
     assert.equal(pausedPayout?.status, "queued", "operator pause must leave queued payout untouched");
 
-    await db.update(rewardPrograms)
-      .set({ status: "active", startsAt: new Date(now.getTime() - 60_000), endsAt: new Date(now.getTime() - 1) })
-      .where(eq(rewardPrograms.id, programId));
-    const expiredPayoutId = await queueEligibilityProbe("expired");
+    const expiredProgramId = await createEligibilityProgram(
+      "expired", "active", new Date(now.getTime() - 60_000), new Date(now.getTime() - 1)
+    );
+    const expiredPayoutId = await queueEligibilityProbe("expired", expiredProgramId);
     assert.equal(await repository.claimNextQueued("expired-program-worker"), null);
     const [expiredPayout] = await db.select().from(rewardPayoutIntents)
       .where(eq(rewardPayoutIntents.id, expiredPayoutId));
     assert.equal(expiredPayout?.status, "queued", "expired program must not start a payout");
 
-    await db.update(rewardPrograms)
-      .set({ status: "active", startsAt: new Date(now.getTime() + 60 * 60 * 1000), endsAt: null })
-      .where(eq(rewardPrograms.id, programId));
-    const futurePayoutId = await queueEligibilityProbe("future");
+    const futureProgramId = await createEligibilityProgram(
+      "future", "active", new Date(now.getTime() + 60 * 60 * 1000), null
+    );
+    const futurePayoutId = await queueEligibilityProbe("future", futureProgramId);
     assert.equal(await repository.claimNextQueued("future-program-worker"), null);
     const [futurePayout] = await db.select().from(rewardPayoutIntents)
       .where(eq(rewardPayoutIntents.id, futurePayoutId));

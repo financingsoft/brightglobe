@@ -5,6 +5,7 @@ import {
   getTransactionDecoder,
   isFullySignedTransaction,
   isSignature,
+  signatureBytes,
   verifySignature
 } from "@solana/kit";
 
@@ -81,7 +82,7 @@ export async function verifyBgPayoutSignedTransaction(input: {
     for (const [signerAddress, signature] of signerEntries) {
       if (signature === null) return false;
       const publicKey = await getPublicKeyFromAddress(address(signerAddress));
-      if (!(await verifySignature(publicKey, new Uint8Array(signature), new Uint8Array(signedTransaction.messageBytes)))) {
+      if (!(await verifySignature(publicKey, signatureBytes(new Uint8Array(signature)), new Uint8Array(signedTransaction.messageBytes)))) {
         return false;
       }
     }

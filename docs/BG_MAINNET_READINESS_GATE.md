@@ -18,7 +18,7 @@ The repository state reviewed for this checklist establishes the following:
 - The BG reward engine and payout signing request are Devnet-scoped. The signing request type does not accept a Mainnet network.
 - Root and Staging Wrangler configuration keep BG treasury reconciliation, payout reconciliation, and archive-history coverage disabled by default.
 - The scheduled Worker returns without running Solana work unless the configured network is Devnet. It does not provide a Mainnet activation path.
-- The BG asset registry entry remains a draft placeholder. The Mainnet mint address and decimals are unset. No BG mint has been created or funded, and no real BG reward has been transferred or distributed.
+- The BG asset registry entry remains a Devnet draft placeholder; its mint address and decimals are unset, and no Mainnet mint is registered. No BG mint has been created or funded, and no real BG reward has been transferred or distributed. There is no live Devnet or Mainnet transfer acceptance.
 - The payout executor is not wired to a live signing provider or a Worker payout-execution route. Its deterministic tests use injected signer and RPC ports.
 - Staff RBAC, step-up authentication, two-person Treasury recovery and audit-read foundations exist in code, but migrations have not been applied to shared environments and no staff principals or role assignments are provisioned by default.
 
@@ -45,7 +45,7 @@ On 2026-11-19, the latest inspected PR validation baseline (PR #65) reported suc
 | G1 — Asset identity | User-supplied mint independently verified at finalized commitment; Classic SPL ownership, initialized state, decimals, supply, mint authority, freeze authority and metadata recorded | Blocked — mint address not supplied; no Mainnet asset registration |
 | G2 — Tokenomics and funding | Final supply/allocation decision, reward reserve, treasury funding source, campaign budgets and caps approved with auditable evidence | Blocked — no final approved values or funded Mainnet treasury |
 | G3 — Treasury and signer | Separate cold reserve, capped reward treasury, SOL fee payer and administrative authority; isolated HSM/KMS or dedicated signer policy verified | Blocked — no Mainnet addresses, signer or governance configuration |
-| G4 — Payout correctness | Independent message/signature verification, ATA checks, simulation, submission, confirmation, finality, idempotent recovery and inventory reconciliation tested against the actual approved environment | Devnet code and fake-port tests exist; no live Mainnet acceptance |
+| G4 — Payout correctness | Independent message/signature verification, ATA checks, simulation, submission, confirmation, finality, idempotent recovery and inventory reconciliation tested against the actual approved environment | Devnet code and fake-port tests exist; live Devnet and Mainnet acceptance are absent |
 | G5 — Security assurance | Threat model, independent review, remediation evidence and incident exercises completed | Blocked — independent audit and formal sign-off not recorded |
 | G6 — Legal and policy | Jurisdiction-specific legal, tax, privacy, sanctions, consumer-protection, advertising and store-policy reviews approved | Blocked — launch jurisdictions and approvals not supplied |
 | G7 — Operator governance | Staff onboarding, least-privilege roles, verified MFA, two-person approval, audit review and recovery procedures exercised | Partial — code foundations exist; no staff principals or assignments provisioned |

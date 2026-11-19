@@ -77,6 +77,17 @@ test("staff access provisioning, role changes, and suspension require independen
         { id: createUuidV7(now.getTime()), staffPrincipalId: approverId, roleId: approverRoleId, status: "active", validFrom: new Date(now.getTime() - 60_000), validUntil: new Date(now.getTime() + 1_800_000), createdAt: now }
       ]);
 
+      await assert.rejects(
+        () => proposeStaffAccessChange(db, {
+          action: "suspend_principal",
+          targetStaffPrincipalId: approverId,
+          reason: "This would remove the only active staff access approver.",
+          idempotencyKey: "access-last-approver-" + suffix,
+          actor: proposer
+        }, now),
+        (error: unknown) => error instanceof StaffAccessGovernanceError && error.code === "LAST_ACCESS_APPROVER"
+      );
+
       const provisionInput = {
         action: "provision_principal" as const,
         targetAuthUserId: targetUserId,

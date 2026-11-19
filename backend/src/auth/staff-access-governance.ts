@@ -676,8 +676,10 @@ export async function executeStaffAccessChange(
       // Suspension is a security boundary, not merely an RBAC flag. Revoke every
       // Better Auth session and invalidate outstanding step-up grants in the
       // same transaction so reactivation can never revive old credentials.
+      const suspendedPrincipal = principals.find((principal) => principal.id === request.targetStaffPrincipalId);
+      if (!suspendedPrincipal) throw new StaffAccessGovernanceError("TARGET_NOT_FOUND", "The target staff principal disappeared before suspension.");
       const revokedSessions = await tx.delete(session)
-        .where(eq(session.userId, principals.find((principal) => principal.id === request.targetStaffPrincipalId)!.authUserId))
+        .where(eq(session.userId, suspendedPrincipal.authUserId))
         .returning({ id: session.id });
       const invalidatedStepUpGrants = await tx.update(staffStepUpGrants)
         .set({ consumedAt: now })

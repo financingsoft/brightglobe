@@ -8,6 +8,7 @@ test("disabled Devnet payout executor does not claim or call external ports", as
     config: { enabled: false, workerId: "test-worker" },
     repository: {
       claimNextQueued: async () => { claims += 1; return null; },
+      claimReconciliationBatch: async () => [],
       persistSigned: async () => false,
       transition: async () => false,
       settleFinalizedPayoutOnce: async () => false

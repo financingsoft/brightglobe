@@ -27,6 +27,7 @@ export type StaffAccessErrorCode =
   | "TARGET_NOT_FOUND"
   | "TARGET_ALREADY_STAFF"
   | "PRINCIPAL_NOT_ACTIVE"
+  | "PRINCIPAL_NOT_SUSPENDED"
   | "ROLE_NOT_FOUND"
   | "ROLE_DISABLED"
   | "ROLE_ALREADY_ASSIGNED"
@@ -211,7 +212,7 @@ async function validateTarget(
   if (input.action !== "provision_principal" && (input.targetAuthUserId || input.displayLabel)) {
     throw new StaffAccessGovernanceError("INVALID_INPUT", "Only principal provisioning accepts an auth user ID or display label.");
   }
-  if ((input.action === "revoke_role" || input.action === "suspend_principal") && input.validUntil) {
+  if ((input.action === "revoke_role" || input.action === "suspend_principal" || input.action === "activate_principal") && input.validUntil) {
     throw new StaffAccessGovernanceError("INVALID_INPUT", "This staff access action does not accept a role expiry.");
   }
 
@@ -256,6 +257,11 @@ async function validateTarget(
     if (input.roleId) throw new StaffAccessGovernanceError("INVALID_INPUT", "Suspension does not accept a role ID.");
     if (target.status !== "active") throw new StaffAccessGovernanceError("PRINCIPAL_NOT_ACTIVE", "Only an active staff principal can be suspended.");
     await assertNotLastAccessApprover(db, targetStaffPrincipalId, now);
+    return;
+  }
+  if (input.action === "activate_principal") {
+    if (input.roleId) throw new StaffAccessGovernanceError("INVALID_INPUT", "Reactivation does not accept a role ID.");
+    if (target.status !== "suspended") throw new StaffAccessGovernanceError("PRINCIPAL_NOT_SUSPENDED", "Only a suspended staff principal can be reactivated.");
     return;
   }
 
@@ -655,17 +661,37 @@ export async function executeStaffAccessChange(
         metadata: { requestId: request.id, roleId: request.roleId, assignmentId: assignment.id },
         now
       });
-    } else {
-      await tx.update(staffPrincipals)
+    } else if (request.action === "suspend_principal") {
+      const [suspended] = await tx.update(staffPrincipals)
         .set({ status: "suspended", updatedAt: now })
         .where(and(
           eq(staffPrincipals.id, request.targetStaffPrincipalId!),
           eq(staffPrincipals.status, "active")
-        ));
+        ))
+        .returning({ id: staffPrincipals.id });
+      if (!suspended) throw new StaffAccessGovernanceError("PRINCIPAL_NOT_ACTIVE", "The target principal is no longer active.");
       await appendAccessAudit(transactionDb, {
         actorStaffId: input.actor.staffPrincipalId,
         subjectStaffId: request.targetStaffPrincipalId,
         action: "bg.staff.principal.suspended",
+        reason,
+        requestId: input.requestIdHeader,
+        metadata: { requestId: request.id },
+        now
+      });
+    } else {
+      const [activated] = await tx.update(staffPrincipals)
+        .set({ status: "active", updatedAt: now })
+        .where(and(
+          eq(staffPrincipals.id, request.targetStaffPrincipalId!),
+          eq(staffPrincipals.status, "suspended")
+        ))
+        .returning({ id: staffPrincipals.id });
+      if (!activated) throw new StaffAccessGovernanceError("PRINCIPAL_NOT_SUSPENDED", "The target principal is no longer suspended.");
+      await appendAccessAudit(transactionDb, {
+        actorStaffId: input.actor.staffPrincipalId,
+        subjectStaffId: request.targetStaffPrincipalId,
+        action: "bg.staff.principal.activated",
         reason,
         requestId: input.requestIdHeader,
         metadata: { requestId: request.id },

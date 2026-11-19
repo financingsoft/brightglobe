@@ -406,12 +406,14 @@ export async function approveBgTreasuryRecovery(
       authUserId: proposerPrincipal.authUserId
     }, "bg.treasury.recovery.propose", now);
 
-    await assertTreasuryAndSnapshot(
-      transactionDb,
-      proposalReference.treasuryAccountId,
-      proposalReference.snapshotId,
-      now
-    );
+    const [treasuryLock] = await tx.select({ id: treasuryAccounts.id })
+      .from(treasuryAccounts)
+      .where(eq(treasuryAccounts.id, proposalReference.treasuryAccountId))
+      .limit(1)
+      .for("update");
+    if (!treasuryLock) {
+      throw new TreasuryRecoveryWorkflowError("TREASURY_NOT_FOUND", "The Treasury account does not exist.");
+    }
 
     const [proposal] = await tx.select().from(bgTreasuryRecoveryProposals)
       .where(eq(bgTreasuryRecoveryProposals.id, input.proposalId))
@@ -449,6 +451,13 @@ export async function approveBgTreasuryRecovery(
       });
       return toResult({ ...proposal, status: "expired" });
     }
+
+    await assertTreasuryAndSnapshot(
+      transactionDb,
+      proposalReference.treasuryAccountId,
+      proposalReference.snapshotId,
+      now
+    );
 
     const [approved] = await tx.update(bgTreasuryRecoveryProposals)
       .set({

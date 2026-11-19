@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { bigint, boolean, check, date, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
+import { bigint, boolean, check, date, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -763,6 +763,83 @@ export const bgTaskAuditEvents = pgTable("bg_task_audit_events", {
 }, (table) => [
   index("bg_task_audit_evidence_created_idx").on(table.evidenceId, table.createdAt),
   check("bg_task_audit_actor_check", sql`${table.actorType} IN ('service', 'user', 'operator')`)
+]);
+
+
+/** Server-managed staff identity and permission model; member identities never imply staff access. */
+export const staffPrincipals = pgTable("staff_principals", {
+  id: uuid("id").primaryKey(),
+  authUserId: text("auth_user_id").notNull().references(() => user.id, { onDelete: "restrict" }).unique(),
+  status: varchar("status", { length: 16 }).notNull().default("pending"),
+  displayLabel: varchar("display_label", { length: 120 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  check("staff_principals_status_check", sql`${table.status} IN ('pending', 'active', 'suspended', 'revoked')`),
+  check("staff_principals_display_label_check", sql`length(trim(${table.displayLabel})) BETWEEN 1 AND 120`)
+]);
+
+export const staffRoles = pgTable("staff_roles", {
+  id: uuid("id").primaryKey(),
+  roleKey: varchar("role_key", { length: 64 }).notNull().unique(),
+  displayName: varchar("display_name", { length: 120 }).notNull(),
+  description: varchar("description", { length: 500 }).notNull().default(""),
+  status: varchar("status", { length: 16 }).notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  check("staff_roles_status_check", sql`${table.status} IN ('active', 'disabled')`),
+  check("staff_roles_key_check", sql.raw("role_key ~ '^[a-z][a-z0-9_.-]{1,63} { rewardPrograms, rewardEvents, rewardPayoutIntents, treasuryAccounts, rewardAuditEvents, bgTaskEvidenceRecords, bgTaskAppeals, bgTaskReviewDecisions, bgTaskAuditEvents, staffPrincipals, staffRoles, staffPermissions, staffRolePermissions, staffRoleAssignments, staffAuditEvents, communityTasks, invitationCodes, invitationAttributions, communityAnnouncements, communityEvents, user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };
+"))
+]);
+
+export const staffPermissions = pgTable("staff_permissions", {
+  id: uuid("id").primaryKey(),
+  permissionKey: varchar("permission_key", { length: 96 }).notNull().unique(),
+  description: varchar("description", { length: 500 }).notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  check("staff_permissions_key_check", sql.raw("permission_key ~ '^[a-z][a-z0-9_.-]{1,95} { rewardPrograms, rewardEvents, rewardPayoutIntents, treasuryAccounts, rewardAuditEvents, bgTaskEvidenceRecords, bgTaskAppeals, bgTaskReviewDecisions, bgTaskAuditEvents, communityTasks, invitationCodes, invitationAttributions, communityAnnouncements, communityEvents, user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };
+"))
+]);
+
+export const staffRolePermissions = pgTable("staff_role_permissions", {
+  roleId: uuid("role_id").notNull().references(() => staffRoles.id, { onDelete: "restrict" }),
+  permissionId: uuid("permission_id").notNull().references(() => staffPermissions.id, { onDelete: "restrict" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  primaryKey({ columns: [table.roleId, table.permissionId] })
+]);
+
+export const staffRoleAssignments = pgTable("staff_role_assignments", {
+  id: uuid("id").primaryKey(),
+  staffPrincipalId: uuid("staff_principal_id").notNull().references(() => staffPrincipals.id, { onDelete: "restrict" }),
+  roleId: uuid("role_id").notNull().references(() => staffRoles.id, { onDelete: "restrict" }),
+  grantedByStaffId: uuid("granted_by_staff_id").references(() => staffPrincipals.id, { onDelete: "restrict" }),
+  status: varchar("status", { length: 16 }).notNull().default("active"),
+  validFrom: timestamp("valid_from", { withTimezone: true }).notNull().defaultNow(),
+  validUntil: timestamp("valid_until", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  index("staff_role_assignments_principal_status_idx").on(table.staffPrincipalId, table.status, table.validFrom, table.validUntil),
+  check("staff_role_assignments_status_check", sql`${table.status} IN ('active', 'revoked')`),
+  check("staff_role_assignments_validity_check", sql`${table.validUntil} IS NULL OR ${table.validUntil} > ${table.validFrom}`),
+  check("staff_role_assignments_revoked_check", sql`(${table.status} = 'active' AND ${table.revokedAt} IS NULL) OR (${table.status} = 'revoked' AND ${table.revokedAt} IS NOT NULL)`)
+]);
+
+export const staffAuditEvents = pgTable("staff_audit_events", {
+  id: uuid("id").primaryKey(),
+  actorStaffId: uuid("actor_staff_id").references(() => staffPrincipals.id, { onDelete: "restrict" }),
+  subjectStaffId: uuid("subject_staff_id").references(() => staffPrincipals.id, { onDelete: "restrict" }),
+  action: varchar("action", { length: 96 }).notNull(),
+  reason: varchar("reason", { length: 1000 }).notNull(),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  requestId: varchar("request_id", { length: 128 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  index("staff_audit_events_actor_created_idx").on(table.actorStaffId, table.createdAt),
+  index("staff_audit_events_subject_created_idx").on(table.subjectStaffId, table.createdAt),
+  check("staff_audit_events_reason_check", sql`length(trim(${table.reason})) BETWEEN 1 AND 1000`)
 ]);
 
 export const schema = { rewardPrograms, rewardEvents, rewardPayoutIntents, treasuryAccounts, rewardAuditEvents, bgTaskEvidenceRecords, bgTaskAppeals, bgTaskReviewDecisions, bgTaskAuditEvents, communityTasks, invitationCodes, invitationAttributions, communityAnnouncements, communityEvents, user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };

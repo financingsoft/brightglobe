@@ -1,113 +1,105 @@
 # BG Treasury Operator Recovery Contract
 
-## Decision
+## Decision and safety boundary
 
-Treasury resume/execution remains unavailable until its final atomic execution transaction is implemented and reviewed. BrightGlobe now has separate server-enforced staff RBAC, TOTP step-up, and two-person proposal/approval routes. Do not expose a resume/execution route, accept an operator ID/role from request data, or treat an ordinary member session as staff authorization.
+BrightGlobe now has server-enforced staff RBAC, TOTP step-up, and Treasury recovery proposal, approval, and execution APIs.
 
-End-user Better Auth and canonical wallet/email sessions establish member identity, not staff authority. The BG task-review service's injected authorizer remains a separate service seam and is not used as staff authorization. Treasury staff routes derive authority only from Better Auth staff principals and database permission grants.
+The execution API performs only an internal database state transition from `paused` to `active`. It does not construct, sign, submit, retry, or transfer a Solana transaction or BG tokens. A healthy reconciliation snapshot by itself never resumes a Treasury.
 
-The staff RBAC, TOTP step-up, and two-person proposal/approval state machine are implemented. The final execution transaction remains unimplemented. Proposal and approval routes are available, but no callable resume operation is exposed.
+End-user Better Auth and canonical wallet/email sessions establish member identity, not staff authority. Treasury staff routes derive authority only from a Better Auth session linked to an active staff principal and server-side database permission grants. Never accept an operator ID or role from request data.
 
-## Staff authorization invariants (implemented)
+## Staff authorization invariants
 
-1. A separate staff-principal and permission model exists. Staff status is not inferred from member profiles, email domains, wallet ownership, client-supplied roles, or hard-coded user IDs.
-2. Staff identity is resolved from a trusted server-verified Better Auth session. Privileged Treasury actions require fresh TOTP step-up grants bound to the session and exact operation.
-3. Explicit permissions are enforced server-side:
+The staff authorization foundation is implemented:
 
-1. Create a separate staff-principal and permission model. Staff status must not be inferred from a member profile, email domain, wallet ownership, client-supplied role, or a hard-coded user ID.
-2. Resolve staff identity from a trusted server-verified staff authentication session. Require strong authentication for privileged actions; define session expiry, revocation, and step-up authentication for treasury operations.
-3. Use explicit permissions, at minimum:
-   - `bg.treasury.read`
-   - `bg.treasury.recovery.propose`
-   - `bg.treasury.recovery.approve`
-4. Enforce separation of duties: proposer and approver must be different active staff principals. A user cannot approve their own proposal.
-5. Record staff identity, permission decision, authentication context, request correlation ID, reason, and timestamps in append-only audit records. Authorization must be checked server-side inside the operation's transaction, not trusted from request payloads.
-6. Do not grant permissions by default. Permission changes themselves require auditable, restricted administration.
+- Separate staff principals are linked to Better Auth users. Ordinary member or wallet identity does not grant staff access.
+- Roles and permissions are normalized. Migrations seed role/permission templates only; they do not create staff principals or role assignments.
+- Staff permissions are checked server-side from active, time-valid database assignments.
+- Staff audit events are append-only.
+- Current Treasury permissions:
+  - `bg.treasury.read`
+  - `bg.treasury.recovery.propose`
+  - `bg.treasury.recovery.approve`
+  - `bg.treasury.recovery.execute`
 
-## Staff step-up contract (implemented)
+## TOTP step-up contract
 
-- Staff authenticate through a Better Auth session and must have an active staff principal plus the exact operation permission.
-- Staff must enroll and verify an authenticator TOTP before requesting a step-up grant.
-- The step-up endpoint verifies a fresh TOTP code; it does not accept email OTP or a client assertion.
-- Each grant is bound to one staff principal, Better Auth session, and exact operation (`bg.treasury.recovery.propose` or `bg.treasury.recovery.approve`).
-- Grants expire after five minutes, store only a SHA-256 token digest, and are atomically consumed once. Replay, cross-session use, cross-user use, cross-operation use, and expired use are rejected.
-- A high-risk route must use `createRequireStaffPermissionWithStepUp`; the ordinary RBAC middleware alone is insufficient.
-- The code adds the issuance endpoint and reusable enforcement middleware. Treasury proposal and approval routes use that middleware; no Treasury execution/resume route exists.
+Implemented through Better Auth TOTP and a server-side one-time grant:
 
-## Two-person proposal and approval implementation
+- The staff principal must be active, hold the exact operation permission, and have an enrolled, verified authenticator.
+- A fresh TOTP code is required for each proposal, approval, and execution operation.
+- Each grant is bound to one staff principal, Better Auth session, and exact operation.
+- Grants expire after five minutes, store only a SHA-256 token digest, and are atomically consumed once.
+- Replay, cross-session, cross-user, cross-operation, and expired use are rejected.
+- High-risk routes must use `createRequireStaffPermissionWithStepUp`; ordinary RBAC middleware alone is insufficient.
 
-- Proposal and approval are separate API operations, each protected by its own fresh, single-use TOTP step-up grant.
-- Proposals bind the exact Treasury account and latest matched snapshot, require a bounded reason and per-proposer idempotency key, and expire after five minutes.
-- The service rechecks the actor's active principal and permission inside the database transaction.
-- The Treasury must remain paused and Devnet-only; snapshot identity, age, configuration, finalized observation, and current reserved/paid payout totals are revalidated under Treasury/snapshot row locks.
-- A second active staff principal with the approval permission must approve. Self-approval is rejected.
-- Proposal/approval state changes and append-only staff audit events commit in the same database transaction.
-- Approval does not resume the Treasury. A separate final execution stage must revalidate the full recovery contract and atomically transition the Treasury only after all safety gates pass.
+## Two-person recovery workflow
 
-## Recovery workflow contract
+### Proposal
 
-Proposal and approval are control-plane operations only. They never sign, construct, submit, retry, or transfer BG tokens. The final resume/execution operation is not implemented.
+The proposer must have `bg.treasury.recovery.propose` and supply:
 
-### Proposal (implemented)
-
-A proposer must supply:
 - Treasury account ID
-- The exact latest reconciliation snapshot ID they reviewed
-- A non-empty reason (bounded length)
-- An idempotency key
+- Exact latest reconciliation snapshot ID reviewed
+- Non-empty reason (maximum 1,000 characters)
+- Per-proposer idempotency key
 
-The service must require an active staff principal with `bg.treasury.recovery.propose`, and the treasury must currently be paused. Only Devnet is in scope for the first implementation.
+The Treasury must be paused and Devnet-only. A proposal is bound to the exact Treasury and snapshot, expires after five minutes, and is audited in the same transaction as its insertion.
 
-### Approval (implemented)
+### Approval
 
-A different active staff principal with `bg.treasury.recovery.approve` must explicitly approve the proposal. The approval must bind to the exact proposal, treasury, and snapshot; it cannot approve a changed or superseded proposal.
+A different active staff principal with `bg.treasury.recovery.approve` must approve the exact proposal. Self-approval is rejected. The proposer must still be active and retain the propose permission when approval is committed.
 
-### Final execution checks (not yet implemented)
+### Execution
 
-When the final execution operation is built, it must perform all checks in one database transaction:
-1. Lock the treasury row and recovery proposal row.
-2. Re-resolve both staff principals and permissions from trusted server-side records; reject revoked, disabled, expired, or self-approved identities.
-3. Require treasury status still be `paused`.
-4. Require the proposal to remain pending and not previously consumed.
-5. Require the referenced snapshot to be the newest snapshot for this treasury, status `matched`, Devnet, no older than five minutes, and identity-matched to the treasury's currently configured mint, Classic SPL token program, token account, and treasury authority.
-6. Require finalized on-chain observation evidence, initialized token account, non-negative balance, and non-negative available inventory after current reservations.
-7. Recompute current reserved and paid payout totals under the same treasury row lock and one SQL statement. Reconcile post-snapshot paid outflows before relying on the snapshot balance; fail closed on any inconsistent aggregate.
-8. If any relevant payout or treasury configuration changed after the reviewed snapshot, reject recovery and require a new reconciliation and proposal.
-9. Atomically transition `paused -> active`, consume the proposal, and append the immutable audit event. A healthy snapshot alone must never resume a treasury.
+Execution requires `bg.treasury.recovery.execute`, a fresh TOTP step-up grant, and the same independent staff principal who approved the proposal. The proposer cannot execute their own proposal.
 
-If any check fails, make no status change. Do not silently repair inventory, alter payout intents, or clear discrepancy evidence.
+The execution service revalidates the proposer and approver identities and permissions inside the transaction. The approval must be no older than five minutes. Under Treasury and proposal row locks, it then revalidates:
 
-## Required audit events
+1. Treasury remains paused and is Devnet-only.
+2. The proposal is approved, unconsumed, and bound to the same Treasury and snapshot.
+3. The referenced snapshot is the newest snapshot, is `matched`, and is no older than five minutes.
+4. Treasury and asset-registry configuration still match the snapshot; the asset remains active and configuration has not changed since the observation.
+5. The mint and token account use the Classic SPL Token Program; the finalized evidence records the expected program owners and mint decimals.
+6. The token account is initialized, the finalized observation slot and token balance exist, and available inventory after reservations is non-negative.
+7. Current reserved and paid payout totals are recomputed in one SQL statement under the same Treasury row lock and must equal the reviewed snapshot totals.
 
-At minimum:
+If any check fails, the transaction makes no status change. If all checks pass, one database transaction:
+
+- Changes Treasury status from `paused` to `active`
+- Changes the proposal status from `approved` to `consumed`
+- Appends the immutable `bg.treasury.recovery.executed` audit event
+
+This operation is control-plane recovery only. It performs no Solana signing, transaction construction, broadcast, retry, or token transfer.
+
+## Audit events
+
+The implementation appends these events transactionally with their associated state changes:
+
 - `bg.treasury.recovery.proposed`
 - `bg.treasury.recovery.approved`
-- `bg.treasury.recovery.rejected`
+- `bg.treasury.recovery.expired`
 - `bg.treasury.recovery.executed`
 
-Each event should bind the treasury ID, proposal ID, snapshot ID, actor staff-principal ID, reason, decision, and relevant before/after status. Audit history must be append-only and protected against ordinary application updates/deletes.
+Events bind the actor, subject, reason, request correlation ID, proposal, Treasury, snapshot, and relevant status transition. Audit history is protected against ordinary application updates and deletes.
 
-## Required tests
+## Verification coverage
 
-- Member session without staff identity is forbidden.
-- Staff principal without the exact permission is forbidden.
-- Disabled/revoked/expired staff principal is forbidden.
-- Missing/blank/oversized reason is rejected.
-- Unknown, stale, non-latest, non-matched, wrong-network, or identity-mismatched snapshot is rejected.
-- Treasury not paused is rejected.
-- Proposal replay and idempotency-key collision do not execute twice.
-- Proposer cannot approve their own proposal.
-- Two distinct authorized staff can propose and approve.
-- Concurrent approval/execution attempts produce at most one transition.
-- Payout settlement or reservation changes after snapshot force a fresh reconciliation/proposal.
-- Audit records are appended atomically with the transition and cannot be updated/deleted.
-- Recovery performs no Solana signing, transaction construction, broadcast, or token transfer.
+PostgreSQL integration tests cover:
 
-## Release gates
+- Proposal idempotency and conflicting idempotency keys
+- Self-approval rejection and independent approval
+- Proposal expiry without accidentally activating Treasury
+- Execution restricted to the actual approver
+- Atomic `paused -> active` transition, proposal consumption, and audit insertion
+- Step-up grant hashing, expiry, session/action binding, and single-use consumption
 
-- Staff authentication and RBAC are implemented and reviewed.
-- Two-person approval and immutable audit protections pass PostgreSQL integration tests.
-- Proposal and approval endpoints are mounted behind TOTP step-up and RBAC; the final resume/execution endpoint remains unmounted until its gates pass.
-- Devnet-only enforcement is covered by tests.
-- Feature remains disabled by default.
-- No Staging/Production migration or deployment, Mainnet activity, or real BG transfer is authorized by this design.
+CI also runs TypeScript strict checks, migrations on ephemeral PostgreSQL, backend integration tests, and Cloudflare Worker dry runs.
+
+## Remaining operational gates
+
+- No staff principals or role assignments have been provisioned by migrations.
+- A reviewed, auditable staff onboarding and role-assignment procedure is still required before granting real operators access.
+- Staff-facing TOTP enrollment/recovery UX and operator runbooks remain separate work.
+- Migration 0031 is committed but has not been applied to any shared environment.
+- No Staging/Production migration or deployment, Mainnet activity, Solana signing, or real BG transfer is authorized by this implementation.

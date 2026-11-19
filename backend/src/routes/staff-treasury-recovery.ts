@@ -5,6 +5,7 @@ import type { Database } from "../db/client.js";
 import { bgTreasuryRecoveryProposals } from "../db/schema.js";
 import {
   approveBgTreasuryRecovery,
+  executeBgTreasuryRecovery,
   proposeBgTreasuryRecovery,
   TreasuryRecoveryWorkflowError
 } from "../rewards/bg-treasury-recovery-workflow.js";
@@ -22,7 +23,7 @@ function normalizeWorkflowError(error: unknown): {
   if (!(error instanceof TreasuryRecoveryWorkflowError)) return null;
 
   const status: 400 | 403 | 404 | 409 | 410 = error.code === "INVALID_INPUT" ? 400
-    : error.code === "STAFF_INACTIVE" || error.code === "STAFF_PERMISSION_REVOKED" ? 403
+    : error.code === "STAFF_INACTIVE" || error.code === "STAFF_PERMISSION_REVOKED" || error.code === "NOT_APPROVER" ? 403
     : error.code === "TREASURY_NOT_FOUND" || error.code === "PROPOSAL_NOT_FOUND" ? 404
     : error.code === "PROPOSAL_EXPIRED" ? 410
     : 409;
@@ -134,6 +135,34 @@ export function createStaffTreasuryRecoveryRoutes(db: Database, auth: BetterAuth
           requestId: context.req.header("x-request-id") ?? context.req.header("cf-ray")
         });
         return context.json({ proposal });
+      } catch (error) {
+        const failure = normalizeWorkflowError(error);
+        if (!failure) throw error;
+        return context.json({ error: { code: failure.code, message: failure.message } }, failure.status);
+      }
+    }
+  );
+
+  routes.post(
+    "/proposals/:proposalId/execute",
+    createRequireStaffPermissionWithStepUp(db, auth, "bg.treasury.recovery.execute"),
+    async (context) => {
+      const body = await context.req.json().catch(() => null) as { reason?: unknown } | null;
+      if (!body || typeof body.reason !== "string") {
+        return context.json({
+          error: { code: "INVALID_INPUT", message: "An execution reason is required." }
+        }, 400);
+      }
+
+      try {
+        const staff = context.get("staffAuth");
+        const proposal = await executeBgTreasuryRecovery(db, {
+          proposalId: context.req.param("proposalId"),
+          reason: body.reason,
+          actor: { staffPrincipalId: staff.staffPrincipalId, authUserId: staff.authUserId },
+          requestId: context.req.header("x-request-id") ?? context.req.header("cf-ray")
+        });
+        return context.json({ proposal, treasuryStatus: "active" });
       } catch (error) {
         const failure = normalizeWorkflowError(error);
         if (!failure) throw error;

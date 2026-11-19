@@ -897,7 +897,7 @@ export const staffStepUpGrants = pgTable("staff_step_up_grants", {
   consumedAt: timestamp("consumed_at", { withTimezone: true })
 }, (table) => [
   index("staff_step_up_grants_subject_operation_idx").on(table.staffPrincipalId, table.sessionId, table.operation, table.expiresAt).where(sql`${table.consumedAt} IS NULL`),
-  check("staff_step_up_operation_check", sql`${table.operation} IN ('bg.treasury.recovery.propose', 'bg.treasury.recovery.approve')`),
+  check("staff_step_up_operation_check", sql`${table.operation} IN ('bg.treasury.recovery.propose', 'bg.treasury.recovery.approve', 'bg.treasury.recovery.execute')`),
   check("staff_step_up_token_hash_check", sql.raw("token_hash ~ '^[a-f0-9]{64}$'")),
   check("staff_step_up_expiry_check", sql`${table.expiresAt} > ${table.issuedAt}`),
   check("staff_step_up_consumed_check", sql`${table.consumedAt} IS NULL OR ${table.consumedAt} >= ${table.issuedAt}`)

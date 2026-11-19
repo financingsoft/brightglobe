@@ -8,7 +8,8 @@ import { twoFactor, user } from "../db/schema.js";
 
 const operations = new Set<StaffStepUpOperation>([
   "bg.treasury.recovery.propose",
-  "bg.treasury.recovery.approve"
+  "bg.treasury.recovery.approve",
+  "bg.treasury.recovery.execute"
 ]);
 
 export function createStaffStepUpRoutes(db: Database, auth: BetterAuthInstance) {

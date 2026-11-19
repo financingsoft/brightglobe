@@ -136,7 +136,12 @@ test("Treasury recovery proposal requires fresh matched inventory and distinct a
         availableAfterReservationsBaseUnits: 100n,
         status: "matched",
         discrepancyCode: null,
-        evidence: { finalizedAccountRead: true },
+        evidence: {
+          finalizedAccountRead: true,
+          mintDecimals: 9,
+          mintAccountProgramOwner: CLASSIC_SPL_TOKEN_PROGRAM_ID,
+          tokenAccountProgramOwner: CLASSIC_SPL_TOKEN_PROGRAM_ID
+        },
         createdAt: now
       });
 

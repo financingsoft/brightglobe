@@ -76,7 +76,11 @@ function fixture(options: {
     }),
     recordSnapshot: async (snapshot) => {
       snapshots.push(snapshot);
-      return { snapshotId: "snapshot-1", treasuryPaused: snapshot.status !== "matched" };
+      return {
+        snapshotId: "snapshot-1",
+        treasuryPaused: snapshot.status !== "matched",
+        snapshot
+      };
     }
   };
   let rpcCalls = 0;

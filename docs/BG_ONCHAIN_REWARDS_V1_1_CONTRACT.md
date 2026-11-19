@@ -229,3 +229,16 @@ Persisted Devnet payout signatures are reconciled independently from the queue e
 - A terminal failed/expired payout releases its reserved program budget only after the evidence gate passes. Ambiguous and quarantined payouts keep the reservation.
 
 The repository supplies the reconciliation service, a read-only adapter over the existing Solana gateway and deterministic tests. The existing scheduled Worker can invoke this reconciler only when `BG_PAYOUT_RECONCILIATION_ENABLED=true` and `SOLANA_NETWORK=devnet`; the default is false and the Staging Wrangler configuration explicitly keeps it false. The adapter's archive-completeness switch must remain false unless the configured RPC provider contract guarantees complete finalized address history. No live signer or broadcast integration is enabled by this phase. Mainnet remains disabled.
+
+## 14. Signed transaction integrity gate
+
+The payout executor must not trust signer-returned metadata or a signer provider's claim that a transaction is valid. Before persisting the signature or calling the broadcast port, the executor independently:
+
+- Decodes both the approved unsigned transaction and the returned signed transaction.
+- Requires byte-for-byte equality of their compiled message bytes, so fee payer, treasury authority, mint, token accounts, amount, decimals, instructions and recent blockhash cannot change after simulation.
+- Requires exactly the expected fee-payer and treasury-authority signer set, with every required signature present.
+- Verifies each Ed25519 signature against the public key derived from its expected Solana address and the exact compiled message bytes.
+- Requires the signer-returned transaction signature to equal the actual fee-payer signature extracted from the signed wire transaction.
+- Enforces the Solana transaction wire-size ceiling before persistence or broadcast.
+
+Any decode, message, signer-set, signature or metadata mismatch is quarantined while the payout is still in signing state. No signature is persisted and no RPC broadcast is attempted. This local verification complements, rather than replaces, the external KMS/HSM signer's independent transaction-message policy enforcement.

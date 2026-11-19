@@ -11,6 +11,7 @@ import {
   validateBgPayoutSigningRequest,
   type BgPayoutSigner
 } from "./bg-payout-signer.js";
+import { verifyBgPayoutSignedTransaction } from "./bg-payout-signed-transaction.js";
 import type { BgPayoutStatus } from "./bg-payout-lifecycle.js";
 
 export interface BgDevnetPayoutIntent {
@@ -301,6 +302,16 @@ export async function executeNextBgDevnetPayout(input: {
     const signed = await signer.sign(signingRequest);
     if (!signed.transactionSignature || !signed.signedTransactionBase64) {
       return await quarantine("signer_returned_incomplete_signed_transaction");
+    }
+    const signedTransactionVerified = await verifyBgPayoutSignedTransaction({
+      unsignedTransactionBase64: built.transactionBase64,
+      signedTransactionBase64: signed.signedTransactionBase64,
+      transactionSignature: signed.transactionSignature,
+      feePayerAddress: intent.feePayerAddress,
+      treasuryAuthorityAddress: intent.treasuryAuthorityAddress
+    });
+    if (!signedTransactionVerified) {
+      return await quarantine("signer_signed_transaction_integrity_verification_failed");
     }
     const persisted = await repository.persistSigned({
       payoutIntentId: intent.id,

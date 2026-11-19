@@ -1,14 +1,21 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  generateKeyPair,
+  getAddressFromPublicKey,
+  
+  getBase64EncodedWireTransaction,
+  getSignatureFromTransaction,
+  getTransactionDecoder,
+  signTransaction
+} from "@solana/kit";
+import {
   CLASSIC_SPL_TOKEN_PROGRAM_ID,
   parseClassicSplMint,
   parseClassicSplTokenAccount
 } from "../blockchain/solana/token/classic-token.js";
 import { decodeSolanaAddress } from "../blockchain/solana/address.js";
-import {
-  deriveClassicSplAssociatedTokenAccounts
-} from "../blockchain/solana/transfer-builder.js";
+import { deriveClassicSplAssociatedTokenAccounts } from "../blockchain/solana/transfer-builder.js";
 import { SOLANA_DEVNET_GENESIS_HASH } from "../blockchain/solana/gateway.js";
 import type {
   BgDevnetPayoutIntent,
@@ -26,12 +33,15 @@ import {
   type BgDevnetPayoutReconciliationRpc
 } from "./bg-devnet-payout-reconciler.js";
 
-const FEE_PAYER = "11111111111111111111111111111111";
-const TREASURY_AUTHORITY = "Vote111111111111111111111111111111111111111";
-const RECIPIENT = "Stake11111111111111111111111111111111111111";
 const MINT = "So11111111111111111111111111111111111111112";
-const BLOCKHASH = FEE_PAYER;
-const SIGNATURE = "fake-devnet-bg-payout-signature";
+const BLOCKHASH = "11111111111111111111111111111111";
+
+function decodeBase64(value: string): Uint8Array {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
+}
 
 function encodeBase64(bytes: Uint8Array): string {
   let binary = "";
@@ -52,23 +62,32 @@ async function fixture(options: {
   rpcSignature?: string;
   simulationError?: unknown | null;
   feePayerLamports?: number;
-  finalizedTransaction?: unknown | null;
+  finalizedDestination?: string;
+  returnUnsignedFromSigner?: boolean;
 } = {}) {
+  // Ephemeral test-only keypairs let the production verifier validate real
+  // Ed25519 signatures without storing or loading any persistent key material.
+  const feePayerKeyPair = await generateKeyPair();
+  const treasuryAuthorityKeyPair = await generateKeyPair();
+  const recipientKeyPair = await generateKeyPair();
+  const feePayerAddress = await getAddressFromPublicKey(feePayerKeyPair.publicKey);
+  const treasuryAuthorityAddress = await getAddressFromPublicKey(treasuryAuthorityKeyPair.publicKey);
+  const recipientAddress = await getAddressFromPublicKey(recipientKeyPair.publicKey);
+
   const accounts = await deriveClassicSplAssociatedTokenAccounts({
-    sourceOwnerAddress: TREASURY_AUTHORITY,
-    destinationOwnerAddress: RECIPIENT,
+    sourceOwnerAddress: treasuryAuthorityAddress,
+    destinationOwnerAddress: recipientAddress,
     mintAddress: MINT
   });
   const mintData = new Uint8Array(82);
   mintData[44] = 9;
   mintData[45] = 1;
   const sourceData = accountBytes(MINT, 0);
-  sourceData.set(decodeSolanaAddress(TREASURY_AUTHORITY)!, 32);
+  sourceData.set(decodeSolanaAddress(treasuryAuthorityAddress)!, 32);
   new DataView(sourceData.buffer).setBigUint64(64, 1_000_000n, true);
   sourceData[108] = 1;
 
-  // Assert that the same account payloads used by the fake RPC satisfy the
-  // production parsers before the executor consumes them.
+  // Assert the fake RPC payloads satisfy the production SPL account parsers.
   assert.equal(parseClassicSplMint({
     owner: CLASSIC_SPL_TOKEN_PROGRAM_ID,
     dataBase64: encodeBase64(mintData)
@@ -76,7 +95,7 @@ async function fixture(options: {
   assert.equal(parseClassicSplTokenAccount({
     owner: CLASSIC_SPL_TOKEN_PROGRAM_ID,
     dataBase64: encodeBase64(sourceData)
-  }).owner, TREASURY_AUTHORITY);
+  }).owner, treasuryAuthorityAddress);
 
   const intent: BgDevnetPayoutIntent = {
     id: "payout-e2e-1",
@@ -84,9 +103,9 @@ async function fixture(options: {
     mintAddress: MINT,
     tokenProgram: CLASSIC_SPL_TOKEN_PROGRAM_ID,
     sourceTokenAccount: accounts.sourceTokenAccount,
-    feePayerAddress: FEE_PAYER,
-    treasuryAuthorityAddress: TREASURY_AUTHORITY,
-    destinationWallet: RECIPIENT,
+    feePayerAddress,
+    treasuryAuthorityAddress,
+    destinationWallet: recipientAddress,
     destinationTokenAccount: accounts.destinationTokenAccount,
     amountBaseUnits: 100n,
     signerProvider: "external",
@@ -104,6 +123,7 @@ async function fixture(options: {
   }> = [];
   let persisted = false;
   let currentStatus = "queued";
+  let transactionSignature = "";
   let signerCalls = 0;
   let broadcastCalls = 0;
   let settlementCalls = 0;
@@ -128,7 +148,7 @@ async function fixture(options: {
         destinationTokenAccount: intent.destinationTokenAccount,
         amountBaseUnits: intent.amountBaseUnits,
         decimals: intent.decimals,
-        signature: persisted ? SIGNATURE : null,
+        signature: persisted ? transactionSignature : null,
         recentBlockhash: persisted ? BLOCKHASH : null,
         lastValidBlockHeight: persisted ? 500n : null,
         finalizedSlot: null
@@ -142,7 +162,7 @@ async function fixture(options: {
       lastValidBlockHeight: bigint;
     }) => {
       assert.equal(input.payoutIntentId, intent.id);
-      assert.equal(input.signature, SIGNATURE);
+      assert.equal(input.signature, transactionSignature);
       assert.equal(input.recentBlockhash, BLOCKHASH);
       assert.equal(input.lastValidBlockHeight, 500n);
       persisted = true;
@@ -167,38 +187,36 @@ async function fixture(options: {
       settlementCalls += 1;
       currentStatus = "paid";
       assert.equal(input.payoutIntentId, intent.id);
-      assert.equal(input.signature, SIGNATURE);
+      assert.equal(input.signature, transactionSignature);
       assert.equal(input.finalizedSlot, 123n);
       return true;
     }
   } as unknown as BgDevnetPayoutRepository;
 
-  const finalizedTransaction = options.finalizedTransaction === undefined
-    ? {
-        slot: 123,
-        transaction: {
-          signatures: [SIGNATURE],
-          message: {
-            recentBlockhash: BLOCKHASH,
-            instructions: [{
-              programId: CLASSIC_SPL_TOKEN_PROGRAM_ID,
-              parsed: {
-                type: "transferChecked",
-                info: {
-                  source: accounts.sourceTokenAccount,
-                  destination: accounts.destinationTokenAccount,
-                  authority: TREASURY_AUTHORITY,
-                  mint: MINT,
-                  amount: "100",
-                  decimals: 9
-                }
-              }
-            }]
+  const makeFinalizedTransaction = () => ({
+    slot: 123,
+    transaction: {
+      signatures: [transactionSignature],
+      message: {
+        recentBlockhash: BLOCKHASH,
+        instructions: [{
+          programId: CLASSIC_SPL_TOKEN_PROGRAM_ID,
+          parsed: {
+            type: "transferChecked",
+            info: {
+              source: accounts.sourceTokenAccount,
+              destination: options.finalizedDestination ?? accounts.destinationTokenAccount,
+              authority: treasuryAuthorityAddress,
+              mint: MINT,
+              amount: "100",
+              decimals: 9
+            }
           }
-        },
-        meta: { err: null, innerInstructions: [] }
+        }]
       }
-    : options.finalizedTransaction;
+    },
+    meta: { err: null, innerInstructions: [] }
+  });
 
   const rpc: BgDevnetPayoutRpc = {
     getDevnetStatus: async () => ({ healthy: true, genesisHash: SOLANA_DEVNET_GENESIS_HASH }),
@@ -231,14 +249,14 @@ async function fixture(options: {
       broadcastCalls += 1;
       assert.equal(persisted, true, "signature and blockhash must be persisted before broadcast");
       if (options.sendError) throw new Error("simulated RPC timeout after send");
-      return options.rpcSignature ?? SIGNATURE;
+      return options.rpcSignature ?? transactionSignature;
     },
     getSignatureStatus: async () => ({
       confirmationStatus: "finalized",
       err: null,
       slot: 123
     }),
-    getFinalizedTransaction: async () => finalizedTransaction
+    getFinalizedTransaction: async () => makeFinalizedTransaction()
   };
 
   const signer = {
@@ -246,11 +264,19 @@ async function fixture(options: {
     sign: async (request: BgPayoutSigningRequest) => {
       signerCalls += 1;
       validateBgPayoutSigningRequest(request);
+      const unsignedTransaction = getTransactionDecoder().decode(
+        decodeBase64(request.unsignedTransactionBase64)
+      );
+      const signedTransaction = await signTransaction(
+        [feePayerKeyPair, treasuryAuthorityKeyPair],
+        unsignedTransaction
+      );
+      transactionSignature = getSignatureFromTransaction(signedTransaction);
       return {
-        // This is deliberately a fake signer: the test proves orchestration,
-        // not cryptographic signing or real Solana broadcast.
-        signedTransactionBase64: request.unsignedTransactionBase64,
-        transactionSignature: SIGNATURE
+        signedTransactionBase64: options.returnUnsignedFromSigner
+          ? request.unsignedTransactionBase64
+          : getBase64EncodedWireTransaction(signedTransaction),
+        transactionSignature
       };
     }
   };
@@ -268,6 +294,7 @@ async function fixture(options: {
     repository,
     rpc,
     transitions,
+    get signature() { return transactionSignature; },
     get persisted() { return persisted; },
     get signerCalls() { return signerCalls; },
     get broadcastCalls() { return broadcastCalls; },
@@ -280,7 +307,7 @@ test("Devnet payout executes through exact finalized verification and one ledger
   assert.deepEqual(h.result, {
     outcome: "paid",
     payoutIntentId: h.intent.id,
-    signature: SIGNATURE,
+    signature: h.signature,
     slot: 123n
   });
   assert.equal(h.persisted, true);
@@ -298,7 +325,7 @@ test("ambiguous broadcast preserves the original signature for reconciliation an
   assert.deepEqual(h.result, {
     outcome: "reconciliation_required",
     payoutIntentId: h.intent.id,
-    signature: SIGNATURE
+    signature: h.signature
   });
   assert.equal(h.persisted, true);
   assert.equal(h.signerCalls, 1);
@@ -308,6 +335,18 @@ test("ambiguous broadcast preserves the original signature for reconciliation an
     ["signed", "reconciliation_required"]
   ]);
   assert.equal(h.transitions[0]?.evidence.broadcastOutcomeAmbiguous, true);
+});
+
+test("unsigned signer output is quarantined before signature persistence or broadcast", async () => {
+  const h = await fixture({ returnUnsignedFromSigner: true });
+  assert.equal(h.result.outcome, "quarantined");
+  assert.equal(h.persisted, false);
+  assert.equal(h.signerCalls, 1);
+  assert.equal(h.broadcastCalls, 0);
+  assert.equal(h.settlementCalls, 0);
+  assert.equal(h.transitions[0]?.from, "signing");
+  assert.equal(h.transitions[0]?.to, "quarantined");
+  assert.equal(h.transitions[0]?.evidence.integrityMismatch, true);
 });
 
 test("RPC signature mismatch quarantines payout before status or ledger settlement", async () => {
@@ -320,31 +359,7 @@ test("RPC signature mismatch quarantines payout before status or ledger settleme
 });
 
 test("finalized transaction destination mismatch quarantines instead of paying", async () => {
-  const transaction = {
-    slot: 123,
-    transaction: {
-      signatures: [SIGNATURE],
-      message: {
-        recentBlockhash: BLOCKHASH,
-        instructions: [{
-          programId: CLASSIC_SPL_TOKEN_PROGRAM_ID,
-          parsed: {
-            type: "transferChecked",
-            info: {
-              source: "unexpected-source",
-              destination: "unexpected-destination",
-              authority: TREASURY_AUTHORITY,
-              mint: MINT,
-              amount: "100",
-              decimals: 9
-            }
-          }
-        }]
-      }
-    },
-    meta: { err: null, innerInstructions: [] }
-  };
-  const h = await fixture({ finalizedTransaction: transaction });
+  const h = await fixture({ finalizedDestination: "unexpected-destination" });
   assert.equal(h.result.outcome, "quarantined");
   assert.equal(h.settlementCalls, 0);
   assert.equal(h.transitions.at(-1)?.to, "quarantined");

@@ -1,5 +1,6 @@
 import { and, desc, eq, gt, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import type { Database } from "../db/client.js";
+import { CLASSIC_SPL_TOKEN_PROGRAM_ID } from "../blockchain/solana/token/classic-token.js";
 import { createUuidV7 } from "../identity/ids.js";
 import {
   assetRegistry,
@@ -167,11 +168,12 @@ async function assertTreasuryAndSnapshot(
   if (latestSnapshot.status !== "matched") {
     throw new TreasuryRecoveryWorkflowError("SNAPSHOT_NOT_MATCHED", "Treasury recovery requires a matched reconciliation snapshot.");
   }
-  if (now.getTime() - latestSnapshot.createdAt.getTime() > SNAPSHOT_MAX_AGE_MS) {
+  if (latestSnapshot.createdAt.getTime() > now.getTime() || now.getTime() - latestSnapshot.createdAt.getTime() > SNAPSHOT_MAX_AGE_MS) {
     throw new TreasuryRecoveryWorkflowError("SNAPSHOT_STALE", "The reconciliation snapshot is older than five minutes.");
   }
   if (
     latestSnapshot.network !== "devnet" ||
+    treasury.tokenProgram !== CLASSIC_SPL_TOKEN_PROGRAM_ID ||
     latestSnapshot.mintAddress !== treasury.mintAddress ||
     latestSnapshot.tokenProgram !== treasury.tokenProgram ||
     latestSnapshot.tokenAccountAddress !== treasury.tokenAccountAddress ||

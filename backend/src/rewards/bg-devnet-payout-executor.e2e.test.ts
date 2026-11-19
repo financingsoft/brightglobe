@@ -12,6 +12,7 @@ import {
 import { SOLANA_DEVNET_GENESIS_HASH } from "../blockchain/solana/gateway.js";
 import type {
   BgDevnetPayoutIntent,
+  BgDevnetPayoutReconciliationCandidate,
   BgDevnetPayoutRepository,
   BgDevnetPayoutRpc
 } from "./bg-devnet-payout-executor.js";
@@ -20,6 +21,10 @@ import {
   validateBgPayoutSigningRequest,
   type BgPayoutSigningRequest
 } from "./bg-payout-signer.js";
+import {
+  reconcileBgDevnetPayouts,
+  type BgDevnetPayoutReconciliationRpc
+} from "./bg-devnet-payout-reconciler.js";
 
 const FEE_PAYER = "11111111111111111111111111111111";
 const TREASURY_AUTHORITY = "Vote111111111111111111111111111111111111111";
@@ -98,13 +103,38 @@ async function fixture(options: {
     evidence: Record<string, unknown>;
   }> = [];
   let persisted = false;
+  let currentStatus = "queued";
   let signerCalls = 0;
   let broadcastCalls = 0;
   let settlementCalls = 0;
 
   const repository = {
-    claimNextQueued: async () => intent,
-    claimReconciliationBatch: async () => [],
+    claimNextQueued: async () => {
+      currentStatus = "signing";
+      return intent;
+    },
+    claimReconciliationBatch: async () => {
+      if (!["signed", "submitted", "confirmed", "finalized", "reconciliation_required"].includes(currentStatus)) return [];
+      const candidate: BgDevnetPayoutReconciliationCandidate = {
+        id: intent.id,
+        status: currentStatus as BgDevnetPayoutReconciliationCandidate["status"],
+        network: intent.network,
+        mintAddress: intent.mintAddress,
+        tokenProgram: intent.tokenProgram,
+        sourceTokenAccount: intent.sourceTokenAccount,
+        feePayerAddress: intent.feePayerAddress,
+        treasuryAuthorityAddress: intent.treasuryAuthorityAddress,
+        destinationWallet: intent.destinationWallet,
+        destinationTokenAccount: intent.destinationTokenAccount,
+        amountBaseUnits: intent.amountBaseUnits,
+        decimals: intent.decimals,
+        signature: persisted ? SIGNATURE : null,
+        recentBlockhash: persisted ? BLOCKHASH : null,
+        lastValidBlockHeight: persisted ? 500n : null,
+        finalizedSlot: null
+      };
+      return [candidate];
+    },
     persistSigned: async (input: {
       payoutIntentId: string;
       signature: string;
@@ -116,6 +146,7 @@ async function fixture(options: {
       assert.equal(input.recentBlockhash, BLOCKHASH);
       assert.equal(input.lastValidBlockHeight, 500n);
       persisted = true;
+      currentStatus = "signed";
       return true;
     },
     transition: async (input: {
@@ -125,6 +156,7 @@ async function fixture(options: {
       evidence: Record<string, unknown>;
     }) => {
       transitions.push(input);
+      currentStatus = input.to;
       return true;
     },
     settleFinalizedPayoutOnce: async (input: {
@@ -133,6 +165,7 @@ async function fixture(options: {
       finalizedSlot: bigint;
     }) => {
       settlementCalls += 1;
+      currentStatus = "paid";
       assert.equal(input.payoutIntentId, intent.id);
       assert.equal(input.signature, SIGNATURE);
       assert.equal(input.finalizedSlot, 123n);
@@ -232,6 +265,8 @@ async function fixture(options: {
   return {
     result,
     intent,
+    repository,
+    rpc,
     transitions,
     get persisted() { return persisted; },
     get signerCalls() { return signerCalls; },
@@ -341,4 +376,33 @@ test("insufficient fee-payer SOL stops before signing and broadcast", async () =
   assert.equal(h.signerCalls, 0);
   assert.equal(h.broadcastCalls, 0);
   assert.equal(h.settlementCalls, 0);
+});
+
+test("ambiguous broadcast recovers the same signature to paid without a second signer or broadcast", async () => {
+  const h = await fixture({ sendError: true });
+  assert.equal(h.result.outcome, "reconciliation_required");
+  assert.equal(h.signerCalls, 1);
+  assert.equal(h.broadcastCalls, 1);
+
+  const reconciliationRpc: BgDevnetPayoutReconciliationRpc = {
+    getDevnetStatus: h.rpc.getDevnetStatus,
+    getSignatureStatus: h.rpc.getSignatureStatus,
+    getFinalizedBlockHeight: async () => 600,
+    getFinalizedTransaction: h.rpc.getFinalizedTransaction,
+    getSignatureHistoryEvidence: async () => ({ found: false, complete: false })
+  };
+  const recovered = await reconcileBgDevnetPayouts({
+    config: { enabled: true, workerId: "e2e-recovery-worker" },
+    repository: h.repository,
+    rpc: reconciliationRpc
+  });
+
+  assert.equal(recovered.paid, 1);
+  assert.equal(h.signerCalls, 1, "reconciliation must not request a replacement signature");
+  assert.equal(h.broadcastCalls, 1, "reconciliation must never rebroadcast");
+  assert.equal(h.settlementCalls, 1);
+  assert.deepEqual(h.transitions.map((x) => [x.from, x.to]), [
+    ["signed", "reconciliation_required"],
+    ["reconciliation_required", "finalized"]
+  ]);
 });

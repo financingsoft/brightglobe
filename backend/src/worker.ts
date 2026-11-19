@@ -140,23 +140,24 @@ const worker = {
               repository: treasuryRepository,
               rpc: treasuryRpc
             });
+            const reconciliationSummary = "reservedBaseUnits" in reconciliation
+              ? {
+                  outcome: reconciliation.outcome,
+                  snapshotId: reconciliation.snapshotId,
+                  treasuryPaused: reconciliation.treasuryPaused,
+                  reservedBaseUnits: reconciliation.reservedBaseUnits.toString(),
+                  paidBaseUnits: reconciliation.paidBaseUnits.toString(),
+                  tokenBalanceBaseUnits: reconciliation.tokenBalanceBaseUnits?.toString() ?? null,
+                  availableAfterReservationsBaseUnits:
+                    reconciliation.availableAfterReservationsBaseUnits?.toString() ?? null,
+                  discrepancyCode: reconciliation.discrepancyCode
+                }
+              : reconciliation;
             console.log("[BrightGlobe BG Treasury Reconciler] Scheduled pass completed:", JSON.stringify({
               cron: controller.cron,
               scheduledTime: controller.scheduledTime,
               treasuryAccountId: treasury.id,
-              ...reconciliation,
-              reservedBaseUnits: "reservedBaseUnits" in reconciliation
-                ? reconciliation.reservedBaseUnits.toString()
-                : undefined,
-              paidBaseUnits: "paidBaseUnits" in reconciliation
-                ? reconciliation.paidBaseUnits.toString()
-                : undefined,
-              tokenBalanceBaseUnits: "tokenBalanceBaseUnits" in reconciliation
-                ? reconciliation.tokenBalanceBaseUnits?.toString() ?? null
-                : undefined,
-              availableAfterReservationsBaseUnits: "availableAfterReservationsBaseUnits" in reconciliation
-                ? reconciliation.availableAfterReservationsBaseUnits?.toString() ?? null
-                : undefined
+              ...reconciliationSummary
             }));
           }
         }

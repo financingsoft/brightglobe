@@ -124,6 +124,7 @@ export function createDrizzleBgDevnetPayoutRepository(db: Database): BgDevnetPay
           accountMintAddress: bgTreasuryReconciliationSnapshots.accountMintAddress,
           accountState: bgTreasuryReconciliationSnapshots.accountState,
           tokenBalanceBaseUnits: bgTreasuryReconciliationSnapshots.tokenBalanceBaseUnits,
+          paidBaseUnits: bgTreasuryReconciliationSnapshots.paidBaseUnits,
           status: bgTreasuryReconciliationSnapshots.status,
           createdAt: bgTreasuryReconciliationSnapshots.createdAt
         }).from(bgTreasuryReconciliationSnapshots)
@@ -159,8 +160,21 @@ export function createDrizzleBgDevnetPayoutRepository(db: Database): BgDevnetPay
           eq(rewardPayoutIntents.treasuryAccountId, candidate.treasury.id),
           inArray(rewardPayoutIntents.status, [...RESERVED_PAYOUT_STATUSES])
         ));
+        const [paidRow] = await tx.select({
+          amount: sql<string>`coalesce(sum(${rewardPayoutIntents.amountBaseUnits}), 0)::text`
+        }).from(rewardPayoutIntents).where(and(
+          eq(rewardPayoutIntents.treasuryAccountId, candidate.treasury.id),
+          eq(rewardPayoutIntents.status, "paid")
+        ));
         const currentReservedBaseUnits = BigInt(reservedRow?.amount ?? "0");
-        if (latestSnapshot.tokenBalanceBaseUnits < currentReservedBaseUnits) return null;
+        const currentPaidBaseUnits = BigInt(paidRow?.amount ?? "0");
+        // Payouts that settled after the snapshot have already left the chain
+        // balance. Deduct that cumulative paid delta before comparing today's
+        // reservations, otherwise an old matched snapshot can be spent twice.
+        if (currentPaidBaseUnits < latestSnapshot.paidBaseUnits) return null;
+        const paidSinceSnapshot = currentPaidBaseUnits - latestSnapshot.paidBaseUnits;
+        const effectiveObservedBalance = latestSnapshot.tokenBalanceBaseUnits - paidSinceSnapshot;
+        if (effectiveObservedBalance < currentReservedBaseUnits) return null;
 
         const windowStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         const [outflowRow] = await tx.select({

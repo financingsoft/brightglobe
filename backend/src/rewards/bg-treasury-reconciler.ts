@@ -251,7 +251,7 @@ export async function reconcileBgTreasuryInventory(input: {
 
   const recorded = await input.repository.recordSnapshot(snapshot);
   return {
-    outcome: snapshot.status,
+    outcome: recorded.snapshot.status,
     snapshotId: recorded.snapshotId,
     treasuryPaused: recorded.treasuryPaused,
     reservedBaseUnits: recorded.snapshot.reservedBaseUnits,

@@ -56,6 +56,7 @@ async function fixture(options: {
   simulationError?: unknown | null;
   feePayerLamports?: number;
   finalizedDestination?: string;
+  returnUnsignedFromSigner?: boolean;
 } = {}) {
   // Ephemeral test-only keypairs let the production verifier validate real
   // Ed25519 signatures without storing or loading any persistent key material.
@@ -265,7 +266,9 @@ async function fixture(options: {
       );
       transactionSignature = getSignatureFromTransaction(signedTransaction);
       return {
-        signedTransactionBase64: getBase64EncodedWireTransaction(signedTransaction),
+        signedTransactionBase64: options.returnUnsignedFromSigner
+          ? request.unsignedTransactionBase64
+          : getBase64EncodedWireTransaction(signedTransaction),
         transactionSignature
       };
     }
@@ -325,6 +328,18 @@ test("ambiguous broadcast preserves the original signature for reconciliation an
     ["signed", "reconciliation_required"]
   ]);
   assert.equal(h.transitions[0]?.evidence.broadcastOutcomeAmbiguous, true);
+});
+
+test("unsigned signer output is quarantined before signature persistence or broadcast", async () => {
+  const h = await fixture({ returnUnsignedFromSigner: true });
+  assert.equal(h.result.outcome, "quarantined");
+  assert.equal(h.persisted, false);
+  assert.equal(h.signerCalls, 1);
+  assert.equal(h.broadcastCalls, 0);
+  assert.equal(h.settlementCalls, 0);
+  assert.equal(h.transitions[0]?.from, "signing");
+  assert.equal(h.transitions[0]?.to, "quarantined");
+  assert.equal(h.transitions[0]?.evidence.integrityMismatch, true);
 });
 
 test("RPC signature mismatch quarantines payout before status or ledger settlement", async () => {

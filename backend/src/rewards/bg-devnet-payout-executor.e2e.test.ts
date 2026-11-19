@@ -64,6 +64,10 @@ async function fixture(options: {
   feePayerLamports?: number;
   finalizedDestination?: string;
   returnUnsignedFromSigner?: boolean;
+  statusError?: unknown | null;
+  statusConfirmationStatus?: "processed" | "confirmed" | "finalized" | null;
+  finalizedMetaError?: unknown | null;
+  finalizedBlockhash?: string;
 } = {}) {
   // Ephemeral test-only keypairs let the production verifier validate real
   // Ed25519 signatures without storing or loading any persistent key material.
@@ -198,7 +202,7 @@ async function fixture(options: {
     transaction: {
       signatures: [transactionSignature],
       message: {
-        recentBlockhash: BLOCKHASH,
+        recentBlockhash: options.finalizedBlockhash ?? BLOCKHASH,
         instructions: [{
           programId: CLASSIC_SPL_TOKEN_PROGRAM_ID,
           parsed: {
@@ -215,7 +219,7 @@ async function fixture(options: {
         }]
       }
     },
-    meta: { err: null, innerInstructions: [] }
+    meta: { err: options.finalizedMetaError ?? null, innerInstructions: [] }
   });
 
   const rpc: BgDevnetPayoutRpc = {
@@ -252,8 +256,8 @@ async function fixture(options: {
       return options.rpcSignature ?? transactionSignature;
     },
     getSignatureStatus: async () => ({
-      confirmationStatus: "finalized",
-      err: null,
+      confirmationStatus: options.statusConfirmationStatus ?? "finalized",
+      err: options.statusError ?? null,
       slot: 123
     }),
     getFinalizedTransaction: async () => makeFinalizedTransaction()
@@ -356,6 +360,45 @@ test("RPC signature mismatch quarantines payout before status or ledger settleme
   assert.equal(h.settlementCalls, 0);
   assert.equal(h.transitions[0]?.to, "quarantined");
   assert.equal(h.transitions[0]?.evidence.integrityMismatch, true);
+});
+
+test("processed execution error remains reconciliation-required until finalized evidence exists", async () => {
+  const h = await fixture({
+    statusError: { InstructionError: [0, "Custom"] },
+    statusConfirmationStatus: "processed"
+  });
+  assert.equal(h.result.outcome, "reconciliation_required");
+  assert.equal(h.settlementCalls, 0);
+  assert.equal(h.transitions.at(-1)?.to, "reconciliation_required");
+  assert.equal(h.transitions.at(-1)?.evidence.definitiveFailureVerified, false);
+});
+
+test("finalized execution error is failed only with matching finalized envelope and non-null meta error", async () => {
+  const chainError = { InstructionError: [0, "Custom"] };
+  const h = await fixture({
+    statusError: chainError,
+    statusConfirmationStatus: "finalized",
+    finalizedMetaError: chainError
+  });
+  assert.equal(h.result.outcome, "failed");
+  assert.equal(h.settlementCalls, 0);
+  assert.equal(h.transitions.at(-1)?.to, "failed");
+  assert.equal(h.transitions.at(-1)?.evidence.definitiveFailureVerified, true);
+  assert.equal(h.transitions.at(-1)?.evidence.finalizedFailureEnvelopeVerified, true);
+});
+
+test("finalized failure with mismatched transaction envelope is quarantined", async () => {
+  const chainError = { InstructionError: [0, "Custom"] };
+  const h = await fixture({
+    statusError: chainError,
+    statusConfirmationStatus: "finalized",
+    finalizedMetaError: chainError,
+    finalizedBlockhash: "11111111111111111111111111111112"
+  });
+  assert.equal(h.result.outcome, "quarantined");
+  assert.equal(h.settlementCalls, 0);
+  assert.equal(h.transitions.at(-1)?.to, "quarantined");
+  assert.equal(h.transitions.at(-1)?.evidence.integrityMismatch, true);
 });
 
 test("finalized transaction destination mismatch quarantines instead of paying", async () => {

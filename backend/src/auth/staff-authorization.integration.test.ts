@@ -38,8 +38,8 @@ test("staff RBAC resolves only active, current server-side grants and protects a
     // user table (id/email only); insert only the stable FK columns so this test
     // remains compatible with both the minimal CI fixture and the full auth schema.
     await client.query(
-      'INSERT INTO public."user" (id, email) VALUES ($1, $2)',
-      [authUserId, `${authUserId}@example.invalid`]
+      'INSERT INTO public."user" (id, name, email) VALUES ($1, $2, $3)',
+      [authUserId, "CI Staff", `${authUserId}@example.invalid`]
     );
     await db.insert(staffPrincipals).values({
       id: principalId,
@@ -93,14 +93,23 @@ test("staff RBAC resolves only active, current server-side grants and protects a
       metadata: { test: true },
       createdAt: now
     });
+    // PostgreSQL aborts the current transaction after a trigger raises. Use
+    // savepoints so both UPDATE and DELETE guards are independently exercised.
+    await client.query("SAVEPOINT staff_audit_update_guard");
     await assert.rejects(
       () => client.query("UPDATE public.staff_audit_events SET reason = 'tampered' WHERE id = $1", [auditId]),
       /append-only/
     );
+    await client.query("ROLLBACK TO SAVEPOINT staff_audit_update_guard");
+    await client.query("RELEASE SAVEPOINT staff_audit_update_guard");
+
+    await client.query("SAVEPOINT staff_audit_delete_guard");
     await assert.rejects(
       () => client.query("DELETE FROM public.staff_audit_events WHERE id = $1", [auditId]),
       /append-only/
     );
+    await client.query("ROLLBACK TO SAVEPOINT staff_audit_delete_guard");
+    await client.query("RELEASE SAVEPOINT staff_audit_delete_guard");
 
     await db.update(staffPrincipals).set({ status: "suspended" }).where(eq(staffPrincipals.id, principalId));
     const suspended = await resolveStaffAuthorization(db, authUserId, now);

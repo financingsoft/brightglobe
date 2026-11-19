@@ -122,7 +122,7 @@ function isSafeLamports(value: number): boolean {
   return Number.isSafeInteger(value) && value >= 0;
 }
 
-function hasExactFinalizedTransfer(
+export function hasExactFinalizedTransfer(
   transaction: unknown,
   signature: string,
   intent: BgDevnetPayoutIntent,

@@ -68,7 +68,7 @@ export function createDrizzleBgTreasuryReconciliationRepository(
       };
     },
 
-    async recordSnapshot(snapshot: BgTreasurySnapshotInput): Promise<{ snapshotId: string; treasuryPaused: boolean }> {
+    async recordSnapshot(snapshot: BgTreasurySnapshotInput): Promise<{ snapshotId: string; treasuryPaused: boolean; snapshot: BgTreasurySnapshotInput }> {
       return db.transaction(async (tx) => {
         const [treasury] = await tx.select({
           id: treasuryAccounts.id,
@@ -79,30 +79,68 @@ export function createDrizzleBgTreasuryReconciliationRepository(
           .for("update");
         if (!treasury) throw new Error("BG treasury account disappeared during reconciliation.");
 
+        // Recompute inventory only after taking the same treasury row lock used by
+        // payout claims. Caller-provided aggregates may have become stale while
+        // waiting for this lock and must never determine the durable safety state.
+        const [reservedRow] = await tx.select({
+          amount: sql<string>`coalesce(sum(${rewardPayoutIntents.amountBaseUnits}), 0)::text`
+        }).from(rewardPayoutIntents).where(and(
+          eq(rewardPayoutIntents.treasuryAccountId, snapshot.treasuryAccountId),
+          inArray(rewardPayoutIntents.status, [...RESERVED_PAYOUT_STATUSES])
+        ));
+        const [paidRow] = await tx.select({
+          amount: sql<string>`coalesce(sum(${rewardPayoutIntents.amountBaseUnits}), 0)::text`
+        }).from(rewardPayoutIntents).where(and(
+          eq(rewardPayoutIntents.treasuryAccountId, snapshot.treasuryAccountId),
+          eq(rewardPayoutIntents.status, "paid")
+        ));
+        const reservedBaseUnits = BigInt(reservedRow?.amount ?? "0");
+        const paidBaseUnits = BigInt(paidRow?.amount ?? "0");
+        const availableAfterReservationsBaseUnits = snapshot.tokenBalanceBaseUnits === null
+          ? null
+          : snapshot.tokenBalanceBaseUnits - reservedBaseUnits;
+        const inventoryInsufficient = snapshot.status === "matched" &&
+          availableAfterReservationsBaseUnits !== null &&
+          availableAfterReservationsBaseUnits < 0n;
+        const persistedSnapshot: BgTreasurySnapshotInput = {
+          ...snapshot,
+          reservedBaseUnits,
+          paidBaseUnits,
+          availableAfterReservationsBaseUnits,
+          status: inventoryInsufficient ? "insufficient_inventory" : snapshot.status,
+          discrepancyCode: inventoryInsufficient
+            ? "treasury_balance_below_reserved_inventory"
+            : snapshot.discrepancyCode,
+          evidence: {
+            ...snapshot.evidence,
+            inventoryTotalsRecomputedUnderTreasuryLock: true
+          }
+        };
+
         const now = new Date();
         const snapshotId = createUuidV7(now.getTime());
         await tx.insert(bgTreasuryReconciliationSnapshots).values({
           id: snapshotId,
-          treasuryAccountId: snapshot.treasuryAccountId,
-          network: snapshot.network,
-          mintAddress: snapshot.mintAddress,
-          tokenProgram: snapshot.tokenProgram,
-          tokenAccountAddress: snapshot.tokenAccountAddress,
-          accountOwnerAddress: snapshot.accountOwnerAddress,
-          accountMintAddress: snapshot.accountMintAddress,
-          accountState: snapshot.accountState,
-          observedSlot: snapshot.observedSlot,
-          tokenBalanceBaseUnits: snapshot.tokenBalanceBaseUnits,
-          reservedBaseUnits: snapshot.reservedBaseUnits,
-          paidBaseUnits: snapshot.paidBaseUnits,
-          availableAfterReservationsBaseUnits: snapshot.availableAfterReservationsBaseUnits,
-          status: snapshot.status,
-          discrepancyCode: snapshot.discrepancyCode,
-          evidence: snapshot.evidence,
+          treasuryAccountId: persistedSnapshot.treasuryAccountId,
+          network: persistedSnapshot.network,
+          mintAddress: persistedSnapshot.mintAddress,
+          tokenProgram: persistedSnapshot.tokenProgram,
+          tokenAccountAddress: persistedSnapshot.tokenAccountAddress,
+          accountOwnerAddress: persistedSnapshot.accountOwnerAddress,
+          accountMintAddress: persistedSnapshot.accountMintAddress,
+          accountState: persistedSnapshot.accountState,
+          observedSlot: persistedSnapshot.observedSlot,
+          tokenBalanceBaseUnits: persistedSnapshot.tokenBalanceBaseUnits,
+          reservedBaseUnits: persistedSnapshot.reservedBaseUnits,
+          paidBaseUnits: persistedSnapshot.paidBaseUnits,
+          availableAfterReservationsBaseUnits: persistedSnapshot.availableAfterReservationsBaseUnits,
+          status: persistedSnapshot.status,
+          discrepancyCode: persistedSnapshot.discrepancyCode,
+          evidence: persistedSnapshot.evidence,
           createdAt: now
         });
 
-        const shouldPause = snapshot.status !== "matched" && treasury.status === "active";
+        const shouldPause = persistedSnapshot.status !== "matched" && treasury.status === "active";
         await tx.update(treasuryAccounts)
           .set({
             lastReconciledAt: now,
@@ -111,7 +149,7 @@ export function createDrizzleBgTreasuryReconciliationRepository(
           })
           .where(eq(treasuryAccounts.id, snapshot.treasuryAccountId));
 
-        if (snapshot.status !== "matched") {
+        if (persistedSnapshot.status !== "matched") {
           await tx.insert(rewardAuditEvents).values({
             id: createUuidV7(now.getTime() + 1),
             actorType: "service",
@@ -122,16 +160,16 @@ export function createDrizzleBgTreasuryReconciliationRepository(
             reason: "BG treasury inventory reconciliation did not produce a clean matched snapshot.",
             metadata: {
               snapshotId,
-              status: snapshot.status,
-              discrepancyCode: snapshot.discrepancyCode,
-              reservedBaseUnits: snapshot.reservedBaseUnits.toString(),
-              paidBaseUnits: snapshot.paidBaseUnits.toString(),
-              tokenBalanceBaseUnits: snapshot.tokenBalanceBaseUnits?.toString() ?? null
+              status: persistedSnapshot.status,
+              discrepancyCode: persistedSnapshot.discrepancyCode,
+              reservedBaseUnits: persistedSnapshot.reservedBaseUnits.toString(),
+              paidBaseUnits: persistedSnapshot.paidBaseUnits.toString(),
+              tokenBalanceBaseUnits: persistedSnapshot.tokenBalanceBaseUnits?.toString() ?? null
             },
             createdAt: now
           });
         }
-        return { snapshotId, treasuryPaused: shouldPause || treasury.status === "paused" };
+        return { snapshotId, treasuryPaused: shouldPause || treasury.status === "paused", snapshot: persistedSnapshot };
       });
     }
   };

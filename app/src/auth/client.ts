@@ -3,7 +3,7 @@ import { createAuthClient } from "better-auth/react";
 import { phoneNumberClient, twoFactorClient } from "better-auth/client/plugins";
 import * as SecureStore from "expo-secure-store";
 
-export const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\\/+$/, "") ?? "";
+export const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") ?? "";
 export const isAuthConfigured = apiBaseUrl.length > 0;
 
 // The native Expo plugin persists Better Auth's session cookie in SecureStore.

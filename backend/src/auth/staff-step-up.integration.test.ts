@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { eq } from "drizzle-orm";
 import { Pool as PgPool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Database } from "../db/client.js";
-import { schema, staffPrincipals, staffStepUpGrants, user } from "../db/schema.js";
+import { schema, staffPrincipals, staffStepUpGrants } from "../db/schema.js";
 import { createUuidV7 } from "../identity/ids.js";
 import { consumeStaffStepUpGrant, issueStaffStepUpGrant } from "./staff-step-up.js";
 
@@ -21,14 +22,10 @@ test("staff step-up grants are hashed, session/action-bound, expiring and single
   const staffPrincipalId = createUuidV7(now.getTime());
 
   try {
-    await db.insert(user).values({
-      id: authUserId,
-      name: "CI Step-Up Staff",
-      email: `${authUserId}@example.invalid`,
-      emailVerified: true,
-      createdAt: now,
-      updatedAt: now
-    });
+    await client.query(
+      'INSERT INTO public."user" (id, name, email) VALUES ($1, $2, $3)',
+      [authUserId, "CI Step-Up Staff", `${authUserId}@example.invalid`]
+    );
     await db.insert(staffPrincipals).values({
       id: staffPrincipalId,
       authUserId,
@@ -49,7 +46,8 @@ test("staff step-up grants are hashed, session/action-bound, expiring and single
     assert.equal(grant.expiresAt.getTime() - now.getTime(), 5 * 60 * 1000);
 
     const [stored] = await db.select({ tokenHash: staffStepUpGrants.tokenHash })
-      .from(staffStepUpGrants);
+      .from(staffStepUpGrants)
+      .where(eq(staffStepUpGrants.staffPrincipalId, staffPrincipalId));
     assert.notEqual(stored?.tokenHash, grant.token);
     assert.match(stored?.tokenHash ?? "", /^[a-f0-9]{64}$/);
 

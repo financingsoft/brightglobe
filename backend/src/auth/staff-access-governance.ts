@@ -3,6 +3,7 @@ import type { Database } from "../db/client.js";
 import { createUuidV7 } from "../identity/ids.js";
 import {
   staffAccessChangeRequests,
+  staffAccessGovernanceMutex,
   staffAuditEvents,
   staffPermissions,
   staffPrincipals,
@@ -82,11 +83,11 @@ export interface StaffAccessRequestResult {
 async function lockStaffAccessGovernance(db: Database): Promise<void> {
   // Serialize low-volume staff access mutations so concurrent role revocations
   // cannot race the minimum-two-access-approver invariant.
-  const [lock] = await db.select({ id: staffRoles.id }).from(staffRoles)
-    .where(eq(staffRoles.roleKey, "staff_access_approver"))
+  const [lock] = await db.select({ id: staffAccessGovernanceMutex.id }).from(staffAccessGovernanceMutex)
+    .where(eq(staffAccessGovernanceMutex.id, 1))
     .limit(1)
     .for("update");
-  if (!lock) throw new StaffAccessGovernanceError("ROLE_NOT_FOUND", "The staff access approver role template is missing.");
+  if (!lock) throw new StaffAccessGovernanceError("ROLE_NOT_FOUND", "The staff access governance mutex is missing.");
 }
 
 async function assertAccessPermission(

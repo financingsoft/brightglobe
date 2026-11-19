@@ -530,6 +530,13 @@ export const communityEvents = pgTable("community_events", {
   check("community_events_window_check", sql`${table.endsAt} IS NULL OR ${table.startsAt} IS NULL OR ${table.endsAt} > ${table.startsAt}`)
 ]);
 
+export const staffAccessGovernanceMutex = pgTable("staff_access_governance_mutex", {
+  id: integer("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  check("staff_access_governance_mutex_singleton_check", sql.raw("id = 1"))
+]);
+
 export const staffAccessChangeRequests = pgTable("staff_access_change_requests", {
   id: uuid("id").primaryKey(),
   action: varchar("action", { length: 32 }).notNull(),
@@ -937,4 +944,4 @@ export const staffStepUpGrants = pgTable("staff_step_up_grants", {
   check("staff_step_up_consumed_check", sql`${table.consumedAt} IS NULL OR ${table.consumedAt} >= ${table.issuedAt}`)
 ]);
 
-export const schema = { staffPrincipals, staffRoles, staffPermissions, staffRolePermissions, staffRoleAssignments, staffAuditEvents, staffStepUpGrants, twoFactor, bgTreasuryRecoveryProposals, staffAccessChangeRequests, rewardPrograms, rewardEvents, rewardPayoutIntents, treasuryAccounts, rewardAuditEvents, bgTaskEvidenceRecords, bgTaskAppeals, bgTaskReviewDecisions, bgTaskAuditEvents, communityTasks, invitationCodes, invitationAttributions, communityAnnouncements, communityEvents, user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };
+export const schema = { staffPrincipals, staffRoles, staffPermissions, staffRolePermissions, staffRoleAssignments, staffAuditEvents, staffStepUpGrants, twoFactor, bgTreasuryRecoveryProposals, staffAccessGovernanceMutex, staffAccessChangeRequests, rewardPrograms, rewardEvents, rewardPayoutIntents, treasuryAccounts, rewardAuditEvents, bgTaskEvidenceRecords, bgTaskAppeals, bgTaskReviewDecisions, bgTaskAuditEvents, communityTasks, invitationCodes, invitationAttributions, communityAnnouncements, communityEvents, user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };

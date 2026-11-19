@@ -139,10 +139,10 @@ export function createStaffAccessGovernanceRoutes(db: Database, auth: BetterAuth
         const staff = context.get("staffAuth");
         const request = await proposeStaffAccessChange(db, {
           action: body.action as StaffAccessAction,
-          targetAuthUserId: typeof body.targetAuthUserId === "string" ? body.targetAuthUserId.trim() : null,
-          targetStaffPrincipalId: typeof body.targetStaffPrincipalId === "string" ? body.targetStaffPrincipalId.trim() : null,
-          roleId: typeof body.roleId === "string" ? body.roleId.trim() : null,
-          displayLabel: typeof body.displayLabel === "string" ? body.displayLabel.trim() : null,
+          targetAuthUserId: typeof body.targetAuthUserId === "string" && body.targetAuthUserId.trim() ? body.targetAuthUserId.trim() : null,
+          targetStaffPrincipalId: typeof body.targetStaffPrincipalId === "string" && body.targetStaffPrincipalId.trim() ? body.targetStaffPrincipalId.trim() : null,
+          roleId: typeof body.roleId === "string" && body.roleId.trim() ? body.roleId.trim() : null,
+          displayLabel: typeof body.displayLabel === "string" && body.displayLabel.trim() ? body.displayLabel.trim() : null,
           validUntil,
           reason: body.reason,
           idempotencyKey: body.idempotencyKey,

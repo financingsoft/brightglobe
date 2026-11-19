@@ -1,12 +1,19 @@
+import { and, eq, inArray } from "drizzle-orm";
 import { createApp } from "./app.js";
 import { createAuth } from "./auth.js";
 import { parseEnvironment, type WorkerBindings } from "./config/env.js";
 import { createDatabase } from "./db/client.js";
+import { treasuryAccounts } from "./db/schema.js";
 import { createSolanaGateway } from "./blockchain/solana/gateway.js";
 import { scanConfiguredBgAsset, IndexerAssetNotConfiguredError } from "./indexer/indexer-service.js";
 import { createDrizzleBgDevnetPayoutRepository } from "./rewards/bg-devnet-payout-repository.js";
 import { reconcileBgDevnetPayouts } from "./rewards/bg-devnet-payout-reconciler.js";
 import { createSolanaBgPayoutReconciliationRpc } from "./rewards/bg-devnet-payout-reconciliation-rpc.js";
+import { createDrizzleBgTreasuryReconciliationRepository } from "./rewards/bg-treasury-reconciliation-repository.js";
+import {
+  reconcileBgTreasuryInventory,
+  type BgTreasuryReconciliationRpc
+} from "./rewards/bg-treasury-reconciler.js";
 
 interface WorkerExecutionContext {
   waitUntil(promise: Promise<unknown>): void;
@@ -110,6 +117,47 @@ const worker = {
             console.log("[BrightGlobe Indexer] BG asset is still a draft; scheduled scan skipped.");
           } else {
             throw error;
+          }
+        }
+
+        if (env.BG_TREASURY_RECONCILIATION_ENABLED) {
+          const treasuryRepository = createDrizzleBgTreasuryReconciliationRepository(db);
+          const treasuryRpc: BgTreasuryReconciliationRpc = {
+            getDevnetStatus: async () => gateway.getDevnetStatus(),
+            getAccountInfo: (address, commitment) => gateway.getAccountInfo(address, commitment)
+          };
+          const configuredTreasuries = await db.select({ id: treasuryAccounts.id })
+            .from(treasuryAccounts)
+            .where(and(
+              eq(treasuryAccounts.network, "devnet"),
+              inArray(treasuryAccounts.status, ["active", "paused"])
+            ));
+
+          for (const treasury of configuredTreasuries) {
+            const reconciliation = await reconcileBgTreasuryInventory({
+              config: { enabled: true },
+              treasuryAccountId: treasury.id,
+              repository: treasuryRepository,
+              rpc: treasuryRpc
+            });
+            console.log("[BrightGlobe BG Treasury Reconciler] Scheduled pass completed:", JSON.stringify({
+              cron: controller.cron,
+              scheduledTime: controller.scheduledTime,
+              treasuryAccountId: treasury.id,
+              ...reconciliation,
+              reservedBaseUnits: "reservedBaseUnits" in reconciliation
+                ? reconciliation.reservedBaseUnits.toString()
+                : undefined,
+              paidBaseUnits: "paidBaseUnits" in reconciliation
+                ? reconciliation.paidBaseUnits.toString()
+                : undefined,
+              tokenBalanceBaseUnits: "tokenBalanceBaseUnits" in reconciliation
+                ? reconciliation.tokenBalanceBaseUnits?.toString() ?? null
+                : undefined,
+              availableAfterReservationsBaseUnits: "availableAfterReservationsBaseUnits" in reconciliation
+                ? reconciliation.availableAfterReservationsBaseUnits?.toString() ?? null
+                : undefined
+            }));
           }
         }
 

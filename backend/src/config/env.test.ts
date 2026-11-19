@@ -16,6 +16,9 @@ test("parses Worker bindings with safe development defaults", () => {
   assert.equal(env.EMAIL_ENABLED, false);
   assert.equal(env.SOLANA_NETWORK, "disabled");
   assert.equal(env.SOLANA_RPC_URL, "https://api.devnet.solana.com");
+  assert.equal(env.BG_PAYOUT_RECONCILIATION_ENABLED, false);
+  assert.equal(env.BG_PAYOUT_ARCHIVE_HISTORY_ENABLED, false);
+  assert.equal(env.BG_PAYOUT_RECONCILIATION_BATCH_SIZE, 10);
 });
 
 test("enables only Solana Devnet when explicitly configured", () => {
@@ -99,5 +102,49 @@ test("requires an HTTPS SMS gateway in production when SMS is enabled", () => {
       SMS_GATEWAY_TOKEN: "test-token"
     }),
     /Production SMS_GATEWAY_URL must use HTTPS/
+  );
+});
+
+test("enables read-only BG payout reconciliation only on Devnet", () => {
+  const env = parseEnvironment({
+    ...requiredBindings,
+    SOLANA_NETWORK: "devnet",
+    BG_PAYOUT_RECONCILIATION_ENABLED: "true",
+    BG_PAYOUT_RECONCILIATION_BATCH_SIZE: "7"
+  });
+  assert.equal(env.BG_PAYOUT_RECONCILIATION_ENABLED, true);
+  assert.equal(env.BG_PAYOUT_ARCHIVE_HISTORY_ENABLED, false);
+  assert.equal(env.BG_PAYOUT_RECONCILIATION_BATCH_SIZE, 7);
+});
+
+test("archive history completeness requires explicit reconciliation enablement", () => {
+  assert.throws(
+    () => parseEnvironment({
+      ...requiredBindings,
+      SOLANA_NETWORK: "devnet",
+      BG_PAYOUT_ARCHIVE_HISTORY_ENABLED: "true"
+    }),
+    /Archive history coverage requires BG payout reconciliation to be enabled/
+  );
+});
+
+test("reconciliation cannot be enabled when Solana is disabled", () => {
+  assert.throws(
+    () => parseEnvironment({
+      ...requiredBindings,
+      BG_PAYOUT_RECONCILIATION_ENABLED: "true"
+    }),
+    /BG payout reconciliation can only run when SOLANA_NETWORK=devnet/
+  );
+});
+
+test("reconciliation batch size is bounded", () => {
+  assert.throws(
+    () => parseEnvironment({
+      ...requiredBindings,
+      SOLANA_NETWORK: "devnet",
+      BG_PAYOUT_RECONCILIATION_BATCH_SIZE: "51"
+    }),
+    /BG_PAYOUT_RECONCILIATION_BATCH_SIZE/
   );
 });

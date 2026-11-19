@@ -169,6 +169,13 @@
       "when": 1795201200000,
       "tag": "0024_bg_payout_authority_and_reconciliation",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1795287600000,
+      "tag": "0025_bg_payout_status_capacity",
+      "breakpoints": true
     }
   ]
 }

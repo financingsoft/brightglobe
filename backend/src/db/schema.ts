@@ -688,6 +688,36 @@ export const bgTreasuryReconciliationSnapshots = pgTable("bg_treasury_reconcilia
   check("bg_treasury_reconciliation_matched_check", sql`${table.status} <> 'matched' OR (${table.tokenBalanceBaseUnits} IS NOT NULL AND ${table.availableAfterReservationsBaseUnits} IS NOT NULL AND ${table.availableAfterReservationsBaseUnits} >= 0 AND ${table.accountState} = 'initialized' AND ${table.accountOwnerAddress} IS NOT NULL AND ${table.accountMintAddress} = ${table.mintAddress})`)
 ]);
 
+export const bgTreasuryRecoveryProposals = pgTable("bg_treasury_recovery_proposals", {
+  id: uuid("id").primaryKey(),
+  treasuryAccountId: uuid("treasury_account_id").notNull().references(() => treasuryAccounts.id, { onDelete: "restrict" }),
+  snapshotId: uuid("snapshot_id").notNull().references(() => bgTreasuryReconciliationSnapshots.id, { onDelete: "restrict" }),
+  proposerStaffId: uuid("proposer_staff_id").notNull().references(() => staffPrincipals.id, { onDelete: "restrict" }),
+  approverStaffId: uuid("approver_staff_id").references(() => staffPrincipals.id, { onDelete: "restrict" }),
+  status: varchar("status", { length: 16 }).notNull().default("pending"),
+  reason: varchar("reason", { length: 1000 }).notNull(),
+  idempotencyKey: varchar("idempotency_key", { length: 128 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  consumedAt: timestamp("consumed_at", { withTimezone: true })
+}, (table) => [
+  uniqueIndex("bg_treasury_recovery_proposals_idempotency_uidx").on(table.proposerStaffId, table.idempotencyKey),
+  uniqueIndex("bg_treasury_recovery_proposals_pending_treasury_uidx").on(table.treasuryAccountId).where(sql.raw("status = 'pending'")),
+  index("bg_treasury_recovery_proposals_snapshot_status_idx").on(table.snapshotId, table.status, table.createdAt),
+  index("bg_treasury_recovery_proposals_approver_created_idx").on(table.approverStaffId, table.createdAt),
+  check("bg_treasury_recovery_proposals_status_check", sql`${table.status} IN ('pending', 'approved', 'expired', 'consumed')`),
+  check("bg_treasury_recovery_proposals_reason_check", sql`length(trim(${table.reason})) BETWEEN 1 AND 1000`),
+  check("bg_treasury_recovery_proposals_idempotency_check", sql`length(trim(${table.idempotencyKey})) BETWEEN 16 AND 128`),
+  check("bg_treasury_recovery_proposals_expiry_check", sql`${table.expiresAt} > ${table.createdAt}`),
+  check("bg_treasury_recovery_proposals_separation_check", sql`${table.approverStaffId} IS NULL OR ${table.approverStaffId} <> ${table.proposerStaffId}`),
+  check("bg_treasury_recovery_proposals_approval_check", sql`(
+    (${table.status} IN ('pending', 'expired') AND ${table.approverStaffId} IS NULL AND ${table.approvedAt} IS NULL AND ${table.consumedAt} IS NULL)
+    OR (${table.status} = 'approved' AND ${table.approverStaffId} IS NOT NULL AND ${table.approvedAt} IS NOT NULL AND ${table.consumedAt} IS NULL)
+    OR (${table.status} = 'consumed' AND ${table.approverStaffId} IS NOT NULL AND ${table.approvedAt} IS NOT NULL AND ${table.consumedAt} IS NOT NULL)
+  )`)
+]);
+
 export const rewardAuditEvents = pgTable("reward_audit_events", {
   id: uuid("id").primaryKey(),
   actorType: varchar("actor_type", { length: 24 }).notNull(),
@@ -873,4 +903,4 @@ export const staffStepUpGrants = pgTable("staff_step_up_grants", {
   check("staff_step_up_consumed_check", sql`${table.consumedAt} IS NULL OR ${table.consumedAt} >= ${table.issuedAt}`)
 ]);
 
-export const schema = { staffPrincipals, staffRoles, staffPermissions, staffRolePermissions, staffRoleAssignments, staffAuditEvents, staffStepUpGrants, twoFactor, rewardPrograms, rewardEvents, rewardPayoutIntents, treasuryAccounts, rewardAuditEvents, bgTaskEvidenceRecords, bgTaskAppeals, bgTaskReviewDecisions, bgTaskAuditEvents, communityTasks, invitationCodes, invitationAttributions, communityAnnouncements, communityEvents, user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };
+export const schema = { staffPrincipals, staffRoles, staffPermissions, staffRolePermissions, staffRoleAssignments, staffAuditEvents, staffStepUpGrants, twoFactor, bgTreasuryRecoveryProposals, rewardPrograms, rewardEvents, rewardPayoutIntents, treasuryAccounts, rewardAuditEvents, bgTaskEvidenceRecords, bgTaskAppeals, bgTaskReviewDecisions, bgTaskAuditEvents, communityTasks, invitationCodes, invitationAttributions, communityAnnouncements, communityEvents, user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };

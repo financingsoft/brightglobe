@@ -280,14 +280,17 @@ test("BG treasury snapshots are append-only, aggregate reserved/paid inventory a
     ]);
 
     await assert.rejects(
-      db.update(bgTreasuryReconciliationSnapshots)
-        .set({ status: "matched" })
-        .where(eq(bgTreasuryReconciliationSnapshots.id, discrepancy.snapshotId)),
+      pool.query(
+        "UPDATE public.bg_treasury_reconciliation_snapshots SET status = $1 WHERE id = $2",
+        ["matched", discrepancy.snapshotId]
+      ),
       /append-only/
     );
     await assert.rejects(
-      db.delete(bgTreasuryReconciliationSnapshots)
-        .where(eq(bgTreasuryReconciliationSnapshots.id, discrepancy.snapshotId)),
+      pool.query(
+        "DELETE FROM public.bg_treasury_reconciliation_snapshots WHERE id = $1",
+        [discrepancy.snapshotId]
+      ),
       /append-only/
     );
   } finally {

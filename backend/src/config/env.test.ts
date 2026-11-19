@@ -154,7 +154,7 @@ test("archive history completeness requires an explicit archive-capable RPC endp
     () => parseEnvironment({
       ...requiredBindings,
       SOLANA_NETWORK: "devnet",
-      SOLANA_RPC_URL: "https://api.devnet.solana.com",
+      SOLANA_RPC_URL: "https://api.devnet.solana.com/",
       BG_PAYOUT_RECONCILIATION_ENABLED: "true",
       BG_PAYOUT_ARCHIVE_HISTORY_ENABLED: "true"
     }),

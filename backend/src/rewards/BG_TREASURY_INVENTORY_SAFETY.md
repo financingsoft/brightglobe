@@ -32,10 +32,13 @@ treasury row and requires the newest snapshot to:
   treasury token account, and treasury authority;
 - show an initialized token account and a non-null observed token balance.
 
-The claim transaction then recomputes current reservations under the treasury lock.
-It refuses to claim if the current reserved amount exceeds the snapshot's observed
-token balance. Missing, stale, mismatched, unavailable, quarantined, or insufficient
-snapshots fail closed before signing.
+The claim transaction then recomputes current reservations and cumulative paid
+payouts under the treasury lock. It subtracts paid payouts settled after the snapshot
+from the snapshot balance before comparing that effective observed balance with
+current reservations. This prevents a payout settled after an old snapshot from being
+counted as still-available inventory. A paid total lower than the snapshot's recorded
+paid total is treated as an inconsistency and fails closed. Missing, stale, mismatched,
+unavailable, quarantined, or insufficient snapshots fail closed before signing.
 
 The five-minute freshness bound is an admission guard, not a substitute for chain
 confirmation. The executor must continue to verify the persisted signature and

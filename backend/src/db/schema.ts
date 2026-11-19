@@ -788,8 +788,7 @@ export const staffRoles = pgTable("staff_roles", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
   check("staff_roles_status_check", sql`${table.status} IN ('active', 'disabled')`),
-  check("staff_roles_key_check", sql.raw("role_key ~ '^[a-z][a-z0-9_.-]{1,63} { rewardPrograms, rewardEvents, rewardPayoutIntents, treasuryAccounts, rewardAuditEvents, bgTaskEvidenceRecords, bgTaskAppeals, bgTaskReviewDecisions, bgTaskAuditEvents, staffPrincipals, staffRoles, staffPermissions, staffRolePermissions, staffRoleAssignments, staffAuditEvents, communityTasks, invitationCodes, invitationAttributions, communityAnnouncements, communityEvents, user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };
-"))
+  check("staff_roles_key_check", sql.raw("role_key ~ '^[a-z][a-z0-9_.-]{1,63}$'"))
 ]);
 
 export const staffPermissions = pgTable("staff_permissions", {
@@ -798,8 +797,7 @@ export const staffPermissions = pgTable("staff_permissions", {
   description: varchar("description", { length: 500 }).notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
-  check("staff_permissions_key_check", sql.raw("permission_key ~ '^[a-z][a-z0-9_.-]{1,95} { rewardPrograms, rewardEvents, rewardPayoutIntents, treasuryAccounts, rewardAuditEvents, bgTaskEvidenceRecords, bgTaskAppeals, bgTaskReviewDecisions, bgTaskAuditEvents, staffPrincipals, staffRoles, staffPermissions, staffRolePermissions, staffRoleAssignments, staffAuditEvents, communityTasks, invitationCodes, invitationAttributions, communityAnnouncements, communityEvents, user, session, account, verification, userProfile, canonicalUsers, providerIdentities, walletOwnerships, identityAuditEvents, canonicalUserProfiles, walletChallenges, walletSessions, assetRegistry, assetAccounts, assetLedgerTransactions, assetLedgerPostings, assetIdempotencyKeys, assetTransactionIntents, assetTransactionTransitions, chainIndexerSources, chainIndexerCursors, chainObservedEvents, chainReconciliationDiscrepancies, bdAccounts, bdRewardRules, bdRewardEvents, bdLedgerTransactions, bdLedgerEntries };
-"))
+  check("staff_permissions_key_check", sql.raw("permission_key ~ '^[a-z][a-z0-9_.-]{1,95}$'"))
 ]);
 
 export const staffRolePermissions = pgTable("staff_role_permissions", {

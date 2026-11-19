@@ -43,9 +43,9 @@ export interface BgDevnetPayoutReconciliationCandidate {
   destinationTokenAccount: string;
   amountBaseUnits: bigint;
   decimals: number;
-  signature: string;
-  recentBlockhash: string;
-  lastValidBlockHeight: bigint;
+  signature: string | null;
+  recentBlockhash: string | null;
+  lastValidBlockHeight: bigint | null;
   finalizedSlot: bigint | null;
 }
 

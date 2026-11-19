@@ -14,6 +14,7 @@ import {
 } from "../assets/ledger/ledger-service.js";
 import { getOrCreateUserAssetAccount } from "../assets/asset-service.js";
 import { createUuidV7 } from "../identity/ids.js";
+import { CLASSIC_SPL_TOKEN_PROGRAM_ID } from "../blockchain/solana/token/classic-token.js";
 import {
   assertBgPayoutTransition,
   type BgPayoutStatus,
@@ -277,9 +278,12 @@ export function createDrizzleBgDevnetPayoutRepository(db: Database): BgDevnetPay
         if (row.payout.status === "paid") return true;
         if (
           row.payout.status !== "finalized" ||
+          row.payout.network !== "devnet" ||
+          row.payout.tokenProgram !== CLASSIC_SPL_TOKEN_PROGRAM_ID ||
           row.payout.chainSignature !== input.signature ||
           row.payout.finalizedSlot !== input.finalizedSlot ||
           row.event.status !== "finalized" ||
+          row.event.amountBaseUnits !== row.payout.amountBaseUnits ||
           row.program.reservedBaseUnits < row.payout.amountBaseUnits
         ) throw new Error("Finalized BG payout evidence or reserved program budget does not match.");
 

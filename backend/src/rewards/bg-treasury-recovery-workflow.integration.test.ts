@@ -8,7 +8,6 @@ import type { Database } from "../db/client.js";
 import {
   assetRegistry,
   bgTreasuryReconciliationSnapshots,
-  bgTreasuryRecoveryProposals,
   schema,
   staffAuditEvents,
   staffPermissions,
@@ -52,7 +51,7 @@ test("Treasury recovery proposal requires fresh matched inventory and distinct a
     await rootDb.transaction(async (tx) => {
       const db = tx as unknown as Database;
 
-      await tx.execute(
+      await client.query(
         `INSERT INTO public."user" (id, name, email) VALUES
           ($1, 'CI recovery proposer', $2),
           ($3, 'CI recovery approver', $4)`,

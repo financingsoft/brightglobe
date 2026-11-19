@@ -293,6 +293,70 @@ test("Neon BG payout repository claims once and settles the reward ledger atomic
     const [failedEvent] = await db.select().from(rewardEvents).where(eq(rewardEvents.id, failedEventId));
     assert.equal(releasedProgram?.reservedBaseUnits, 0n);
     assert.equal(failedEvent?.status, "failed");
+
+    const queueEligibilityProbe = async (suffix: string): Promise<string> => {
+      const probeEventId = createUuidV7(Date.now());
+      const probePayoutId = createUuidV7(Date.now());
+      await db.insert(rewardEvents).values({
+        id: probeEventId,
+        programId,
+        canonicalUserId,
+        actionType: "campaign",
+        evidenceRef: null,
+        idempotencyKey: "bg-payout-eligibility:" + suffix + ":" + id,
+        amountBaseUnits: amount,
+        ruleVersion: 1,
+        periodKey: null,
+        status: "reserved",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      await db.insert(rewardPayoutIntents).values({
+        id: probePayoutId,
+        rewardEventId: probeEventId,
+        treasuryAccountId,
+        network: "devnet",
+        mintAddress,
+        tokenProgram: CLASSIC_SPL_TOKEN_PROGRAM_ID,
+        sourceTokenAccount,
+        feePayerAddress,
+        treasuryAuthorityAddress: treasuryWalletAddress,
+        destinationWallet: testAddress(910_000 + suffix.length),
+        destinationTokenAccount: testAddress(920_000 + suffix.length),
+        amountBaseUnits: amount,
+        status: "queued",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      return probePayoutId;
+    };
+
+    await db.update(rewardPrograms)
+      .set({ status: "paused", startsAt: new Date(now.getTime() - 60_000), endsAt: null })
+      .where(eq(rewardPrograms.id, programId));
+    const pausedPayoutId = await queueEligibilityProbe("paused");
+    assert.equal(await repository.claimNextQueued("paused-program-worker"), null);
+    const [pausedPayout] = await db.select().from(rewardPayoutIntents)
+      .where(eq(rewardPayoutIntents.id, pausedPayoutId));
+    assert.equal(pausedPayout?.status, "queued", "operator pause must leave queued payout untouched");
+
+    await db.update(rewardPrograms)
+      .set({ status: "active", startsAt: new Date(now.getTime() - 60_000), endsAt: new Date(now.getTime() - 1) })
+      .where(eq(rewardPrograms.id, programId));
+    const expiredPayoutId = await queueEligibilityProbe("expired");
+    assert.equal(await repository.claimNextQueued("expired-program-worker"), null);
+    const [expiredPayout] = await db.select().from(rewardPayoutIntents)
+      .where(eq(rewardPayoutIntents.id, expiredPayoutId));
+    assert.equal(expiredPayout?.status, "queued", "expired program must not start a payout");
+
+    await db.update(rewardPrograms)
+      .set({ status: "active", startsAt: new Date(now.getTime() + 60 * 60 * 1000), endsAt: null })
+      .where(eq(rewardPrograms.id, programId));
+    const futurePayoutId = await queueEligibilityProbe("future");
+    assert.equal(await repository.claimNextQueued("future-program-worker"), null);
+    const [futurePayout] = await db.select().from(rewardPayoutIntents)
+      .where(eq(rewardPayoutIntents.id, futurePayoutId));
+    assert.equal(futurePayout?.status, "queued", "future program must not start a payout");
   } finally {
     await pool.end();
   }

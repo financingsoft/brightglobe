@@ -43,7 +43,7 @@ export interface BgDevnetPayoutRepository {
   transition(input: {
     payoutIntentId: string;
     from: "signing" | "signed" | "submitted" | "confirmed" | "reconciliation_required";
-    to: "submitted" | "confirmed" | "finalized" | "reconciliation_required" | "failed" | "quarantined";
+    to: "submitted" | "confirmed" | "finalized" | "reconciliation_required" | "failed" | "expired" | "quarantined" | "cancelled";
     signature?: string;
     slot?: bigint;
     errorCode?: string;

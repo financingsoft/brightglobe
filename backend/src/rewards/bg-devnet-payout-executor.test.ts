@@ -41,6 +41,7 @@ test("enabled executor returns empty without touching RPC when no queued payout 
     config: { enabled: true, workerId: "test-worker" },
     repository: {
       claimNextQueued: async () => { claims += 1; return null; },
+      claimReconciliationBatch: async () => [],
       persistSigned: async () => false,
       transition: async () => false,
       settleFinalizedPayoutOnce: async () => false

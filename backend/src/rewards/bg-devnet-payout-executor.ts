@@ -30,9 +30,30 @@ export interface BgDevnetPayoutIntent {
   remainingRollingOutflowBaseUnits: bigint;
 }
 
+export interface BgDevnetPayoutReconciliationCandidate {
+  id: string;
+  status: "signed" | "submitted" | "confirmed" | "finalized" | "reconciliation_required";
+  network: string;
+  mintAddress: string;
+  tokenProgram: string;
+  sourceTokenAccount: string;
+  feePayerAddress: string;
+  treasuryAuthorityAddress: string;
+  destinationWallet: string;
+  destinationTokenAccount: string;
+  amountBaseUnits: bigint;
+  decimals: number;
+  signature: string;
+  recentBlockhash: string;
+  lastValidBlockHeight: bigint;
+  finalizedSlot: bigint | null;
+}
+
 export interface BgDevnetPayoutRepository {
   /** Must atomically claim exactly one queued intent (UPDATE ... WHERE status='queued' RETURNING). */
   claimNextQueued(workerId: string): Promise<BgDevnetPayoutIntent | null>;
+  /** Claims persisted, non-terminal payouts for read-only chain reconciliation using a bounded retry lease. */
+  claimReconciliationBatch(workerId: string, limit: number): Promise<BgDevnetPayoutReconciliationCandidate[]>;
   /** Must atomically persist signature and blockhash while status is still signing. */
   persistSigned(input: {
     payoutIntentId: string;

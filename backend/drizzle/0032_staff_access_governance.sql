@@ -64,7 +64,7 @@ CREATE TABLE public.staff_access_change_requests (
   approved_at timestamptz,
   consumed_at timestamptz,
   CONSTRAINT staff_access_change_action_check
-    CHECK (action IN ('provision_principal', 'assign_role', 'revoke_role', 'suspend_principal')),
+    CHECK (action IN ('provision_principal', 'assign_role', 'revoke_role', 'suspend_principal', 'activate_principal')),
   CONSTRAINT staff_access_change_status_check
     CHECK (status IN ('pending', 'approved', 'expired', 'consumed')),
   CONSTRAINT staff_access_change_reason_check
@@ -90,7 +90,7 @@ CREATE TABLE public.staff_access_change_requests (
       (action = 'provision_principal' AND target_auth_user_id IS NOT NULL AND target_staff_principal_id IS NULL AND role_id IS NOT NULL AND display_label IS NOT NULL)
       OR (action = 'assign_role' AND target_auth_user_id IS NULL AND target_staff_principal_id IS NOT NULL AND role_id IS NOT NULL AND display_label IS NULL)
       OR (action = 'revoke_role' AND target_auth_user_id IS NULL AND target_staff_principal_id IS NOT NULL AND role_id IS NOT NULL AND display_label IS NULL)
-      OR (action = 'suspend_principal' AND target_auth_user_id IS NULL AND target_staff_principal_id IS NOT NULL AND role_id IS NULL AND display_label IS NULL)
+      OR ((action = 'suspend_principal' OR action = 'activate_principal') AND target_auth_user_id IS NULL AND target_staff_principal_id IS NOT NULL AND role_id IS NULL AND display_label IS NULL)
     )
 );
 --> statement-breakpoint

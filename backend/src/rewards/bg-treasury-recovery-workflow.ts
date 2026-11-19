@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, isNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import type { Database } from "../db/client.js";
 import { CLASSIC_SPL_TOKEN_PROGRAM_ID } from "../blockchain/solana/token/classic-token.js";
 import { createUuidV7 } from "../identity/ids.js";
@@ -362,11 +362,10 @@ export async function approveBgTreasuryRecovery(
 
   return db.transaction(async (tx) => {
     const transactionDb = tx as unknown as Database;
-    await assertStaffPermission(transactionDb, input.actor, "bg.treasury.recovery.approve", now);
-
     const [proposalReference] = await tx.select({
       treasuryAccountId: bgTreasuryRecoveryProposals.treasuryAccountId,
-      snapshotId: bgTreasuryRecoveryProposals.snapshotId
+      snapshotId: bgTreasuryRecoveryProposals.snapshotId,
+      proposerStaffId: bgTreasuryRecoveryProposals.proposerStaffId
     }).from(bgTreasuryRecoveryProposals)
       .where(eq(bgTreasuryRecoveryProposals.id, input.proposalId))
       .limit(1);
@@ -374,6 +373,34 @@ export async function approveBgTreasuryRecovery(
     if (!proposalReference) {
       throw new TreasuryRecoveryWorkflowError("PROPOSAL_NOT_FOUND", "The Treasury recovery proposal does not exist.");
     }
+
+    // Lock both principals in a stable order before checking either grant. This
+    // prevents cross-approval deadlocks and ensures the proposer remains active
+    // and authorized when the independent approval is committed.
+    const principalIds = [input.actor.staffPrincipalId, proposalReference.proposerStaffId].sort();
+    const principals = await tx.select({
+      id: staffPrincipals.id,
+      authUserId: staffPrincipals.authUserId,
+      status: staffPrincipals.status
+    }).from(staffPrincipals)
+      .where(inArray(staffPrincipals.id, principalIds))
+      .orderBy(asc(staffPrincipals.id))
+      .for("update");
+    const approverPrincipal = principals.find((principal) => principal.id === input.actor.staffPrincipalId);
+    const proposerPrincipal = principals.find((principal) => principal.id === proposalReference.proposerStaffId);
+
+    if (!approverPrincipal || approverPrincipal.authUserId !== input.actor.authUserId || approverPrincipal.status !== "active") {
+      throw new TreasuryRecoveryWorkflowError("STAFF_INACTIVE", "The approving staff principal is no longer active.");
+    }
+    if (!proposerPrincipal || proposerPrincipal.status !== "active") {
+      throw new TreasuryRecoveryWorkflowError("STAFF_INACTIVE", "The proposing staff principal is no longer active.");
+    }
+
+    await assertStaffPermission(transactionDb, input.actor, "bg.treasury.recovery.approve", now);
+    await assertStaffPermission(transactionDb, {
+      staffPrincipalId: proposerPrincipal.id,
+      authUserId: proposerPrincipal.authUserId
+    }, "bg.treasury.recovery.propose", now);
 
     await assertTreasuryAndSnapshot(
       transactionDb,

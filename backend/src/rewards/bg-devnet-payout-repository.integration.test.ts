@@ -7,6 +7,7 @@ import type { Database } from "../db/client.js";
 import {
   assetAccounts,
   assetRegistry,
+  bgTreasuryReconciliationSnapshots,
   canonicalUsers,
   rewardEvents,
   rewardPayoutIntents,
@@ -148,6 +149,26 @@ test("Neon BG payout repository claims once and settles the reward ledger atomic
       status: "queued",
       createdAt: now,
       updatedAt: now
+    });
+    await db.insert(bgTreasuryReconciliationSnapshots).values({
+      id: createUuidV7(now.getTime()),
+      treasuryAccountId,
+      network: "devnet",
+      mintAddress,
+      tokenProgram: CLASSIC_SPL_TOKEN_PROGRAM_ID,
+      tokenAccountAddress: sourceTokenAccount,
+      accountOwnerAddress: treasuryWalletAddress,
+      accountMintAddress: mintAddress,
+      accountState: "initialized",
+      observedSlot: 123n,
+      tokenBalanceBaseUnits: 1_000n,
+      reservedBaseUnits: amount,
+      paidBaseUnits: 0n,
+      availableAfterReservationsBaseUnits: 900n,
+      status: "matched",
+      discrepancyCode: null,
+      evidence: { finalizedAccountRead: true },
+      createdAt: now
     });
 
     const repository = createDrizzleBgDevnetPayoutRepository(db);

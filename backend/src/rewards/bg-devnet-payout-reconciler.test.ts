@@ -168,6 +168,42 @@ test("confirmed signature advances only to confirmed and remains reserved", asyn
   assert.equal(h.settlements, 0);
 });
 
+test("a signed payout with a live blockhash is never re-signed or expired", async () => {
+  const h = harness({
+    item: candidate({ status: "signed" }),
+    blockHeight: 100,
+    history: { found: false, complete: false }
+  });
+  const result = await reconcileBgDevnetPayouts({
+    config: { enabled: true, workerId: "reconciler" },
+    repository: h.repository,
+    rpc: h.rpc
+  });
+  assert.equal(result.awaitingFinality, 1);
+  assert.deepEqual(h.transitions.map((x) => [x.from, x.to]), [
+    ["signed", "reconciliation_required"]
+  ]);
+  assert.equal(h.settlements, 0);
+});
+
+test("authoritative archive discovery can finalize the original signature after status cache expiry", async () => {
+  const h = harness({
+    item: candidate({ status: "reconciliation_required" }),
+    blockHeight: 101,
+    history: { found: true, complete: false },
+    transaction: finalizedTransaction()
+  });
+  const result = await reconcileBgDevnetPayouts({
+    config: { enabled: true, workerId: "reconciler" },
+    repository: h.repository,
+    rpc: h.rpc
+  });
+  assert.equal(result.paid, 1);
+  assert.deepEqual(h.transitions.map((x) => [x.from, x.to]), [
+    ["reconciliation_required", "finalized"]
+  ]);
+});
+
 test("missing status with incomplete history never expires or releases reservation", async () => {
   const h = harness({
     item: candidate({ status: "submitted" }),

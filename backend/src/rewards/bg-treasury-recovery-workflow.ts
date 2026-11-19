@@ -326,6 +326,10 @@ export async function proposeBgTreasuryRecovery(
       expiresAt
     }).returning();
 
+    if (!created) {
+      throw new Error("Treasury recovery proposal insert returned no row.");
+    }
+
     await appendAudit(transactionDb, {
       actorStaffId: input.actor.staffPrincipalId,
       subjectStaffId: input.actor.staffPrincipalId,

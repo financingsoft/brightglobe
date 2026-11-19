@@ -1,6 +1,7 @@
 import { CLASSIC_SPL_TOKEN_PROGRAM_ID } from "../blockchain/solana/token/classic-token.js";
 import { SOLANA_DEVNET_GENESIS_HASH } from "../blockchain/solana/gateway.js";
 import { matchesFinalizedTransactionEnvelope } from "../indexer/transaction-verifier.js";
+import type { BgPayoutStatus } from "./bg-payout-lifecycle.js";
 import {
   hasExactFinalizedTransfer,
   type BgDevnetPayoutReconciliationCandidate,
@@ -71,7 +72,7 @@ function hasFinalizedFailedEnvelope(
     matchesFinalizedTransactionEnvelope(transaction, candidate.signature, candidate.recentBlockhash, slot);
 }
 
-type MutableStatus = BgDevnetPayoutReconciliationCandidate["status"];
+type MutableStatus = BgPayoutStatus;
 
 export async function reconcileBgDevnetPayouts(input: {
   config: BgDevnetPayoutReconcilerConfig;
@@ -200,7 +201,7 @@ export async function reconcileBgDevnetPayouts(input: {
         decimals: candidate.decimals,
         maxSinglePayoutBaseUnits: candidate.amountBaseUnits,
         remainingRollingOutflowBaseUnits: candidate.amountBaseUnits
-      }, candidate.recentBlockhash);
+      }, candidate.recentBlockhash) !== null;
     };
 
     try {
@@ -268,7 +269,7 @@ export async function reconcileBgDevnetPayouts(input: {
             summary.deferred += 1; continue;
           }
         }
-        if (status !== "confirmed" && status !== "finalized") {
+        if (status !== "confirmed") {
           if (!await transition("confirmed", { chainObservation: "confirmed" }, {
             slot: BigInt(observation.slot)
           })) { summary.deferred += 1; continue; }

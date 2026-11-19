@@ -228,4 +228,4 @@ Persisted Devnet payout signatures are reconciled independently from the queue e
 - A finalized failed transaction may be marked failed only when its transaction envelope matches the persisted signature and recent blockhash. An instruction, account, amount or envelope mismatch is quarantined.
 - A terminal failed/expired payout releases its reserved program budget only after the evidence gate passes. Ambiguous and quarantined payouts keep the reservation.
 
-The repository currently supplies the reconciliation port and deterministic tests only. No scheduled Worker, production RPC adapter, live signer or broadcast integration is enabled by this phase. Mainnet remains disabled.
+The repository supplies the reconciliation service, a read-only adapter over the existing Solana gateway and deterministic tests. The adapter's archive-completeness switch must remain false unless the configured RPC provider contract guarantees complete finalized address history. No scheduled Worker, production RPC endpoint wiring, live signer or broadcast integration is enabled by this phase. Mainnet remains disabled.

@@ -111,7 +111,7 @@ export function createStaffAccessGovernanceRoutes(db: Database, auth: BetterAuth
     createRequireStaffPermissionWithStepUp(db, auth, "bg.staff.access.propose"),
     async (context) => {
       const body = await context.req.json().catch(() => null) as Record<string, unknown> | null;
-      const actions = new Set<StaffAccessAction>(["provision_principal", "assign_role", "revoke_role", "suspend_principal"]);
+      const actions = new Set<StaffAccessAction>(["provision_principal", "assign_role", "revoke_role", "suspend_principal", "activate_principal"]);
       if (
         !body ||
         typeof body.action !== "string" ||

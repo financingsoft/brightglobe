@@ -3,8 +3,7 @@ import test from "node:test";
 import {
   generateKeyPair,
   getAddressFromPublicKey,
-  getBase64Decoder,
-  getBase64Encoder,
+  
   getBase64EncodedWireTransaction,
   getSignatureFromTransaction,
   getTransactionDecoder,
@@ -36,6 +35,13 @@ import {
 
 const MINT = "So11111111111111111111111111111111111111112";
 const BLOCKHASH = "11111111111111111111111111111111";
+
+function decodeBase64(value: string): Uint8Array {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
+}
 
 function encodeBase64(bytes: Uint8Array): string {
   let binary = "";
@@ -259,7 +265,7 @@ async function fixture(options: {
       signerCalls += 1;
       validateBgPayoutSigningRequest(request);
       const unsignedTransaction = getTransactionDecoder().decode(
-        getBase64Decoder().decode(getBase64Encoder().encode(request.unsignedTransactionBase64))
+        decodeBase64(request.unsignedTransactionBase64)
       );
       const signedTransaction = await signTransaction(
         [feePayerKeyPair, treasuryAuthorityKeyPair],

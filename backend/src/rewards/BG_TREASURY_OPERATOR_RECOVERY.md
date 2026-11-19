@@ -2,11 +2,11 @@
 
 ## Decision
 
-Treasury resume/execution remains unavailable until its final atomic execution transaction is implemented and reviewed. BrightGlobe now has separate server-enforced staff RBAC, TOTP step-up, and two-person proposal/approval routes. Do not expose a resume/execution route, accept an operator ID/role from request data, or treat an ordinary member session as staff authorization.
+BrightGlobe now has server-enforced staff RBAC, TOTP step-up, and two-person Treasury recovery proposal, approval, and execution routes. Execution performs only the guarded internal Treasury state transition; it never constructs, signs, submits, or transfers a Solana transaction. Do not accept an operator ID/role from request data or treat an ordinary member session as staff authorization.
 
 End-user Better Auth and canonical wallet/email sessions establish member identity, not staff authority. The BG task-review service's injected authorizer remains a separate service seam and is not used as staff authorization. Treasury staff routes derive authority only from Better Auth staff principals and database permission grants.
 
-The staff RBAC, TOTP step-up, and two-person proposal/approval state machine are implemented. The final execution transaction remains unimplemented. Proposal and approval routes are available, but no callable resume operation is exposed.
+The staff RBAC, TOTP step-up, two-person proposal/approval state machine, and final atomic paused-to-active state transition are implemented. This is a control-plane recovery only; on-chain signing and BG transfers remain outside this workflow.
 
 ## Staff authorization invariants (implemented)
 
@@ -19,7 +19,7 @@ The staff RBAC, TOTP step-up, and two-person proposal/approval state machine are
 3. Use explicit permissions, at minimum:
    - `bg.treasury.read`
    - `bg.treasury.recovery.propose`
-   - `bg.treasury.recovery.approve`
+   - `bg.treasury.recovery.approve`\n   - `bg.treasury.recovery.execute`
 4. Enforce separation of duties: proposer and approver must be different active staff principals. A user cannot approve their own proposal.
 5. Record staff identity, permission decision, authentication context, request correlation ID, reason, and timestamps in append-only audit records. Authorization must be checked server-side inside the operation's transaction, not trusted from request payloads.
 6. Do not grant permissions by default. Permission changes themselves require auditable, restricted administration.
@@ -32,7 +32,7 @@ The staff RBAC, TOTP step-up, and two-person proposal/approval state machine are
 - Each grant is bound to one staff principal, Better Auth session, and exact operation (`bg.treasury.recovery.propose` or `bg.treasury.recovery.approve`).
 - Grants expire after five minutes, store only a SHA-256 token digest, and are atomically consumed once. Replay, cross-session use, cross-user use, cross-operation use, and expired use are rejected.
 - A high-risk route must use `createRequireStaffPermissionWithStepUp`; the ordinary RBAC middleware alone is insufficient.
-- The code adds the issuance endpoint and reusable enforcement middleware. Treasury proposal and approval routes use that middleware; no Treasury execution/resume route exists.
+- The code adds the issuance endpoint and reusable enforcement middleware. Proposal, approval, and execution routes all require operation-specific, single-use TOTP step-up grants.
 
 ## Two-person proposal and approval implementation
 
@@ -42,7 +42,7 @@ The staff RBAC, TOTP step-up, and two-person proposal/approval state machine are
 - The Treasury must remain paused and Devnet-only; snapshot identity, age, configuration, finalized observation, and current reserved/paid payout totals are revalidated under Treasury/snapshot row locks.
 - A second active staff principal with the approval permission must approve. Self-approval is rejected.
 - Proposal/approval state changes and append-only staff audit events commit in the same database transaction.
-- Approval does not resume the Treasury. A separate final execution stage must revalidate the full recovery contract and atomically transition the Treasury only after all safety gates pass.
+- Approval does not resume the Treasury. The separate execution operation revalidates the full recovery contract, requires the same independent approver to execute, then atomically transitions the Treasury from paused to active, consumes the proposal, and appends the immutable audit event.
 
 ## Recovery workflow contract
 
@@ -62,9 +62,9 @@ The service must require an active staff principal with `bg.treasury.recovery.pr
 
 A different active staff principal with `bg.treasury.recovery.approve` must explicitly approve the proposal. The approval must bind to the exact proposal, treasury, and snapshot; it cannot approve a changed or superseded proposal.
 
-### Final execution checks (not yet implemented)
+### Final execution checks (implemented)
 
-When the final execution operation is built, it must perform all checks in one database transaction:
+The execution operation performs all checks in one database transaction:
 1. Lock the treasury row and recovery proposal row.
 2. Re-resolve both staff principals and permissions from trusted server-side records; reject revoked, disabled, expired, or self-approved identities.
 3. Require treasury status still be `paused`.
@@ -107,7 +107,7 @@ Each event should bind the treasury ID, proposal ID, snapshot ID, actor staff-pr
 
 - Staff authentication and RBAC are implemented and reviewed.
 - Two-person approval and immutable audit protections pass PostgreSQL integration tests.
-- Proposal and approval endpoints are mounted behind TOTP step-up and RBAC; the final resume/execution endpoint remains unmounted until its gates pass.
+- Proposal, approval, and internal Treasury state-transition execution endpoints are mounted behind RBAC and fresh TOTP step-up. No on-chain signing or transfer endpoint is part of this workflow.
 - Devnet-only enforcement is covered by tests.
 - Feature remains disabled by default.
 - No Staging/Production migration or deployment, Mainnet activity, or real BG transfer is authorized by this design.

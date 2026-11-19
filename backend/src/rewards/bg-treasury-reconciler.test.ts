@@ -196,7 +196,7 @@ test("wrong SPL program owner and mint decimals are quarantined", async () => {
     repository: wrongProgram.repository,
     rpc: wrongProgram.rpc
   });
-  assert.equal(programResult.outcome, "unavailable");
+  assert.equal(programResult.outcome, "quarantined");
 
   const wrongDecimals = fixture({ mintDecimals: 8 });
   const decimalsResult = await reconcileBgTreasuryInventory({

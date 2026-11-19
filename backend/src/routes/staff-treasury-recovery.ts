@@ -11,18 +11,19 @@ import {
   type StaffAuthVariables
 } from "../middleware/require-staff-permission.js";
 
-function errorResponse(error: unknown, context: Parameters<Parameters<Hono<{ Variables: StaffAuthVariables }>["post"]>[1]>[0]) {
-  if (!(error instanceof TreasuryRecoveryWorkflowError)) throw error;
+function normalizeWorkflowError(error: unknown): {
+  status: 400 | 403 | 404 | 409 | 410;
+  code: string;
+  message: string;
+} | null {
+  if (!(error instanceof TreasuryRecoveryWorkflowError)) return null;
 
-  const status = error.code === "INVALID_INPUT" ? 400
+  const status: 400 | 403 | 404 | 409 | 410 = error.code === "INVALID_INPUT" ? 400
     : error.code === "STAFF_INACTIVE" || error.code === "STAFF_PERMISSION_REVOKED" ? 403
     : error.code === "TREASURY_NOT_FOUND" || error.code === "PROPOSAL_NOT_FOUND" ? 404
     : error.code === "PROPOSAL_EXPIRED" ? 410
     : 409;
-
-  return context.json({
-    error: { code: error.code, message: error.message }
-  }, status);
+  return { status, code: error.code, message: error.message };
 }
 
 export function createStaffTreasuryRecoveryRoutes(db: Database, auth: BetterAuthInstance) {
@@ -63,7 +64,9 @@ export function createStaffTreasuryRecoveryRoutes(db: Database, auth: BetterAuth
         });
         return context.json({ proposal }, 201);
       } catch (error) {
-        return errorResponse(error, context);
+        const failure = normalizeWorkflowError(error);
+        if (!failure) throw error;
+        return context.json({ error: { code: failure.code, message: failure.message } }, failure.status);
       }
     }
   );
@@ -89,7 +92,9 @@ export function createStaffTreasuryRecoveryRoutes(db: Database, auth: BetterAuth
         });
         return context.json({ proposal });
       } catch (error) {
-        return errorResponse(error, context);
+        const failure = normalizeWorkflowError(error);
+        if (!failure) throw error;
+        return context.json({ error: { code: failure.code, message: failure.message } }, failure.status);
       }
     }
   );

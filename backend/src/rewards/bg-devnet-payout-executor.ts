@@ -63,7 +63,7 @@ export interface BgDevnetPayoutRepository {
   }): Promise<boolean>;
   transition(input: {
     payoutIntentId: string;
-    from: "signing" | "signed" | "submitted" | "confirmed" | "reconciliation_required";
+    from: "signing" | "signed" | "submitted" | "confirmed" | "finalized" | "reconciliation_required";
     to: "submitted" | "confirmed" | "finalized" | "reconciliation_required" | "failed" | "expired" | "quarantined" | "cancelled";
     signature?: string;
     slot?: bigint;

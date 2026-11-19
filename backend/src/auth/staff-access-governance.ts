@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, isNull, lte, ne, or } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNull, lte, ne, or } from "drizzle-orm";
 import type { Database } from "../db/client.js";
 import { createUuidV7 } from "../identity/ids.js";
 import {
@@ -185,7 +185,7 @@ async function validateTarget(
   input: Pick<StaffAccessRequestInput, "action" | "targetAuthUserId" | "targetStaffPrincipalId" | "roleId" | "displayLabel" | "validUntil" | "actor">,
   now: Date
 ) {
-  if (input.validUntil && input.validUntil.getTime() <= now.getTime()) {
+  if (input.validUntil && (Number.isNaN(input.validUntil.getTime()) || input.validUntil.getTime() <= now.getTime())) {
     throw new StaffAccessGovernanceError("INVALID_INPUT", "Role validity must end in the future.");
   }
 
@@ -333,6 +333,7 @@ export async function proposeStaffAccessChange(
         existing.targetStaffPrincipalId !== (input.targetStaffPrincipalId ?? null) ||
         existing.roleId !== (input.roleId ?? null) ||
         existing.displayLabel !== (input.displayLabel?.trim() ?? null) ||
+        (existing.validUntil?.getTime() ?? null) !== (input.validUntil?.getTime() ?? null) ||
         existing.reason !== reason
       ) {
         throw new StaffAccessGovernanceError("IDEMPOTENCY_CONFLICT", "The idempotency key was already used for a different staff access request.");
@@ -428,6 +429,9 @@ export async function approveStaffAccessChange(
       .limit(1)
       .for("update");
     if (!request) throw new StaffAccessGovernanceError("REQUEST_NOT_FOUND", "The staff access request does not exist.");
+    if (request.proposerStaffId !== reference.proposerStaffId || request.targetAuthUserId !== reference.targetAuthUserId || request.targetStaffPrincipalId !== reference.targetStaffPrincipalId || request.roleId !== reference.roleId || request.action !== reference.action || request.displayLabel !== reference.displayLabel || (request.validUntil?.getTime() ?? null) !== (reference.validUntil?.getTime() ?? null)) {
+      throw new StaffAccessGovernanceError("REQUEST_NOT_PENDING", "The staff access request binding changed before approval.");
+    }
     if (request.proposerStaffId === input.actor.staffPrincipalId) {
       throw new StaffAccessGovernanceError("SELF_APPROVAL", "The proposer cannot approve their own staff access request.");
     }
@@ -531,7 +535,7 @@ export async function executeStaffAccessChange(
       .limit(1)
       .for("update");
     if (!request) throw new StaffAccessGovernanceError("REQUEST_NOT_FOUND", "The staff access request does not exist.");
-    if (request.proposerStaffId !== reference.proposerStaffId || request.approverStaffId !== reference.approverStaffId) {
+    if (request.proposerStaffId !== reference.proposerStaffId || request.approverStaffId !== reference.approverStaffId || request.targetAuthUserId !== reference.targetAuthUserId || request.targetStaffPrincipalId !== reference.targetStaffPrincipalId || request.roleId !== reference.roleId || request.action !== reference.action || request.displayLabel !== reference.displayLabel || (request.validUntil?.getTime() ?? null) !== (reference.validUntil?.getTime() ?? null)) {
       throw new StaffAccessGovernanceError("REQUEST_NOT_PENDING", "The request binding changed before execution.");
     }
     if (request.status !== "approved" || !request.approvedAt) {

@@ -110,9 +110,9 @@ export default function SecurityScreen() {
     }
   };
 
-  const copyCodes = async () => {
-    // Clipboard export is intentionally omitted: codes remain visible for manual secure storage.
-    setNotice(t("请将代码保存到密码管理器或离线安全位置；不要截图或发送给他人。", "Store these codes in a password manager or secure offline location. Do not screenshot or share them."));
+  const acknowledgeCodesSaved = () => {
+    setBackupCodes([]);
+    setNotice(t("恢复码已从当前页面清除。请确认它们已保存在安全位置。", "Backup codes have been cleared from this screen. Confirm they are stored securely."));
   };
 
   return (
@@ -160,7 +160,6 @@ export default function SecurityScreen() {
             <View style={styles.enrollment}>
               <Text style={styles.copy}>{t("使用 Google Authenticator、1Password 或其他兼容 TOTP 的应用扫描二维码。二维码只在本机生成，不会发送给第三方。", "Scan this QR code with Google Authenticator, 1Password, or another TOTP-compatible app. The QR code is rendered locally and is not sent to a third party.")}</Text>
               <View style={styles.qrFrame}><QRCode value={totpURI} size={176} /></View>
-              <Text selectable style={styles.uri}>{totpURI}</Text>
               <TextInput
                 value={code}
                 onChangeText={setCode}
@@ -207,8 +206,8 @@ export default function SecurityScreen() {
             <View style={styles.codeGrid}>
               {backupCodes.map((item, index) => <Text selectable key={index} style={styles.code}>{item}</Text>)}
             </View>
-            <Pressable onPress={copyCodes} style={styles.secondary}>
-              <Text style={styles.secondaryText}>{t("我已了解如何安全保存", "I understand how to store these safely")}</Text>
+            <Pressable onPress={acknowledgeCodesSaved} style={styles.secondary}>
+              <Text style={styles.secondaryText}>{t("我已安全保存，清除页面代码", "Saved securely; clear codes from screen")}</Text>
             </Pressable>
           </View>
         ) : null}

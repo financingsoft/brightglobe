@@ -213,6 +213,12 @@ export default function SettingsScreen() {
           <Text style={styles.value}>{t("查看 Devnet 资产状态", "View Devnet asset status")} ›</Text>
         </Pressable>
         {isAuthenticated && !isPreviewAccount && authMethod === "email" ? (
+          <Pressable style={styles.row} onPress={() => router.push("/security")}>
+            <Text style={styles.label}>{t("账户安全", "Account security")}</Text>
+            <Text style={styles.value}>{t("身份验证器与恢复码", "Authenticator and recovery codes")} ›</Text>
+          </Pressable>
+        ) : null}
+        {isAuthenticated && !isPreviewAccount && authMethod === "email" ? (
           <Pressable style={styles.row} onPress={openSessions}>
             <Text style={styles.label}>{t("登录设备", "Signed-in devices")}</Text>
             <Text style={styles.value}>{t("管理设备与会话", "Manage devices and sessions")} ›</Text>

@@ -1,8 +1,8 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gte, like, lte } from "drizzle-orm";
 import { Hono } from "hono";
 import type { BetterAuthInstance } from "../auth.js";
 import type { Database } from "../db/client.js";
-import { staffAccessChangeRequests, staffPrincipals, staffRoles } from "../db/schema.js";
+import { staffAccessChangeRequests, staffAuditEvents, staffPrincipals, staffRoles } from "../db/schema.js";
 import {
   approveStaffAccessChange,
   executeStaffAccessChange,
@@ -56,6 +56,46 @@ export function createStaffAccessGovernanceRoutes(db: Database, auth: BetterAuth
     }
   );
 
+  routes.get(
+    "/audit",
+    createRequireStaffPermission(db, auth, "bg.staff.access.read"),
+    async (context) => {
+      const action = context.req.query("action");
+      const actorStaffId = context.req.query("actorStaffId");
+      const subjectStaffId = context.req.query("subjectStaffId");
+      const requestId = context.req.query("requestId");
+      const fromValue = context.req.query("from");
+      const toValue = context.req.query("to");
+      const limitValue = context.req.query("limit");
+      const limit = limitValue ? Number(limitValue) : 50;
+      const from = fromValue ? new Date(fromValue) : null;
+      const to = toValue ? new Date(toValue) : null;
+
+      if (
+        (action && !action.startsWith("bg.staff.")) ||
+        !Number.isInteger(limit) || limit < 1 || limit > 100 ||
+        (from && Number.isNaN(from.getTime())) ||
+        (to && Number.isNaN(to.getTime())) ||
+        (from && to && from.getTime() > to.getTime())
+      ) {
+        return context.json({ error: { code: "INVALID_AUDIT_FILTER", message: "The audit filters or limit are invalid." } }, 400);
+      }
+
+      const filters = [like(staffAuditEvents.action, "bg.staff.%")];
+      if (action) filters.push(eq(staffAuditEvents.action, action));
+      if (actorStaffId) filters.push(eq(staffAuditEvents.actorStaffId, actorStaffId));
+      if (subjectStaffId) filters.push(eq(staffAuditEvents.subjectStaffId, subjectStaffId));
+      if (requestId) filters.push(eq(staffAuditEvents.requestId, requestId));
+      if (from) filters.push(gte(staffAuditEvents.createdAt, from));
+      if (to) filters.push(lte(staffAuditEvents.createdAt, to));
+
+      const events = await db.select().from(staffAuditEvents)
+        .where(and(...filters))
+        .orderBy(desc(staffAuditEvents.createdAt))
+        .limit(limit);
+      return context.json({ events });
+    }
+  );
   routes.get(
     "/principals",
     createRequireStaffPermission(db, auth, "bg.staff.access.read"),

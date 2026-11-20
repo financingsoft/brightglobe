@@ -142,6 +142,10 @@ test("fee quote rejects malformed, unsupported, or partially signed transaction 
   const h = createHarness();
   await assert.rejects(() => h.rpc.getFeeForTransaction("not-base64"));
   await assert.rejects(() => h.rpc.getFeeForTransaction(wireTransaction([new Uint8Array(64)])));
+  const nonCanonicalVector = new Uint8Array(2 + 128 + 3);
+  nonCanonicalVector.set([0x82, 0x00]);
+  nonCanonicalVector.set([0x80, 0x01, 0x02], 130);
+  await assert.rejects(() => h.rpc.getFeeForTransaction(encodeBase64(nonCanonicalVector)));
   const partiallySigned = wireTransaction([
     Uint8Array.from({ length: 64 }, () => 1),
     new Uint8Array(64)

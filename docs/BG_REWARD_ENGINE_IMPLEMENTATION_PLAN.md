@@ -29,6 +29,8 @@
 - Reuse Classic SPL mint/account parser, ATA derivation, checked transfer builder, transaction lifecycle and chain verifier.
 - Add a signer interface with a Devnet-only test implementation.
 - Add signer policy validation and no-secret logging tests.
+- Add a concrete gateway-backed Devnet payout RPC adapter for finalized account/balance reads, ATA rent, message fee quotes, unsigned simulation, signed broadcast, signature status and finalized transaction reads.
+- Keep live Worker execution disabled until a separately reviewed external signer provider, isolated Devnet configuration and explicit execution activation are available.
 - Create ATA idempotently and sponsor only approved fee/rent.
 - No Mainnet RPC or Mainnet signing path enabled.
 

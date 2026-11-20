@@ -81,8 +81,8 @@ function inspectPayoutWireTransaction(value: string): {
 } {
   const bytes = decodeTransaction(value);
   const vector = readShortVectorLength(bytes);
-  if (vector.value !== EXPECTED_PAYOUT_SIGNATURES) {
-    throw new TypeError("BG payout transaction must contain exactly two signer slots.");
+  if (vector.value !== EXPECTED_PAYOUT_SIGNATURES || vector.nextOffset !== 1) {
+    throw new TypeError("BG payout transaction must use a canonical two-signer vector.");
   }
 
   const signatureStart = vector.nextOffset;
